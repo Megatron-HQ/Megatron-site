@@ -10,7 +10,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "prepare": "git config core.hooksPath .githooks",
+    "pre-commit:check": "node .githooks/pre-commit --check",
+    "test": "node --test .claude/skills/visual-verify/*.test.mjs",
+    "verify:visual": "node .claude/skills/visual-verify/verify.mjs",
+    "verify:qa": "node .qa/verify.mjs"
   },
   "dependencies": {
     "@fontsource/geist-mono": "5.3.0",
