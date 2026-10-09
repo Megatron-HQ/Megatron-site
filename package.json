@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The product website for Megatron, a local Claude Code control center.",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -13,9 +13,13 @@
     "preview": "vite preview --host 127.0.0.1",
     "prepare": "git config core.hooksPath .githooks",
     "pre-commit:check": "node .githooks/pre-commit --check",
-    "test": "node --test .claude/skills/visual-verify/*.test.mjs",
+    "test": "node --test .claude/skills/visual-verify/*.test.mjs scripts/ci/*.test.mjs",
+    "lint": "eslint . --max-warnings 0",
+    "format:check": "prettier . --check",
+    "format": "prettier . --write",
     "verify:visual": "node .claude/skills/visual-verify/verify.mjs",
-    "verify:qa": "node scripts/qa/verify.mjs"
+    "verify:qa": "node scripts/qa/verify.mjs",
+    "verify:qa:ci": "node scripts/ci/verify-qa.mjs"
   },
   "dependencies": {
     "@fontsource/geist-mono": "5.3.0",
@@ -23,10 +27,14 @@
     "lucide": "1.54.0"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@tailwindcss/vite": "4.3.3",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
     "pixelmatch": "7.2.0",
     "playwright-core": "1.62.1",
     "pngjs": "7.0.0",
+    "prettier": "3.9.9",
     "tailwindcss": "4.3.3",
     "vite": "8.3.4"
   }

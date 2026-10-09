@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint JavaScript
+        run: npm run lint
+      - name: Check formatting
+        run: npm run format:check
+      - name: Check generated mirrors
+        run: npm run pre-commit:check
+      - name: Build production site
+        run: npm run build
+
+  browser:
+    name: Browser (${{ matrix.platform }})
+    needs: quality
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: Linux
+          - os: windows-2025
+            platform: Windows
+          - os: macos-15
+            platform: macOS
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install matching Chromium
+        run: |
+          npx --no-install playwright-core install --with-deps --no-shell chromium
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $chromiumPath = node -e "process.stdout.write(require('playwright-core').chromium.executablePath())"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "CHROME_PATH=$chromiumPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Run tooling and failure regression tests
+        run: npm test
+      - name: Verify all responsive screens
+        run: npm run verify:visual
+      - name: Verify production interactions
+        run: npm run verify:qa:ci
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-evidence-${{ matrix.platform }}
+          path: |
+            .visual-verify/*.png
+            .qa/*.png
+            .qa/results.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

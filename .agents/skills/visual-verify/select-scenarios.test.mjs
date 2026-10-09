@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { knownScreens, parseOnly, selectScenarios } from './select-scenarios.mjs'
+import {
+  knownScreens,
+  parseOnly,
+  selectScenarios
+} from './select-scenarios.mjs'
 
 const FIXTURE = [
   { name: 'skill-detail-open', screen: 'skill-detail' },
   { name: 'skill-detail-disabled', screen: 'skill-detail' },
   { name: 'sidebar-nav-hover', screen: 'sidebar' },
-  { name: 'sidebar-filter-closes-open-detail', screen: ['sidebar', 'skill-detail'] },
+  {
+    name: 'sidebar-filter-closes-open-detail',
+    screen: ['sidebar', 'skill-detail']
+  },
   { name: 'plugin-detail-open', screen: 'plugin-detail' },
   // Stands in for a just-added scenario: tagged, but no baseline captured yet.
   { name: 'plugin-detail-freshly-added', screen: 'plugin-detail' }
@@ -30,9 +37,15 @@ const names = (scenarios) => scenarios.map((s) => s.name)
 
 test('parseOnly reads both flag forms and absence', () => {
   assert.equal(parseOnly(['--foo', 'bar']), null)
-  assert.deepEqual(parseOnly(['--only', 'skill-detail,sidebar']), ['skill-detail', 'sidebar'])
+  assert.deepEqual(parseOnly(['--only', 'skill-detail,sidebar']), [
+    'skill-detail',
+    'sidebar'
+  ])
   assert.deepEqual(parseOnly(['--only=skill-detail']), ['skill-detail'])
-  assert.deepEqual(parseOnly(['--only', ' skill-detail , , sidebar ']), ['skill-detail', 'sidebar'])
+  assert.deepEqual(parseOnly(['--only', ' skill-detail , , sidebar ']), [
+    'skill-detail',
+    'sidebar'
+  ])
 })
 
 test('parseOnly throws when the flag names nothing', () => {
@@ -41,7 +54,11 @@ test('parseOnly throws when the flag names nothing', () => {
 })
 
 test('knownScreens unions string and array tags', () => {
-  assert.deepEqual([...knownScreens(FIXTURE)].sort(), ['plugin-detail', 'sidebar', 'skill-detail'])
+  assert.deepEqual([...knownScreens(FIXTURE)].sort(), [
+    'plugin-detail',
+    'sidebar',
+    'skill-detail'
+  ])
 })
 
 test('no --only returns the full list unchanged', () => {
@@ -72,17 +89,22 @@ test('a multi-screen scenario is selected by either of its screens', () => {
 })
 
 test('a scenario with no baseline is captured despite a non-matching --only', () => {
-  assert.deepEqual(names(selectScenarios(FIXTURE, ['skill-detail'], BASELINES)), [
-    'skill-detail-open',
-    'skill-detail-disabled',
-    'sidebar-filter-closes-open-detail',
-    'plugin-detail-freshly-added'
-  ])
+  assert.deepEqual(
+    names(selectScenarios(FIXTURE, ['skill-detail'], BASELINES)),
+    [
+      'skill-detail-open',
+      'skill-detail-disabled',
+      'sidebar-filter-closes-open-detail',
+      'plugin-detail-freshly-added'
+    ]
+  )
 })
 
 test('a baselined scenario on a non-matching screen is excluded', () => {
   assert.ok(
-    !names(selectScenarios(FIXTURE, ['plugin-detail'], BASELINES)).includes('sidebar-nav-hover')
+    !names(selectScenarios(FIXTURE, ['plugin-detail'], BASELINES)).includes(
+      'sidebar-nav-hover'
+    )
   )
 })
 
@@ -91,7 +113,10 @@ test('an unknown --only screen throws, naming it and the valid set', () => {
     () => selectScenarios(FIXTURE, ['sidbar'], BASELINES),
     (err) => {
       assert.match(err.message, /unknown screen\(s\): sidbar/)
-      assert.match(err.message, /valid screens: plugin-detail, sidebar, skill-detail/)
+      assert.match(
+        err.message,
+        /valid screens: plugin-detail, sidebar, skill-detail/
+      )
       return true
     }
   )

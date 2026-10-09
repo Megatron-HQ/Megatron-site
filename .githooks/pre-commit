@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 // Keeps generated mirrors in sync — see CLAUDE.md's Locked decisions table.
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { dirname, join, relative } from 'node:path/posix'
 
 const FILE_MIRRORS = [{ source: 'CLAUDE.md', target: 'AGENTS.md' }]
@@ -12,7 +18,9 @@ function gitStagedBlob(path) {
 }
 
 function gitTrackedFiles(path) {
-  return execFileSync('git', ['ls-files', '--cached', '--', path], { encoding: 'utf8' })
+  return execFileSync('git', ['ls-files', '--cached', '--', path], {
+    encoding: 'utf8'
+  })
     .split('\n')
     .filter(Boolean)
 }
@@ -25,7 +33,8 @@ function checkInSync() {
   const problems = []
 
   for (const { source, target } of FILE_MIRRORS) {
-    const inSync = existsSync(target) && readFileSync(source).equals(readFileSync(target))
+    const inSync =
+      existsSync(target) && readFileSync(source).equals(readFileSync(target))
     if (!inSync) problems.push(`${target} is out of sync with ${source}`)
   }
 
@@ -36,12 +45,16 @@ function checkInSync() {
       const targetFile = mirroredPath(sourceFile, source, target)
       expectedTargets.add(targetFile)
       const inSync =
-        existsSync(targetFile) && readFileSync(sourceFile).equals(readFileSync(targetFile))
-      if (!inSync) problems.push(`${targetFile} is out of sync with ${sourceFile}`)
+        existsSync(targetFile) &&
+        readFileSync(sourceFile).equals(readFileSync(targetFile))
+      if (!inSync)
+        problems.push(`${targetFile} is out of sync with ${sourceFile}`)
     }
     for (const targetFile of gitTrackedFiles(target)) {
       if (!expectedTargets.has(targetFile)) {
-        problems.push(`${targetFile} is an orphan with no ${source} counterpart`)
+        problems.push(
+          `${targetFile} is an orphan with no ${source} counterpart`
+        )
       }
     }
   }
@@ -93,6 +106,8 @@ function regenerateDirMirror(source, target) {
 if (process.argv.includes('--check')) {
   checkInSync()
 } else {
-  for (const { source, target } of FILE_MIRRORS) regenerateFileMirror(source, target)
-  for (const { source, target } of DIR_MIRRORS) regenerateDirMirror(source, target)
+  for (const { source, target } of FILE_MIRRORS)
+    regenerateFileMirror(source, target)
+  for (const { source, target } of DIR_MIRRORS)
+    regenerateDirMirror(source, target)
 }

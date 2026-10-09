@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { browserLaunchOptions, resolveChromePath, getChromium } from './browser-launch.mjs'
+import {
+  browserLaunchOptions,
+  resolveChromePath,
+  getChromium
+} from './browser-launch.mjs'
 
 test('resolveChromePath respects CHROME_PATH environment variable if valid', () => {
   const custom = import.meta.filename
@@ -9,7 +13,9 @@ test('resolveChromePath respects CHROME_PATH environment variable if valid', () 
 })
 
 test('resolveChromePath ignores non-existent CHROME_PATH', () => {
-  const resolved = resolveChromePath({ CHROME_PATH: '/non/existent/path/chrome.exe' })
+  const resolved = resolveChromePath({
+    CHROME_PATH: '/non/existent/path/chrome.exe'
+  })
   assert.notEqual(resolved, '/non/existent/path/chrome.exe')
 })
 
@@ -21,7 +27,10 @@ test('browserLaunchOptions defaults to headless mode with sandbox args', () => {
 })
 
 test('browserLaunchOptions allows overriding options', () => {
-  const options = browserLaunchOptions({ headless: false, args: ['--custom'] }, {})
+  const options = browserLaunchOptions(
+    { headless: false, args: ['--custom'] },
+    {}
+  )
   assert.equal(options.headless, false)
   assert.deepEqual(options.args, ['--custom'])
 })

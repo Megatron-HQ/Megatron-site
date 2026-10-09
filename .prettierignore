@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.qa/
+.visual-verify/
+.visual-verify-baselines/
+.agents/
+AGENTS.md
+.claude/**/*.md
+.claude/settings.local.json
+package-lock.json

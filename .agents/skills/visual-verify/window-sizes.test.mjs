@@ -22,13 +22,19 @@ test('getWindowSizes filters by viewport label', () => {
 
   const multi = getWindowSizes(['mobile', 'desktop'])
   assert.equal(multi.length, 2)
-  assert.deepEqual(multi.map((v) => v.label), ['desktop', 'mobile'])
+  assert.deepEqual(
+    multi.map((v) => v.label),
+    ['desktop', 'mobile']
+  )
 })
 
 test('getWindowSizes filters by numeric width string', () => {
   const filtered = getWindowSizes(['375', '768'])
   assert.equal(filtered.length, 2)
-  assert.deepEqual(filtered.map((v) => v.width), [768, 375])
+  assert.deepEqual(
+    filtered.map((v) => v.width),
+    [768, 375]
+  )
 })
 
 test('all viewports have valid dimensions', () => {

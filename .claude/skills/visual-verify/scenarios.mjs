@@ -11,7 +11,10 @@
  * or click a button filter on desktop/tablet.
  */
 async function selectSourceFilter(page, value) {
-  const isMobileSelect = await page.locator('[data-source-select]').isVisible().catch(() => false)
+  const isMobileSelect = await page
+    .locator('[data-source-select]')
+    .isVisible()
+    .catch(() => false)
   if (isMobileSelect) {
     await page.locator('[data-source-select]').selectOption(value)
   } else {
@@ -24,7 +27,10 @@ async function selectSourceFilter(page, value) {
  * or desktop/tablet (action buttons).
  */
 async function selectUsagePanel(page, panel) {
-  const isMobileSelect = await page.locator('[data-usage-select]').isVisible().catch(() => false)
+  const isMobileSelect = await page
+    .locator('[data-usage-select]')
+    .isVisible()
+    .catch(() => false)
   if (isMobileSelect) {
     await page.locator('[data-usage-select]').selectOption(panel)
   } else {
@@ -46,7 +52,10 @@ export const scenarios = [
     screen: 'demo-skills',
     async run(page) {
       await page.locator('#preview-skills').click()
-      await page.locator('.skill-table-row').first().waitFor({ state: 'visible' })
+      await page
+        .locator('.skill-table-row')
+        .first()
+        .waitFor({ state: 'visible' })
       await page.locator('#product').scrollIntoViewIfNeeded()
     }
   },
@@ -55,7 +64,9 @@ export const scenarios = [
     screen: 'demo-skills',
     async run(page) {
       await page.locator('#preview-skills').click()
-      const search = page.getByRole('searchbox', { name: 'Search sample skills' })
+      const search = page.getByRole('searchbox', {
+        name: 'Search sample skills'
+      })
       await search.fill('design-system')
       await page.locator('.skill-name').first().waitFor({ state: 'visible' })
       await page.locator('#product').scrollIntoViewIfNeeded()
@@ -67,7 +78,10 @@ export const scenarios = [
     async run(page) {
       await page.locator('#preview-skills').click()
       await selectSourceFilter(page, 'global')
-      await page.locator('.skill-table-row').first().waitFor({ state: 'visible' })
+      await page
+        .locator('.skill-table-row')
+        .first()
+        .waitFor({ state: 'visible' })
       await page.locator('#product').scrollIntoViewIfNeeded()
     }
   },
@@ -76,7 +90,9 @@ export const scenarios = [
     screen: 'demo-skills',
     async run(page) {
       await page.locator('#preview-skills').click()
-      const search = page.getByRole('searchbox', { name: 'Search sample skills' })
+      const search = page.getByRole('searchbox', {
+        name: 'Search sample skills'
+      })
       await search.fill('design-system')
       await page.getByRole('button', { name: 'Inspect design-system' }).click()
       await page.locator('[data-action="back"]').waitFor({ state: 'visible' })
@@ -88,7 +104,10 @@ export const scenarios = [
     screen: 'demo-plugins',
     async run(page) {
       await page.locator('#preview-plugins').click()
-      await page.locator('.plugin-demo-row').first().waitFor({ state: 'visible' })
+      await page
+        .locator('.plugin-demo-row')
+        .first()
+        .waitFor({ state: 'visible' })
       await page.locator('#product').scrollIntoViewIfNeeded()
     }
   },
@@ -98,7 +117,10 @@ export const scenarios = [
     async run(page) {
       await page.locator('#preview-usage').click()
       await page.getByRole('tab', { name: '24 hours' }).click()
-      await page.locator('.chart-bar-button').first().waitFor({ state: 'visible' })
+      await page
+        .locator('.chart-bar-button')
+        .first()
+        .waitFor({ state: 'visible' })
       await page.locator('#product').scrollIntoViewIfNeeded()
     }
   },

@@ -4,7 +4,7 @@ The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron)
 
 ## Run locally
 
-Requires Node.js 22.12+ (or a newer supported Node release) and npm.
+Requires Node.js 22.13+ (or a newer supported Node release) and npm.
 
 ```powershell
 npm ci
@@ -71,3 +71,28 @@ Remove-Item Env:MEGATRON_TEST_URL
 ```
 
 `npm ci` configures `.githooks/` as the Git hook directory. The executable pre-commit hook regenerates `AGENTS.md` and `.agents/skills/` from the staged `CLAUDE.md` and `.claude/skills/` sources. Stage source changes before manually running `node .githooks/pre-commit`; never edit the mirrors directly.
+
+## Continuous integration
+
+[CI](.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and manual workflow dispatch. It uses Node 22, the lockfile, read-only repository permissions, pinned action commits, timeouts, and cancellation of superseded runs.
+
+- **Quality:** ESLint with zero warnings, Prettier formatting, generated-mirror synchronization, and a production build.
+- **Browser (Linux)**, **Browser (Windows)**, and **Browser (macOS):** tooling tests, real-browser failure regression cases, the full responsive screen sweep, and production interaction checks. All three use Chromium matching the pinned Playwright version.
+- **Evidence:** screenshots and QA results are retained as run artifacts for seven days, including when browser checks fail. Pixel comparison baselines remain local; CI screenshots require review for appearance changes.
+
+To run the same checks locally:
+
+```powershell
+npm run lint
+npm run format:check
+npm run pre-commit:check
+npm test
+npm run verify:visual
+npm run verify:qa:ci
+```
+
+`verify:visual` builds the site. `verify:qa:ci` uses that build, starts its own preview, and stops it after success or failure. It refuses an occupied port instead of using an unrelated server. Set `MEGATRON_CI_PREVIEW_PORT` to a free port if the default `4173` is occupied.
+
+Use `npm run format` to apply formatting before committing. Formatting and linting check authored sources; generated mirrors and verification artifacts are excluded.
+
+After the workflow has run on the remote repository, configure branch protection or a ruleset to require **Quality**, **Browser (Linux)**, **Browser (Windows)**, and **Browser (macOS)** before merging. The workflow itself does not change repository protection settings.

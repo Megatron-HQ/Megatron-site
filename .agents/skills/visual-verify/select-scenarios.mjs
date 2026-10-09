@@ -38,7 +38,9 @@ export function parseOnly(argv) {
     .map((screen) => screen.trim())
     .filter(Boolean)
   if (screens.length === 0) {
-    throw new Error('--only was given but names no screens (e.g. --only skill-detail,sidebar)')
+    throw new Error(
+      '--only was given but names no screens (e.g. --only skill-detail,sidebar)'
+    )
   }
   return screens
 }
@@ -48,7 +50,8 @@ function hasBaseline(scenarioName, baselineNames) {
   for (const file of baselineNames) {
     // "<scenario-name>--<size-label>.png" — "--" is only ever the size separator.
     const separator = file.lastIndexOf('--')
-    if (separator !== -1 && file.slice(0, separator) === scenarioName) return true
+    if (separator !== -1 && file.slice(0, separator) === scenarioName)
+      return true
   }
   return false
 }
