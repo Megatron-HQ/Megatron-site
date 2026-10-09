@@ -8,6 +8,8 @@
 import { execSync, spawn } from 'node:child_process'
 import { mkdir, readdir, readFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import pixelmatch from 'pixelmatch'
+import { PNG } from 'pngjs'
 import { launchBrowser } from './browser-launch.mjs'
 import { scenarios } from './scenarios.mjs'
 import { parseOnly, selectScenarios } from './select-scenarios.mjs'
@@ -19,29 +21,6 @@ const BASELINE_DIR = join(REPO_ROOT, '.visual-verify-baselines')
 
 const DIFF_THRESHOLD = 0.1
 const DIFF_PIXEL_FLOOR = 2000
-
-let pixelmatchModule = null
-let pngModule = null
-
-async function getPixelmatchAndPNG() {
-  if (pixelmatchModule && pngModule) {
-    return { pixelmatch: pixelmatchModule, PNG: pngModule }
-  }
-  let pm, PNG
-  try {
-    pm = (await import('pixelmatch')).default
-  } catch {
-    pm = (await import('file:///C:/Megatron/node_modules/pixelmatch/index.js')).default
-  }
-  try {
-    PNG = (await import('pngjs')).PNG
-  } catch {
-    PNG = (await import('file:///C:/Megatron/node_modules/pngjs/lib/png.js')).PNG
-  }
-  pixelmatchModule = pm
-  pngModule = PNG
-  return { pixelmatch: pm, PNG }
-}
 
 async function isServerUp(url) {
   try {
@@ -81,7 +60,9 @@ async function ensureServer() {
     try {
       if (process.platform === 'win32' && previewProcess.pid) {
         try {
-          execSync(`taskkill /pid ${previewProcess.pid} /T /F`, { stdio: 'ignore' })
+          execSync(`taskkill /pid ${previewProcess.pid} /T /F`, {
+            stdio: 'ignore'
+          })
         } catch {
           previewProcess.kill()
         }
@@ -103,7 +84,9 @@ async function ensureServer() {
 
   if (!ready) {
     cleanup()
-    throw new Error('Vite preview server failed to start on http://127.0.0.1:4173/')
+    throw new Error(
+      'Vite preview server failed to start on http://127.0.0.1:4173/'
+    )
   }
 
   return {
@@ -136,11 +119,13 @@ async function diffAgainstBaseline(screenshotPath, name) {
     return 'new'
   }
 
-  const { pixelmatch, PNG } = await getPixelmatchAndPNG()
   const baseline = PNG.sync.read(baselineBuffer)
   const candidate = PNG.sync.read(await readFile(screenshotPath))
 
-  if (baseline.width !== candidate.width || baseline.height !== candidate.height) {
+  if (
+    baseline.width !== candidate.width ||
+    baseline.height !== candidate.height
+  ) {
     return 'changed'
   }
 
@@ -166,7 +151,9 @@ async function findOrphanBaselines(producedNames) {
   } catch {
     return []
   }
-  return existing.filter((file) => file.endsWith('.png') && !producedNames.has(file))
+  return existing.filter(
+    (file) => file.endsWith('.png') && !producedNames.has(file)
+  )
 }
 
 function registerDefectListeners(page, defects) {
@@ -180,7 +167,14 @@ function registerDefectListeners(page, defects) {
   })
 }
 
-async function captureAll(page, baseUrl, outDir, activeScenarios, sizes, scoped) {
+async function captureAll(
+  page,
+  baseUrl,
+  outDir,
+  activeScenarios,
+  sizes,
+  scoped
+) {
   const written = []
   const skipped = []
   const defects = { consoleErrors: [], pageErrors: [], overflow: [] }
@@ -249,7 +243,9 @@ function printScopeBanner(scope, { closing } = {}) {
   console.log(
     `[visual-verify] SCOPED RUN — ${activeCount} of ${totalCount} scenarios · --only ${only.join(',')}`
   )
-  console.log(`[visual-verify]   ${totalCount - activeCount} scenarios NOT captured this run`)
+  console.log(
+    `[visual-verify]   ${totalCount - activeCount} scenarios NOT captured this run`
+  )
 }
 
 function printSummary(written, skipped, defects, diff, orphanBaselines, scope) {
@@ -265,7 +261,9 @@ function printSummary(written, skipped, defects, diff, orphanBaselines, scope) {
     for (const name of diff.new) console.log(`  ${name}`)
   }
   if (diff.changed.length > 0) {
-    console.log('[visual-verify] CHANGED (differs from accepted baseline — review):')
+    console.log(
+      '[visual-verify] CHANGED (differs from accepted baseline — review):'
+    )
     for (const name of diff.changed) console.log(`  ${name}`)
   }
   if (skipped.length > 0) {
@@ -273,7 +271,9 @@ function printSummary(written, skipped, defects, diff, orphanBaselines, scope) {
     for (const { name, reason } of skipped) console.log(`  ${name}: ${reason}`)
   }
   if (orphanBaselines.length > 0) {
-    console.log('[visual-verify] orphaned baselines (no matching scenario this run):')
+    console.log(
+      '[visual-verify] orphaned baselines (no matching scenario this run):'
+    )
     for (const name of orphanBaselines) console.log(`  ${name}`)
   }
 
@@ -335,16 +335,17 @@ async function main() {
     const page = await context.newPage()
 
     const sizes = getWindowSizes()
-    const { written, skipped, defects, diff, orphanBaselines } = await captureAll(
-      page,
-      baseUrl,
-      OUT_DIR,
-      active,
-      sizes,
-      scoped
-    )
+    const { written, skipped, defects, diff, orphanBaselines } =
+      await captureAll(page, baseUrl, OUT_DIR, active, sizes, scoped)
 
     printSummary(written, skipped, defects, diff, orphanBaselines, scope)
+    if (
+      defects.overflow.length > 0 ||
+      defects.consoleErrors.length > 0 ||
+      defects.pageErrors.length > 0
+    ) {
+      process.exitCode = 1
+    }
   } finally {
     await browser?.close()
     cleanupServer()

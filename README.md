@@ -44,4 +44,30 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 The site was rendered and exercised in installed Chrome using Playwright against both development and production builds. Checks cover all preview sections, five usage panels, time-window changes, chart-point selection, skill filtering/search/inspection, return navigation, sample plugin switches, installation copy feedback, mobile navigation, keyboard controls, FAQ disclosures, and reduced motion.
 
-Responsive checks cover 375px, 768px, 1024px, and 1440px and found no page-level horizontal overflow. Essential page and installation content remains available with JavaScript disabled. Rendered screenshots and session verification scripts are retained locally under the ignored `.qa/` directory; these use the existing Playwright installation in `C:/Megatron` and are not part of the distributable site.
+Responsive checks cover 375px, 768px, 1024px, and 1440px. Essential page and installation content remains available with JavaScript disabled. Verification scripts are tracked in `scripts/qa/` and `.claude/skills/visual-verify/`; reports, screenshots, and temporary fixtures are saved under ignored directories.
+
+`npm ci` installs the pinned `playwright-core`, `pixelmatch`, and `pngjs` development dependencies. Browser checks use installed Chrome/Edge or a custom executable set through `CHROME_PATH`. If neither is installed, download Playwright's matching Chromium once:
+
+```powershell
+npx playwright-core install chromium
+```
+
+Run the tooling tests and full visual sweep:
+
+```powershell
+npm test
+npm run verify:visual
+npm run pre-commit:check
+```
+
+The visual sweep builds the site and starts a temporary production preview when needed. It exits with status 1 for horizontal overflow, console errors/warnings, or uncaught page errors. New or changed screenshots remain review items; they do not fail the command automatically.
+
+For interactive QA, start `npm run preview` after building and run the following in a second PowerShell window:
+
+```powershell
+$env:MEGATRON_TEST_URL = 'http://127.0.0.1:4173/'
+npm run verify:qa
+Remove-Item Env:MEGATRON_TEST_URL
+```
+
+`npm ci` configures `.githooks/` as the Git hook directory. The executable pre-commit hook regenerates `AGENTS.md` and `.agents/skills/` from the staged `CLAUDE.md` and `.claude/skills/` sources. Stage source changes before manually running `node .githooks/pre-commit`; never edit the mirrors directly.

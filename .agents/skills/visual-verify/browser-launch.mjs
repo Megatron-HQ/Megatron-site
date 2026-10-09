@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { chromium } from 'playwright-core'
 
 const CANDIDATE_CHROME_PATHS = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -37,17 +38,10 @@ export function resolveChromePath(env = process.env) {
 }
 
 /**
- * Returns the chromium module from playwright-core, checking local node_modules
- * before falling back to known sibling installation paths.
+ * Returns Chromium from this project's declared playwright-core dependency.
  */
 export async function getChromium() {
-  try {
-    const local = await import('playwright-core')
-    return local.chromium
-  } catch {
-    const fallback = await import('file:///C:/Megatron/node_modules/playwright-core/index.mjs')
-    return fallback.chromium
-  }
+  return chromium
 }
 
 /**
