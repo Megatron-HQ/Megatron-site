@@ -2,6 +2,10 @@
 
 The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage.
 
+The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions.
+
+The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
+
 ## Run locally
 
 Requires Node.js 22.13+ (or a newer supported Node release) and npm.
@@ -19,6 +23,23 @@ npm run preview
 ```
 
 The production site is emitted to `dist/`. The production preview serves at `http://127.0.0.1:4173`.
+
+## Commands
+
+| Command                    | Purpose                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| `npm run dev`              | Start the development server at `127.0.0.1:5173`.                                           |
+| `npm run build`            | Check TypeScript and renderer integrity, then build both production entries.                |
+| `npm run preview`          | Serve the existing production build at `127.0.0.1:4173`.                                    |
+| `npm run typecheck`        | Check the preview, adapter, and imported renderer types.                                    |
+| `npm run preview:check`    | Verify the pinned renderer snapshot against its recorded hashes.                            |
+| `npm run lint`             | Check authored JavaScript and TypeScript with zero warnings allowed.                        |
+| `npm run format:check`     | Check formatting without modifying files.                                                   |
+| `npm run format`           | Format authored code and documentation.                                                     |
+| `npm test`                 | Run adapter, analytics, messaging, provenance, and verification-tool regression tests.      |
+| `npm run verify:visual`    | Build and capture all responsive preview states.                                            |
+| `npm run verify:qa:ci`     | Run production interaction checks with an owned preview server; requires an existing build. |
+| `npm run pre-commit:check` | Check generated instruction and skill mirrors.                                              |
 
 ## Structure
 
@@ -44,6 +65,12 @@ The GitHub releases endpoint contained no published releases on October 9, 2026.
 Megatron is presented as currently free and MIT-licensed, with no commitments about future pricing. Preview metrics, skills, plugins, and definitions are illustrative, not user testimonials or product performance claims.
 
 ## Verification
+
+The current snapshot is Megatron `0.1.0` at revision `6a8a79b471bb99f43da2ee958731284cd7ba7dcb`. Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+
+The implementation was verified with 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 50 passing regression tests. TypeScript, provenance, lint, formatting, generated mirrors, production build, and interactive QA also passed. These results describe the pinned implementation; rerun the checks when changing it.
+
+See [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original audit and approach.
 
 The preview uses the actual app renderer in a same-origin iframe. Marketing CSS is isolated from its app tokens, fonts, and components. The typed browser API operates on session-only sample data; folder grants, plugin commands, rescans, external links, and data-folder actions are simulated. Reload or Reset sample restores the original fixtures. The app checkout is not modified.
 
@@ -101,7 +128,7 @@ Remove-Item Env:MEGATRON_TEST_URL
 
 [CI](.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and manual workflow dispatch. It uses Node 22, the lockfile, read-only repository permissions, pinned action commits, timeouts, and cancellation of superseded runs.
 
-- **Quality:** ESLint with zero warnings, Prettier formatting, generated-mirror synchronization, and a production build.
+- **Quality:** JavaScript/TypeScript ESLint with zero warnings, Prettier formatting, generated-mirror synchronization, TypeScript checking, renderer integrity, and a production build.
 - **Browser (Linux)**, **Browser (Windows)**, and **Browser (macOS):** tooling tests, real-browser failure regression cases, the full responsive screen sweep, and production interaction checks. All three use Chromium matching the pinned Playwright version.
 - **Evidence:** screenshots and QA results are retained as run artifacts for seven days, including when browser checks fail. Pixel comparison baselines remain local; CI screenshots require review for appearance changes.
 
