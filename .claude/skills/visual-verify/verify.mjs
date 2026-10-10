@@ -96,13 +96,15 @@ async function ensureServer() {
 }
 
 async function finishTransitions(page) {
-  await page.evaluate(() => {
-    for (const animation of document.getAnimations()) {
-      try {
-        animation.finish()
-      } catch {}
-    }
-  })
+  for (const frame of page.frames()) {
+    await frame.evaluate(() => {
+      for (const animation of document.getAnimations()) {
+        try {
+          animation.finish()
+        } catch {}
+      }
+    })
+  }
 }
 
 async function hasHorizontalOverflow(page) {
@@ -188,7 +190,10 @@ async function captureAll(
       const name = `${scenario.name}--${size.label}.png`
       await page.setViewportSize({ width: size.width, height: size.height })
       await page.emulateMedia({ reducedMotion: 'reduce' })
-      await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
+      const scenarioUrl = new URL(baseUrl)
+      scenarioUrl.searchParams.set('clock', '2026-10-09T12:00:00.000Z')
+      await page.clock.setFixedTime(new Date('2026-10-09T12:00:00.000Z'))
+      await page.goto(scenarioUrl.href, { waitUntil: 'domcontentloaded' })
       await page.locator('#preview-skills').waitFor({ state: 'attached' })
       await page.evaluate(() => document.fonts.ready)
 

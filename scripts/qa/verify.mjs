@@ -1,17 +1,32 @@
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
+import {
+  preparePreview,
+  previewFrame,
+  selectPanel,
+  verifyPreview
+} from './preview.mjs'
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { verifyPreviewStates } from './states.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
-const repositoryRoot = resolve(import.meta.dirname, '../..')
-const directory = join(repositoryRoot, '.qa')
+const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
 await mkdir(directory, { recursive: true })
 const browser = await launchBrowser()
 const errors = []
+const externalRequests = []
 const results = []
 
 async function prepare(page) {
+  page.on('request', (request) => {
+    const url = new URL(request.url())
+    if (
+      ['http:', 'https:'].includes(url.protocol) &&
+      url.origin !== new URL(baseUrl).origin
+    )
+      externalRequests.push(request.url())
+  })
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
     if (['error', 'warning'].includes(message.type()))
@@ -19,7 +34,7 @@ async function prepare(page) {
   })
   const response = await page.goto(baseUrl)
   assert.equal(response.status(), 200)
-  await page.locator('#preview-skills').waitFor()
+  await preparePreview(page)
   await page.evaluate(() => document.fonts.ready)
 }
 async function checkOverflow(page, width) {
@@ -40,14 +55,22 @@ try {
   })
   const page = await context.newPage()
   await prepare(page)
-  assert.equal(await page.locator('.skill-table-row').count(), 9)
+  assert.equal(
+    await page.evaluate(() => scrollY),
+    0,
+    'The iframe must not pull the landing page down on load.'
+  )
   assert.equal(await page.locator('i[data-lucide]').count(), 0)
-  await page.screenshot({ path: `${directory}/desktop.png`, fullPage: false })
+  await page.screenshot({ path: join(directory, 'desktop.png') })
   await page.screenshot({
-    path: `${directory}/desktop-full.png`,
+    path: join(directory, 'desktop-full.png'),
     fullPage: true
   })
+  await verifyPreview(page)
   await checkOverflow(page, 1440)
+  results.push(
+    'Actual renderer geometry, sorting and keyboard rows, files and tree resizing, activity dialogs, settings, install-specific plugin actions, all Usage panels, independent windows, reset, expansion and Escape passed.'
+  )
 
   await page.locator('#preview-skills').focus()
   await page.keyboard.press('ArrowRight')
@@ -55,143 +78,17 @@ try {
     await page.locator('#preview-plugins').getAttribute('aria-selected'),
     'true'
   )
-  assert.equal(
-    await page
-      .locator('#preview-plugins')
-      .evaluate((element) => element === document.activeElement),
-    true
-  )
-  const pluginSwitch = page.getByRole('switch', {
-    name: 'frontend sample plugin'
-  })
-  assert.equal(await pluginSwitch.getAttribute('aria-checked'), 'true')
-  await pluginSwitch.click()
-  assert.equal(
-    await page
-      .getByRole('switch', { name: 'frontend sample plugin' })
-      .getAttribute('aria-checked'),
-    'false'
-  )
-  await page.locator('#preview-plugins').focus()
-  await page.keyboard.press('ArrowRight')
-  assert.equal(
-    await page.locator('#preview-usage').getAttribute('aria-selected'),
-    'true'
-  )
-  const defaultPromptCount = await page
-    .locator('.demo-stat strong')
-    .first()
-    .textContent()
-  await page.getByRole('tab', { name: '24 hours' }).click()
-  assert.notEqual(
-    await page.locator('.demo-stat strong').first().textContent(),
-    defaultPromptCount
-  )
-  assert.equal(await page.locator('.chart-bar-button').count(), 24)
-  await page.locator('.chart-bar-button').nth(8).click()
-  assert.equal(
-    await page.locator('.chart-bar-button').nth(8).getAttribute('aria-pressed'),
-    'true'
-  )
-  await page.mouse.move(10, 10)
-  assert.equal(
-    await page
-      .locator('.chart-bar-button')
-      .nth(8)
-      .locator('.chart-tooltip')
-      .evaluate((element) => getComputedStyle(element).opacity),
-    '1'
-  )
-  await page.keyboard.press('Enter')
-  assert.equal(
-    await page.locator('.chart-bar-button').nth(8).getAttribute('aria-pressed'),
-    'false'
-  )
-  await page.keyboard.press('Enter')
-  await page.keyboard.press('Escape')
-  assert.equal(
-    await page.locator('.chart-bar-button[aria-pressed="true"]').count(),
-    0
-  )
-  await page.getByRole('tab', { name: '24 hours' }).focus()
-  await page.keyboard.press('ArrowRight')
-  assert.equal(
-    await page
-      .getByRole('tab', { name: '7 days' })
-      .getAttribute('aria-selected'),
-    'true'
-  )
-  assert.equal(await page.locator('.chart-bar-button').count(), 7)
-  for (const panel of ['cost', 'models', 'skills', 'resident']) {
-    await page.locator(`[data-action="panel"][data-value="${panel}"]`).click()
-    assert.equal(
-      await page
-        .locator(`[data-action="panel"][data-value="${panel}"]`)
-        .getAttribute('aria-pressed'),
-      'true'
-    )
-    assert.ok(
-      (await page.locator('.demo-usage-content').innerText()).length > 100
-    )
-  }
-  await page.locator('[data-action="panel"][data-value="skills"]').click()
-  await page.locator('.top-skill-row').first().click()
-  assert.equal(
-    await page.locator('#preview-skills').getAttribute('aria-selected'),
-    'true'
-  )
-  assert.equal(await page.locator('.definition-preview').count(), 1)
-  await page.locator('[data-action="back"]').click()
-  assert.equal(
-    await page.locator('#preview-usage').getAttribute('aria-selected'),
-    'true'
-  )
-  await page.locator('#preview-plugins').click()
-  assert.equal(
-    await page
-      .getByRole('switch', { name: 'frontend sample plugin' })
-      .getAttribute('aria-checked'),
-    'false'
-  )
-  results.push(
-    'Desktop keyboard tabs, all usage panels, time windows, skill back navigation, and persistent sample plugin switches passed.'
-  )
-
-  await page.locator('#preview-skills').click()
-  await page.locator('[data-action="source"][data-value="global"]').click()
-  assert.equal(await page.locator('.skill-name').count(), 3)
-  await page.locator('[data-action="source"][data-value="all"]').click()
-  await page
-    .getByRole('searchbox', { name: 'Search sample skills' })
-    .fill('design-system')
-  assert.equal(await page.locator('.skill-name').count(), 1)
-  await page.getByRole('button', { name: 'Inspect design-system' }).click()
-  assert.match(await page.locator('.detail-finding').innerText(), /figma/)
-  assert.equal(
-    await page
-      .locator('[data-action="back"]')
-      .evaluate((element) => element === document.activeElement),
-    true
-  )
-  await page.locator('[data-action="back"]').click()
-  assert.equal(await page.getByRole('searchbox').inputValue(), 'design-system')
-  await page.getByRole('searchbox').fill('<img src=x>')
-  assert.equal(await page.locator('.skill-name').count(), 0)
-  assert.equal(await page.locator('#product-demo img[src="x"]').count(), 0)
-  await page.getByRole('searchbox').fill('')
-  assert.equal(await page.locator('.skill-name').count(), 8)
+  const app = previewFrame(page)
+  await app.getByRole('button', { name: 'Plugins', exact: true }).waitFor()
   await page.locator('[data-show-cost]').click()
+  await app.locator('header').getByText('Cost', { exact: true }).waitFor()
   assert.equal(
     await page.locator('#preview-usage').getAttribute('aria-selected'),
     'true'
-  )
-  assert.match(
-    await page.locator('.demo-cost-summary').innerText(),
-    /API-equivalent/i
   )
   await page
     .locator('#product')
-    .screenshot({ path: `${directory}/cost-preview.png` })
+    .screenshot({ path: join(directory, 'cost-preview.png') })
   await page.locator('[data-copy-install]').click()
   await page.waitForFunction(
     () =>
@@ -200,10 +97,6 @@ try {
       ),
     null,
     { timeout: 5000 }
-  )
-  assert.match(
-    await page.locator('[data-copy-status]').textContent(),
-    /copied|selected/i
   )
   await page.locator('.faq-list summary').first().focus()
   await page.keyboard.press('Space')
@@ -219,37 +112,69 @@ try {
       .count()
   )
   results.push(
-    'Skill filters, search, lint inspection, safe search text, cost link, installation copy feedback, and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, Cost CTA, installation copy and keyboard FAQ disclosure passed.'
+  )
+  await page.goto(baseUrl)
+  await verifyPreviewStates(page, baseUrl)
+  results.push(
+    'Source/chevron behavior, conditional columns, budget audit filters, palette cross-section navigation, remaining file statuses, folder grants, scoped updates, invocation return filters, every time window, and loading/error/empty/action-failure states passed.'
   )
 
   for (const width of [375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto(baseUrl)
-    await page.locator('#preview-skills').waitFor()
-    await page.evaluate(() => document.fonts.ready)
+    const frame = await preparePreview(page)
     await checkOverflow(page, width)
-    await page.locator('#preview-usage').click()
-    for (const panel of ['activity', 'cost', 'models', 'skills', 'resident']) {
-      if (width < 960)
-        await page.locator('[data-usage-select]').selectOption(panel)
-      else
-        await page
-          .locator(`[data-action="panel"][data-value="${panel}"]`)
-          .click()
+    for (const panel of [
+      'Activity',
+      'Cost',
+      'Models',
+      'Skills',
+      'Resident tax'
+    ]) {
+      await selectPanel(frame, panel)
       await checkOverflow(page, width)
     }
+    await page
+      .getByRole('button', { name: 'Reset sample', exact: true })
+      .click()
+    await frame
+      .getByRole('button', { name: 'Search skills', exact: false })
+      .waitFor()
+    const viewport = page.locator('.preview-viewport')
+    const dimensions = await viewport.evaluate((element) => ({
+      available: element.clientWidth,
+      content: element.scrollWidth
+    }))
+    assert.ok(
+      dimensions.content >= 860,
+      'Keep the app minimum width instead of redesigning its layout.'
+    )
     if (width === 375) {
-      await page.locator('#preview-skills').click()
-      await page.locator('[data-source-select]').selectOption('plugin')
-      assert.equal(await page.locator('.skill-name').count(), 3)
-      await page.locator('[data-source-select]').selectOption('all')
-      await page.evaluate(() => window.scrollTo(0, 0))
-      await page.screenshot({
-        path: `${directory}/mobile.png`,
-        fullPage: false
+      assert.ok(
+        dimensions.content > dimensions.available,
+        'Small screens must allow contained horizontal panning.'
+      )
+      await frame
+        .getByRole('button', { name: 'Search skills', exact: false })
+        .focus()
+      await page.waitForFunction(
+        () => document.querySelector('.preview-viewport').scrollLeft > 0
+      )
+      await viewport.evaluate((element) => {
+        element.scrollLeft = 0
       })
+      await page
+        .getByRole('button', { name: 'Expand preview', exact: true })
+        .click()
+      await checkOverflow(page, width)
+      await page
+        .getByRole('button', { name: 'Close preview', exact: true })
+        .click()
+      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.screenshot({ path: join(directory, 'mobile.png') })
       await page.screenshot({
-        path: `${directory}/mobile-full.png`,
+        path: join(directory, 'mobile-full.png'),
         fullPage: true
       })
       await page.locator('[data-menu-toggle]').click()
@@ -266,7 +191,7 @@ try {
     }
   }
   results.push(
-    'All five usage views have no page overflow at 375, 768, 1024, and 1440px; mobile source selection and navigation passed.'
+    'All five Usage views at 375/768/1024/1440px: no page overflow; contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
   )
 
   const motionPage = await context.newPage()
@@ -291,17 +216,21 @@ try {
   assert.ok(await noScriptPage.locator('#install-commands').isVisible())
   await checkOverflow(noScriptPage, 375)
   results.push(
-    'Reduced-motion behavior and readable installation content without JavaScript passed.'
+    'Reduced motion and readable installation content without JavaScript passed.'
   )
+
   const normalContext = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
     reducedMotion: 'no-preference'
   })
   const normalPage = await normalContext.newPage()
   await prepare(normalPage)
-  await normalPage.locator('.demo-main').hover()
+  await normalPage.locator('[data-preview-frame]').scrollIntoViewIfNeeded()
+  const normalApp = previewFrame(normalPage)
+  await normalApp.locator('tbody tr').last().scrollIntoViewIfNeeded()
+  await normalApp.locator('tbody tr').last().hover()
   const scrollBeforeWheel = await normalPage.evaluate(() => scrollY)
-  await normalPage.mouse.wheel(0, 400)
+  await normalPage.mouse.wheel(0, 500)
   await normalPage.waitForFunction(
     (before) => scrollY > before,
     scrollBeforeWheel
@@ -321,11 +250,17 @@ try {
     'auto'
   )
   results.push(
-    'Default scroll effects and switching to reduced motion while the page is open passed.'
+    'Wheel scrolling at the preview edge, default scroll effects and changing reduced motion passed.'
   )
+
   assert.deepEqual(errors, [], `Browser errors: ${errors.join('\n')}`)
+  assert.deepEqual(
+    externalRequests,
+    [],
+    'The preview and marketing page must use local static assets only.'
+  )
   await writeFile(
-    `${directory}/results.json`,
+    join(directory, 'results.json'),
     JSON.stringify({ results, errors }, null, 2)
   )
   console.log(JSON.stringify({ results, errors }, null, 2))

@@ -1,226 +1,204 @@
-// Scenarios captured by visual-verify across responsive viewports.
-// Each scenario describes how to navigate to or activate a specific
-// UI state on the Megatron website from the default baseline page.
-//
-// Screens map to the --only filter table in SKILL.md:
-// hero, demo-skills, demo-plugins, demo-usage, features, analytics,
-// local, faq, install, navigation.
+import {
+  openSkill,
+  preparePreview,
+  selectPanel
+} from '../../../scripts/qa/preview.mjs'
 
-/**
- * Helper to select an option from a source select dropdown on mobile
- * or click a button filter on desktop/tablet.
- */
-async function selectSourceFilter(page, value) {
-  const isMobileSelect = await page
-    .locator('[data-source-select]')
-    .isVisible()
-    .catch(() => false)
-  if (isMobileSelect) {
-    await page.locator('[data-source-select]').selectOption(value)
-  } else {
-    await page.locator(`[data-action="source"][data-value="${value}"]`).click()
-  }
+async function product(page, action = async () => {}) {
+  const app = await preparePreview(page)
+  await action(app)
+  await page.locator('#product').scrollIntoViewIfNeeded()
+  await app.locator('body').evaluate(() => document.fonts.ready)
 }
-
-/**
- * Helper to select a usage panel on mobile (select dropdown)
- * or desktop/tablet (action buttons).
- */
-async function selectUsagePanel(page, panel) {
-  const isMobileSelect = await page
-    .locator('[data-usage-select]')
-    .isVisible()
-    .catch(() => false)
-  if (isMobileSelect) {
-    await page.locator('[data-usage-select]').selectOption(panel)
-  } else {
-    await page.locator(`[data-action="panel"][data-value="${panel}"]`).click()
-  }
+function sample(name, screen, action) {
+  return { name, screen, run: (page) => product(page, action) }
 }
-
+async function plugin(app, name, marketplace) {
+  await app.getByRole('button', { name: 'Plugins', exact: true }).click()
+  await app
+    .locator('tbody tr')
+    .filter({ hasText: name })
+    .filter({ hasText: marketplace })
+    .first()
+    .click()
+  await app
+    .getByRole('button', { name: 'Back to plugins', exact: true })
+    .waitFor()
+}
 export const scenarios = [
   {
     name: 'hero-section',
     screen: 'hero',
     async run(page) {
+      await preparePreview(page)
       await page.evaluate(() => window.scrollTo(0, 0))
-      await page.locator('#hero-title').waitFor({ state: 'visible' })
+      await page.locator('#hero-title').waitFor()
     }
   },
+  sample('product-demo-skills', 'demo-skills', async (app) => {
+    await app.locator('tbody tr').first().waitFor()
+  }),
+  sample('product-demo-skills-search', 'demo-skills', async (app) => {
+    await app
+      .getByRole('button', { name: 'Search skills', exact: false })
+      .click()
+    await app
+      .getByPlaceholder('Search skills, plugins, projects...')
+      .fill('design')
+    await app.getByRole('option').first().waitFor()
+  }),
+  sample('product-demo-skills-filter-global', 'demo-skills', async (app) => {
+    await app.getByRole('button', { name: 'Global', exact: true }).click()
+  }),
+  sample('product-demo-skills-project-empty', 'demo-skills', async (app) => {
+    await app
+      .getByRole('button', { name: 'Expand project list', exact: true })
+      .click()
+    await app.getByRole('button', { name: /empty-lab/ }).click()
+    await app
+      .getByText('No skills found in empty-lab', { exact: true })
+      .waitFor()
+  }),
+  sample('product-demo-skill-detail', 'demo-skills', (app) =>
+    openSkill(app, 'design-system')
+  ),
+  sample('product-demo-skill-manual', 'demo-skills', (app) =>
+    openSkill(app, 'manual-plan')
+  ),
+  sample('product-demo-skill-files', 'demo-skills', async (app) => {
+    await openSkill(app)
+    await app.getByRole('button', { name: 'View files', exact: true }).click()
+    await app.getByRole('tree', { name: 'Skill files' }).waitFor()
+  }),
+  sample('product-demo-skill-file-status', 'demo-skills', async (app) => {
+    await openSkill(app)
+    await app.getByRole('button', { name: 'View files', exact: true }).click()
+    await app.getByLabel('Filter skill files').fill('large-report')
+    await app
+      .getByRole('treeitem')
+      .filter({ hasText: 'large-report.json' })
+      .click()
+    await app.getByText('File too large to preview.', { exact: true }).waitFor()
+  }),
+  sample('product-demo-skill-history', 'demo-skills', async (app) => {
+    await openSkill(app)
+    await app
+      .getByRole('button', { name: /invocations?$/ })
+      .first()
+      .click()
+    await app.getByRole('dialog').getByLabel('Search activity').waitFor()
+  }),
+  sample('product-demo-budget', 'demo-skills', async (app) => {
+    await app.getByRole('button', { name: /EST\. tokens/ }).click()
+    await app
+      .getByRole('dialog')
+      .getByText('What this number means?', { exact: true })
+      .waitFor()
+  }),
+  sample('product-demo-settings-dark', 'demo-skills', async (app) => {
+    await app.getByRole('button', { name: 'Settings', exact: true }).click()
+    await app.getByRole('radio', { name: 'Dark', exact: true }).focus()
+    await app.getByRole('radio', { name: 'Dark', exact: true }).press('Enter')
+  }),
+  sample('product-demo-project-folders', 'demo-skills', async (app) => {
+    await app.getByRole('button', { name: 'Settings', exact: true }).click()
+    await app.getByRole('button', { name: 'Manage…', exact: true }).focus()
+    await app
+      .getByRole('button', { name: 'Manage…', exact: true })
+      .press('Enter')
+    await app
+      .getByRole('dialog')
+      .getByText('Project Folders', { exact: true })
+      .waitFor()
+  }),
+  sample('product-demo-plugins', 'demo-plugins', async (app) => {
+    await app.getByRole('button', { name: 'Plugins', exact: true }).click()
+    await app.locator('tbody tr').first().waitFor()
+  }),
+  sample('product-demo-plugin-mixed', 'demo-plugins', (app) =>
+    plugin(app, 'frontend', 'team-tools')
+  ),
+  sample('product-demo-plugin-unknown', 'demo-plugins', (app) =>
+    plugin(app, 'docs', 'community')
+  ),
+  sample('product-demo-plugin-uninstall', 'demo-plugins', async (app) => {
+    await plugin(app, 'commit', 'team-tools')
+    await app.getByRole('button', { name: 'Uninstall', exact: true }).click()
+    await app.getByRole('dialog').waitFor()
+  }),
+  ...['Activity', 'Cost', 'Models', 'Skills', 'Resident tax'].map((panel) =>
+    sample(
+      'product-demo-usage-' +
+        (panel === 'Resident tax' ? 'resident' : panel.toLowerCase()),
+      'demo-usage',
+      (app) => selectPanel(app, panel)
+    )
+  ),
+  sample('product-demo-usage-cost-details', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Cost')
+    await app.getByRole('radio', { name: '24 hours', exact: true }).click()
+    await app.locator('button[aria-haspopup="dialog"]').first().click()
+    await app
+      .getByRole('dialog')
+      .getByText(/Cost details/)
+      .waitFor()
+  }),
+  sample('product-demo-usage-invocations', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Skills')
+    await app
+      .getByRole('button', { name: /skill invocations/ })
+      .first()
+      .click()
+    await app.getByRole('dialog').getByLabel('Search invocations').waitFor()
+  }),
+  sample('product-demo-usage-effort', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Models')
+    await app.locator('tbody button[aria-pressed]').first().click()
+  }),
   {
-    name: 'product-demo-skills',
+    name: 'product-demo-expanded',
     screen: 'demo-skills',
     async run(page) {
-      await page.locator('#preview-skills').click()
+      await product(page)
       await page
-        .locator('.skill-table-row')
-        .first()
-        .waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
+        .getByRole('button', { name: 'Expand preview', exact: true })
+        .click()
+      await page.locator('[data-preview-host][data-expanded="true"]').waitFor()
     }
   },
-  {
-    name: 'product-demo-skills-search',
-    screen: 'demo-skills',
+  ...[
+    ['features-section', 'features', '.features-section'],
+    ['analytics-section', 'analytics', '#analytics'],
+    ['why-local-section', 'local', '#local'],
+    ['installation-section', 'install', '#get-started']
+  ].map(([name, screen, selector]) => ({
+    name,
+    screen,
     async run(page) {
-      await page.locator('#preview-skills').click()
-      const search = page.getByRole('searchbox', {
-        name: 'Search sample skills'
-      })
-      await search.fill('design-system')
-      await page.locator('.skill-name').first().waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
+      await preparePreview(page)
+      await page.locator(selector).scrollIntoViewIfNeeded()
     }
-  },
-  {
-    name: 'product-demo-skills-filter-global',
-    screen: 'demo-skills',
-    async run(page) {
-      await page.locator('#preview-skills').click()
-      await selectSourceFilter(page, 'global')
-      await page
-        .locator('.skill-table-row')
-        .first()
-        .waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-skill-detail',
-    screen: 'demo-skills',
-    async run(page) {
-      await page.locator('#preview-skills').click()
-      const search = page.getByRole('searchbox', {
-        name: 'Search sample skills'
-      })
-      await search.fill('design-system')
-      await page.getByRole('button', { name: 'Inspect design-system' }).click()
-      await page.locator('[data-action="back"]').waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-plugins',
-    screen: 'demo-plugins',
-    async run(page) {
-      await page.locator('#preview-plugins').click()
-      await page
-        .locator('.plugin-demo-row')
-        .first()
-        .waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-usage-activity',
-    screen: 'demo-usage',
-    async run(page) {
-      await page.locator('#preview-usage').click()
-      await page.getByRole('tab', { name: '24 hours' }).click()
-      await page
-        .locator('.chart-bar-button')
-        .first()
-        .waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-usage-cost',
-    screen: 'demo-usage',
-    async run(page) {
-      await page.locator('#preview-usage').click()
-      await selectUsagePanel(page, 'cost')
-      await page.locator('.demo-cost-summary').waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-usage-models',
-    screen: 'demo-usage',
-    async run(page) {
-      await page.locator('#preview-usage').click()
-      await selectUsagePanel(page, 'models')
-      await page.locator('.model-ranking').first().waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-usage-skills',
-    screen: 'demo-usage',
-    async run(page) {
-      await page.locator('#preview-usage').click()
-      await selectUsagePanel(page, 'skills')
-      await page.locator('.top-skill-row').first().waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'product-demo-usage-resident',
-    screen: 'demo-usage',
-    async run(page) {
-      await page.locator('#preview-usage').click()
-      await selectUsagePanel(page, 'resident')
-      await page.locator('.resident-rows').first().waitFor({ state: 'visible' })
-      await page.locator('#product').scrollIntoViewIfNeeded()
-    }
-  },
-  {
-    name: 'features-section',
-    screen: 'features',
-    async run(page) {
-      await page.locator('.features-section').scrollIntoViewIfNeeded()
-      await page.locator('.inventory-feature').waitFor({ state: 'visible' })
-    }
-  },
-  {
-    name: 'analytics-section',
-    screen: 'analytics',
-    async run(page) {
-      await page.locator('#analytics').scrollIntoViewIfNeeded()
-      await page.locator('#analytics-heading').waitFor({ state: 'visible' })
-    }
-  },
-  {
-    name: 'why-local-section',
-    screen: 'local',
-    async run(page) {
-      await page.locator('#local').scrollIntoViewIfNeeded()
-      await page.locator('#local-heading').waitFor({ state: 'visible' })
-    }
-  },
+  })),
   {
     name: 'faq-section',
     screen: 'faq',
     async run(page) {
+      await preparePreview(page)
       await page.locator('.faq-section').scrollIntoViewIfNeeded()
-      const summary = page.locator('.faq-list summary').first()
-      await summary.waitFor({ state: 'visible' })
-      await summary.click()
-    }
-  },
-  {
-    name: 'installation-section',
-    screen: 'install',
-    async run(page) {
-      await page.locator('#get-started').scrollIntoViewIfNeeded()
-      await page.locator('#install-commands').waitFor({ state: 'visible' })
+      await page.locator('.faq-list summary').first().click()
     }
   },
   {
     name: 'mobile-navigation',
     screen: 'navigation',
-    async shouldSkip(page, viewport) {
-      if (viewport && viewport.width >= 768) {
-        return 'mobile navigation drawer is only rendered at viewports < 768px'
-      }
-      return null
+    async shouldSkip(page, size) {
+      return size.width < 768 ? null : 'Desktop navigation is already visible.'
     },
     async run(page) {
+      await preparePreview(page)
       await page.evaluate(() => window.scrollTo(0, 0))
-      const toggle = page.locator('[data-menu-toggle]')
-      await toggle.waitFor({ state: 'visible' })
-      await toggle.click()
-      await page.locator('#mobile-navigation').waitFor({ state: 'visible' })
+      await page.locator('[data-menu-toggle]').click()
+      await page.locator('#mobile-navigation').waitFor()
     }
   }
 ]

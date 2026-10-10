@@ -35,13 +35,13 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install locked dependencies
         run: npm ci
-      - name: Lint JavaScript
+      - name: Lint JavaScript and TypeScript
         run: npm run lint
       - name: Check formatting
         run: npm run format:check
       - name: Check generated mirrors
         run: npm run pre-commit:check
-      - name: Build production site
+      - name: Typecheck, verify renderer provenance, and build production entries
         run: npm run build
 
   browser:

@@ -1,5 +1,6 @@
 import javascript from '@eslint/js'
 import globals from 'globals'
+import typescript from 'typescript-eslint'
 
 const SCRIPT_FILES = ['**/*.{js,mjs}', '.githooks/pre-commit']
 
@@ -11,8 +12,17 @@ export default [
       '.qa/**',
       '.visual-verify/**',
       '.visual-verify-baselines/**',
-      '.agents/**'
+      '.agents/**',
+      'vendor/**'
     ]
+  },
+  ...typescript.configs.recommended.map((config) => ({
+    ...config,
+    files: ['src/preview/**/*.{ts,tsx}']
+  })),
+  {
+    files: ['src/preview/**/*.{ts,tsx}'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } }
   },
   {
     files: SCRIPT_FILES,

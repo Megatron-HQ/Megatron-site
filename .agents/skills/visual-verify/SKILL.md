@@ -5,7 +5,7 @@ description: Use after implementing any UI change requested by the user — new 
 
 # Visual verify
 
-Megatron's website is a single-page landing site built with Vite, Vanilla JS, and Tailwind CSS v4.
+Megatron's website is a single-page landing site built with Vite, Vanilla JS marketing, an isolated React/TypeScript app preview, and Tailwind CSS v4.
 This skill builds the site, drives the browser through every known screen, interactive state, and
 section at every responsive viewport Megatron supports (375px mobile, 768px tablet, 1024px laptop,
 1440px desktop), and provides evidence (screenshots, baseline diffs, horizontal overflow checks,
@@ -21,7 +21,7 @@ wrapping up (see "Before wrapping up").
 Run the **full sweep** — `npm run verify:visual`, no `--only` — when any of these hold:
 
 - `git diff --name-only` touches shared styles or global markup: `src/styles.css` or high-level structure in `index.html`.
-- `src/demo-data.js` changed shared mock data structures spanning multiple panels.
+- `src/preview/` or `vendor/megatron/` changed shared renderer or sample API behavior.
 - the user asked for a full audit.
 - you're not certain which screens the change reaches.
 
@@ -29,10 +29,10 @@ Otherwise **scope it** — `npm run verify:visual -- --only <screen>,<screen>` �
 
 | Changed file(s)                                                       | `--only` screen(s)                   |
 | --------------------------------------------------------------------- | ------------------------------------ |
-| `src/product-demo.js` (skills table, search, inspection)              | `demo-skills`                        |
-| `src/product-demo.js` (plugins list, switches)                        | `demo-plugins`                       |
-| `src/product-demo.js` (usage panels, trend charts, model tables)      | `demo-usage`                         |
-| `src/demo-data.js`                                                     | `demo-skills,demo-plugins,demo-usage`|
+| `src/product-preview-host.js` / `src/preview/` (skills table, search, inspection)              | `demo-skills`                        |
+| `src/product-preview-host.js` / `src/preview/` (plugin inventory and install actions)                        | `demo-plugins`                       |
+| `src/product-preview-host.js` / `src/preview/` (usage panels, trend charts, model tables)      | `demo-usage`                         |
+| `src/preview/fixtures.ts` / `src/preview/analytics.ts`                                                     | `demo-skills,demo-plugins,demo-usage`|
 | `src/main.js` (navigation, install copy, scroll handlers)             | `hero,install,navigation`            |
 | `index.html` (features section)                                       | `features`                           |
 | `index.html` (analytics section)                                      | `analytics`                          |
@@ -52,6 +52,8 @@ npm run verify:visual -- --only <screen>,<screen>   # scoped run
 npm run verify:visual                               # full sweep
 # On Windows PowerShell, quote the flag: npm run verify:visual -- "--only" <screen>
 ```
+
+Use a production preview through `MEGATRON_TEST_URL` when a dev server is already running; the app’s development-only reduced-motion warning is intentionally absent from production. Preview scenarios use the real renderer in its iframe, with a frozen sample clock.
 
 This runs a production build (`npm run build`), ensures the preview or dev server is running, and
 captures each scenario at all 4 responsive viewports (375px, 768px, 1024px, 1440px). Screenshots are
@@ -85,3 +87,7 @@ persists across runs.
 
 If any run this cycle was scoped (`--only`), do **one full `npm run verify:visual`** before calling
 the UI task complete to guarantee no regressions occurred across untouched viewports or sections.
+
+## App parity reference
+
+Run `node scripts/qa/compare-app.mjs <app-checkout>` to compare the original pinned app renderer in hidden Electron with the standalone production preview at matching client dimensions, DPR, fonts, locale, timezone, theme and time. Inspect `.qa/app-reference/` differences; broad website baseline thresholds are not proof of renderer parity. This optional reference refresh needs the app checkout and Electron. Ordinary builds and CI use the checked-in snapshot only.

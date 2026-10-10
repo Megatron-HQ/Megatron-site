@@ -1,0 +1,214 @@
+@import 'tailwindcss' source(none);
+@source '../';
+@source '../../../../../../src/preview';
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource/geist-mono/400.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@utility drag-region {
+  -webkit-app-region: drag;
+}
+
+:root {
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --warning: oklch(0.769 0.188 70.08);
+  --success: oklch(0.723 0.219 149.579);
+  --disabled-flag: oklch(0.577 0.12 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.625rem;
+  /* Acid lime brand accent — same literal value in both themes, per DESIGN.md */
+  --accent-lime: #e4f222;
+  --accent-lime-foreground: oklch(0.145 0 0);
+  /* Usage view chart ink — monochrome, no hue, no second accent (docs/usage-view-ui-spec.md
+     §4.1). `--usage-bar` is the default full-ink bar fill; `--usage-bar-quiet` is opt-in per
+     chart for context / de-emphasized bars. */
+  --usage-bar: oklch(0.145 0 0);
+  --usage-bar-quiet: oklch(0.7 0 0);
+  /* Data-series color — the third functional color layer (DESIGN.md §C11, docs/usage-view-ui-spec.md
+     §C3). Chart *series identity* only, scoped to by-model charts (Cost spend bar, Models panel).
+     Assigned by model family, never by rank; older versions are color-mix tints of their family's
+     slot (lib/model-identity.ts). Slots 1-3 are `dataviz` reference slots; slot 4 is its violet
+     with a custom dark step — all four CVD-validated all-pairs in both themes. An unmapped family
+     folds to --usage-bar-quiet, never a generated hue. */
+  --usage-series-1: #2a78d6; /* sonnet */
+  --usage-series-2: #eb6834; /* opus */
+  --usage-series-3: #1baf7a; /* haiku */
+  --usage-series-4: #4a3aa7; /* fable */
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --usage-bar: oklch(0.985 0 0);
+  --usage-bar-quiet: oklch(0.45 0 0);
+  --usage-series-1: #3987e5; /* sonnet */
+  --usage-series-2: #d95926; /* opus */
+  --usage-series-3: #199e70; /* haiku */
+  --usage-series-4: #7b3fe4; /* fable — not dataviz's #9085e9, which collides with slot 1 (protan ΔE 1.9) */
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --warning: oklch(0.828 0.189 84.429);
+  --success: oklch(0.792 0.209 151.711);
+  --disabled-flag: oklch(0.704 0.094 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-disabled-flag: var(--disabled-flag);
+  --color-accent-lime: var(--accent-lime);
+  --color-accent-lime-foreground: var(--accent-lime-foreground);
+  --color-usage-bar: var(--usage-bar);
+  --color-usage-bar-quiet: var(--usage-bar-quiet);
+  --color-usage-series-1: var(--usage-series-1);
+  --color-usage-series-2: var(--usage-series-2);
+  --color-usage-series-3: var(--usage-series-3);
+  --color-usage-series-4: var(--usage-series-4);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  /* SkillDetail's usage bar eases open on mount — CSS only, and skipped under reduced motion. */
+  --animate-bar-grow: bar-grow 0.5s ease-out;
+  /* Each segment's icon fades in only after bar-grow finishes (0.5s delay) — bar-grow scales the
+     bar horizontally, which would visibly squash an icon rendered during that transform. */
+  --animate-icon-fade: icon-fade 0.2s ease-out 0.5s both;
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes icon-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* SkillDetail's trigger-mix bar is monochrome by design (DESIGN.md forbids color-as-category):
+   the three trigger types are told apart by texture over one shared ink fill, not by hue. The
+   pattern is deliberately low-contrast against its base — a faint grid line drawn in the page
+   ground, which inverts with the theme so the effect stays subtle in both. */
+.trigger-fill-solid {
+  background-color: var(--foreground);
+}
+.trigger-fill-hatch {
+  background-color: var(--foreground);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--background) 20%, transparent) 4px 5.5px
+  );
+}
+.trigger-fill-dots {
+  background-color: var(--foreground);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--background) 22%, transparent) 1px,
+    transparent 1.5px
+  );
+  background-size: 5px 5px;
+}
+
+/* Models effort mix: "Not recorded" sits off the ordinal ink ramp, so it's quiet stripes on the
+   paper rather than a solid shade that would read as a step between Medium and High. Not
+   `.trigger-fill-hatch` — that one is full-ink and would read as Xhigh. */
+.usage-fill-unrecorded {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--usage-bar-quiet) 0 1.5px,
+    transparent 1.5px 4px
+  );
+}
+
+/* Usage view — the 3-4 primary stat numerals only. 30px is a deliberate, scoped departure from
+   the 16px/600 No-Hero-Type ceiling (docs/usage-view-ui-spec.md §8); Geist Mono keeps it inside
+   the "Mono for data" principle so only size departs. */
+.text-usage-stat {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+}

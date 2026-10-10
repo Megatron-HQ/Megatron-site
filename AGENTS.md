@@ -4,23 +4,26 @@ The product website and landing page for Megatron, a local-first desktop control
 
 ## Commands
 
-| Command                    | Note                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------- |
-| `npm run dev`              | Starts Vite dev server at `http://127.0.0.1:5173`                                                 |
-| `npm run build`            | Builds production bundle to `dist/`                                                               |
-| `npm run preview`          | Serves production build preview at `http://127.0.0.1:4173`                                        |
-| `npm run lint`             | Checks browser and Node JavaScript with ESLint; warnings fail                                     |
-| `npm run format:check`     | Checks formatting without modifying files                                                         |
-| `npm run format`           | Formats authored code and docs; ignores generated mirrors                                         |
-| `npm run verify:visual`    | Runs visual verification suite across responsive viewports (`--only <screen>`)                    |
-| `npm test`                 | Runs tooling tests, including browser-based CLI failure regression cases                          |
-| `npm run verify:qa`        | Runs headless Playwright verification against the running site (`node scripts/qa/verify.mjs`)     |
-| `npm run verify:qa:ci`     | Starts an owned production preview, runs interactive QA, and stops it; requires an existing build |
-| `npm run pre-commit:check` | Verifies generated mirrors (`AGENTS.md` and `.agents/skills/`) are in sync                        |
+| Command                         | Note                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `npm run dev`                   | Starts Vite dev server at `http://127.0.0.1:5173`                                                 |
+| `npm run build`                 | Typechecks, verifies the pinned renderer, and builds both entries to `dist/`                      |
+| `npm run typecheck`             | Checks the browser adapter and app renderer with TypeScript                                       |
+| `npm run preview:check`         | Verifies renderer file hashes without a sibling app checkout                                      |
+| `npm run preview:sync -- <app>` | Imports a reviewed app checkout and records the integration patches                               |
+| `npm run preview`               | Serves production build preview at `http://127.0.0.1:4173`                                        |
+| `npm run lint`                  | Checks authored JavaScript and TypeScript with ESLint; warnings fail                              |
+| `npm run format:check`          | Checks formatting without modifying files                                                         |
+| `npm run format`                | Formats authored code and docs; ignores generated mirrors                                         |
+| `npm run verify:visual`         | Runs visual verification suite across responsive viewports (`--only <screen>`)                    |
+| `npm test`                      | Runs tooling tests, including browser-based CLI failure regression cases                          |
+| `npm run verify:qa`             | Runs headless Playwright verification against the running site (`node scripts/qa/verify.mjs`)     |
+| `npm run verify:qa:ci`          | Starts an owned production preview, runs interactive QA, and stops it; requires an existing build |
+| `npm run pre-commit:check`      | Verifies generated mirrors (`AGENTS.md` and `.agents/skills/`) are in sync                        |
 
 ## Stack
 
-Vite + Vanilla JS + Tailwind CSS v4 (`@tailwindcss/vite`), Geist fonts (`@fontsource/geist-sans`, `@fontsource/geist-mono`), Lucide icons (`lucide`).
+Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v4 (`@tailwindcss/vite`), Geist fonts, and Lucide icons. App and marketing styles use separate Tailwind discovery scopes.
 
 - Node pinned to `>=22.13.0` in `package.json` for the supported ESLint toolchain.
 - Single-product landing site, zero runtime tracking or external analytics.
@@ -31,8 +34,11 @@ Vite + Vanilla JS + Tailwind CSS v4 (`@tailwindcss/vite`), Geist fonts (`@fontso
 - `index.html`: Semantic landing page markup and structured metadata.
 - `src/styles.css`: Tailwind theme, tokens, responsive rules, and reduced motion.
 - `src/main.js`: Navigation, installation command copying, and scroll effects.
-- `src/product-demo.js`: Isolated interactive preview, keyboard controls, and render helpers.
-- `src/demo-data.js`: Illustrative sample data, separate from the renderer.
+- `src/product-preview-host.js`: Same-origin iframe navigation, reset, native modal expansion, and keyboard focus reveal.
+- `src/icons.js`: Marketing icon registry.
+- `preview/index.html`, `src/preview/`: App entry, typed sample API, fixture analytics, and trusted host protocol.
+- `vendor/megatron/`: Pinned actual renderer, shared API types, license, and reproducible provenance; never hand-edit.
+- `scripts/preview/`: Snapshot import and hash verification.
 - `public/`: Static assets (`megatron-icon.png`).
 - `design-system/MASTER.md`: Authoritative design tokens and interaction rules.
 - `scripts/qa/`: Tracked, portable browser verification scripts.
@@ -48,11 +54,13 @@ Vite + Vanilla JS + Tailwind CSS v4 (`@tailwindcss/vite`), Geist fonts (`@fontso
 | Generated mirrors   | `AGENTS.md` (from `CLAUDE.md`) and `.agents/skills/` (from `.claude/skills/`) — never hand-edited, no symlinks | Git symlinks need Developer Mode **and** `core.symlinks=true` on Windows. Instead `.githooks/pre-commit` regenerates and re-stages both every commit; `npm run pre-commit:check` acts as the backstop. |
 | Privacy             | No remote telemetry, forms, or analytics requests                                                              | Aligns with Megatron's local-first core philosophy.                                                                                                                                                    |
 | Verification        | Tracked browser checks in `scripts/qa/` and `.claude/skills/visual-verify/`; reports remain ignored            | Exercises responsive viewports (375px, 768px, 1024px, 1440px), keyboard controls, and ensures zero horizontal page overflow.                                                                           |
-| Interactive preview | Isolated mock data in `src/demo-data.js`                                                                       | Illustrative sample data only; never touches visitor local files.                                                                                                                                      |
+| Interactive preview | Actual app renderer in an isolated iframe; typed sample API in `src/preview/`                                  | Preserves app visuals and controls; never accesses visitor local files or runs native commands. Retains 860px client width with contained panning and expansion.                                       |
 
 ## Testing & Verification
 
 Run `npm ci` to install the declared Playwright and image-diff dependencies. Browser tests use installed Chrome/Edge, an executable specified by `CHROME_PATH`, or Chromium installed with `npx playwright-core install chromium`. No sibling Megatron checkout is required.
+
+`node scripts/qa/compare-app.mjs <app-checkout>` separately captures the original pinned renderer in hidden Electron and compares it with the production preview at 1200×720 and 860×600. It uses synthetic fixtures and does not run app scanners. Evidence remains in `.qa/app-reference/`. Only this reference-refresh command requires the app checkout and Electron.
 
 Site verification is performed with Playwright in `scripts/qa/verify.mjs` and `.claude/skills/visual-verify/`:
 

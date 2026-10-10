@@ -25,8 +25,11 @@ The production site is emitted to `dist/`. The production preview serves at `htt
 - `index.html`: semantic page content and metadata.
 - `src/styles.css`: Tailwind theme, layout, responsive rules, and reduced motion.
 - `src/main.js`: navigation, installation copying, and scroll effects.
-- `src/product-demo.js`: isolated interactive preview, keyboard controls, and render helpers.
-- `src/demo-data.js`: illustrative sample data, separate from the renderer.
+- `src/product-preview-host.js`: iframe lifecycle, section navigation, reset, expansion, and focus reveal.
+- `src/icons.js`: locally bundled marketing icons.
+- `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, and trusted host messaging.
+- `vendor/megatron/`: pinned app renderer, API types, license, and SHA-256 provenance.
+- `scripts/preview/`: reproducible renderer import and integrity checks.
 - `public/megatron-icon.png`: the desktop application's existing icon.
 - `design-system/MASTER.md`: approved design and content rules.
 
@@ -42,7 +45,11 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The site was rendered and exercised in installed Chrome using Playwright against both development and production builds. Checks cover all preview sections, five usage panels, time-window changes, chart-point selection, skill filtering/search/inspection, return navigation, sample plugin switches, installation copy feedback, mobile navigation, keyboard controls, FAQ disclosures, and reduced motion.
+The preview uses the actual app renderer in a same-origin iframe. Marketing CSS is isolated from its app tokens, fonts, and components. The typed browser API operates on session-only sample data; folder grants, plugin commands, rescans, external links, and data-folder actions are simulated. Reload or Reset sample restores the original fixtures. The app checkout is not modified.
+
+At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
+
+Checks cover the command palette, conditional inventory columns, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings, scoped plugin actions, all five Usage panels, independent time windows, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
 
 Responsive checks cover 375px, 768px, 1024px, and 1440px. Essential page and installation content remains available with JavaScript disabled. Verification scripts are tracked in `scripts/qa/` and `.claude/skills/visual-verify/`; reports, screenshots, and temporary fixtures are saved under ignored directories.
 
@@ -60,7 +67,25 @@ npm run verify:visual
 npm run pre-commit:check
 ```
 
-The visual sweep builds the site and starts a temporary production preview when needed. It exits with status 1 for horizontal overflow, console errors/warnings, or uncaught page errors. New or changed screenshots remain review items; they do not fail the command automatically.
+The visual sweep builds the site and starts a temporary production preview when needed. It exits with status 1 for horizontal overflow, console errors/warnings, or uncaught page errors. New or changed screenshots remain review items; they do not fail the command automatically. When a development server is already open, set `MEGATRON_TEST_URL` to a production preview to avoid development-only library warnings. Build includes TypeScript and renderer-provenance checks.
+
+## Updating the app renderer
+
+The authoritative revision and four integration patches are recorded in `vendor/megatron/provenance.json`. Never edit the snapshot manually. To import a reviewed app checkout:
+
+```powershell
+npm run preview:sync -- C:\Megatron
+npm run preview:check
+npm run typecheck
+```
+
+Review the source and dependency changes, run interactive QA and the full screenshot sweep, and compare against the current app. The separate reference command builds the original renderer from the pinned checkout and runs it in hidden Electron with the same synthetic API, frozen time, locale, theme, dimensions, and DPR as the website:
+
+```powershell
+node scripts/qa/compare-app.mjs C:\Megatron
+```
+
+Reference screenshots and differences are written to `.qa/app-reference/`. This development check requires that app checkout and its installed Electron; ordinary website builds and CI do not. It compares renderer content, excluding operating-system window chrome.
 
 For interactive QA, start `npm run preview` after building and run the following in a second PowerShell window:
 
