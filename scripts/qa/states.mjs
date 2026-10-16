@@ -14,17 +14,46 @@ async function selectSkill(app, name) {
 }
 
 export async function verifyPreviewStates(page, baseUrl) {
+  await page.locator('#product').scrollIntoViewIfNeeded()
   const app = await preparePreview(page)
-  await app
-    .getByRole('button', { name: 'Expand project list', exact: true })
-    .click()
+  const collapse = app.getByRole('button', {
+    name: 'Collapse project list',
+    exact: true
+  })
+  if (await collapse.isVisible()) {
+    await collapse.click()
+    await app
+      .getByRole('button', { name: 'Expand project list', exact: true })
+      .click()
+  } else {
+    await app
+      .getByRole('button', { name: 'Expand project list', exact: true })
+      .click()
+  }
   assert.equal(
     await app.locator('tbody tr').count(),
     20,
     'Chevron expansion must preserve the current filter.'
   )
-  await app.getByRole('button', { name: 'Project', exact: true }).click()
+  await app.getByRole('button', { name: 'Projects', exact: true }).click()
   assert.equal(await app.locator('tbody tr').count(), 6)
+  // Clicking an already-selected Projects button toggles folder list expansion (commit 3a2439c)
+  await app.getByRole('button', { name: 'Projects', exact: true }).click()
+  assert.equal(
+    await app
+      .getByRole('button', { name: 'Expand project list', exact: true })
+      .isVisible(),
+    true,
+    'Clicking an active Projects row must collapse the list.'
+  )
+  await app.getByRole('button', { name: 'Projects', exact: true }).click()
+  assert.equal(
+    await app
+      .getByRole('button', { name: 'Collapse project list', exact: true })
+      .isVisible(),
+    true,
+    'Clicking again must re-expand the list.'
+  )
   await app.getByRole('button', { name: 'Global', exact: true }).click()
   assert.equal(await app.locator('tbody tr').count(), 9)
   assert.equal(
@@ -83,7 +112,11 @@ export async function verifyPreviewStates(page, baseUrl) {
     .click()
 
   await app.getByRole('button', { name: 'Plugins', exact: true }).click()
-  await app.locator('tbody tr').filter({ hasText: 'docs' }).click()
+  await app
+    .locator('tbody tr')
+    .filter({ hasText: 'docs' })
+    .filter({ hasText: 'docs-site' })
+    .click()
   assert.equal(
     await app
       .getByRole('button', { name: 'Disable', exact: true })
@@ -94,9 +127,7 @@ export async function verifyPreviewStates(page, baseUrl) {
   await app
     .getByRole('button', { name: 'C:/Projects/docs-site', exact: true })
     .click()
-  await app
-    .getByRole('button', { name: 'Add Repository...', exact: true })
-    .click()
+  await app.getByRole('button', { name: 'Add Folder...', exact: true }).click()
   await app
     .getByRole('button', { name: 'Revoke access to docs-site', exact: true })
     .waitFor()
@@ -106,10 +137,18 @@ export async function verifyPreviewStates(page, baseUrl) {
     .first()
     .click()
   await app.getByRole('button', { name: 'Enable', exact: true }).waitFor()
+  await app
+    .getByRole('button', { name: 'Back to plugins', exact: true })
+    .click()
+  await app
+    .locator('tbody tr')
+    .filter({ hasText: 'docs' })
+    .filter({ hasText: 'Unknown project' })
+    .click()
   assert.equal(
     await app
       .getByRole('button', { name: 'Disable', exact: true })
-      .last()
+      .first()
       .isDisabled(),
     true,
     'The install with no owning project must remain non-actionable.'
@@ -120,6 +159,7 @@ export async function verifyPreviewStates(page, baseUrl) {
   await app
     .locator('tbody tr')
     .filter({ hasText: 'frontend' })
+    .filter({ hasText: 'User' })
     .filter({ hasText: 'team-tools' })
     .click()
   await app.getByRole('button', { name: 'Update', exact: true }).first().click()
@@ -128,11 +168,19 @@ export async function verifyPreviewStates(page, baseUrl) {
     .first()
     .waitFor({ state: 'visible' })
   await app.locator('[title="Installed version: v1.5.0"]').first().waitFor()
-  assert.equal(
-    await app.locator('[title="Installed version: v1.2.0"]').count(),
-    1,
-    'Updating user scope must preserve the project install version.'
-  )
+  await app
+    .getByRole('button', { name: 'Back to plugins', exact: true })
+    .click()
+  await app
+    .locator('tbody tr')
+    .filter({ hasText: 'frontend' })
+    .filter({ hasText: 'web-app' })
+    .filter({ hasText: 'team-tools' })
+    .click()
+  await app.locator('[title="Installed version: v1.2.0"]').first().waitFor()
+  await app
+    .getByRole('button', { name: 'Back to plugins', exact: true })
+    .click()
 
   await selectPanel(app, 'Skills')
   await app
@@ -236,6 +284,42 @@ export async function verifyPreviewStates(page, baseUrl) {
           .click()
       },
       /The sample plugin action failed/
+    ],
+    [
+      'scan-partial',
+      async (frame) => {
+        await frame
+          .getByRole('button', { name: 'Scan details', exact: true })
+          .click()
+      },
+      'Scan needs attention'
+    ],
+    [
+      'scan-failed',
+      async () => {},
+      'Scan failed. Showing the last available data.'
+    ],
+    ['projects-empty', async () => {}, 'No project folders'],
+    [
+      'projects-unavailable',
+      async (frame) => {
+        await frame.getByRole('button', { name: /^web-app/ }).click()
+      },
+      'This folder could not be fully refreshed. Showing the last available data.'
+    ],
+    [
+      'projects-missing',
+      async (frame) => {
+        await frame.getByRole('button', { name: /^web-app/ }).click()
+      },
+      'This project folder is missing. Showing its last available data. Check its location if it moved.'
+    ],
+    [
+      'projects-needs-access',
+      async (frame) => {
+        await frame.getByRole('button', { name: /^web-app/ }).click()
+      },
+      'Folder access is required. Grant this project or a parent folder in Settings.'
     ]
   ]
   for (const [scenario, activate, message] of cases) {

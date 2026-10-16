@@ -51,9 +51,11 @@ export const scenarios = [
     await app.getByRole('button', { name: 'Global', exact: true }).click()
   }),
   sample('product-demo-skills-project-empty', 'demo-skills', async (app) => {
-    await app
-      .getByRole('button', { name: 'Expand project list', exact: true })
-      .click()
+    const expand = app.getByRole('button', {
+      name: 'Expand project list',
+      exact: true
+    })
+    if (await expand.isVisible()) await expand.click()
     await app.getByRole('button', { name: /empty-lab/ }).click()
     await app
       .getByText('No skills found in empty-lab', { exact: true })

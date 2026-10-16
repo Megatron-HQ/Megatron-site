@@ -303,3 +303,86 @@ test('reset cancels a pending action without unlocking a newer action', async ()
     null
   )
 })
+
+test('listProjects returns the project catalog and tracks folder additions/revocations', async () => {
+  const { api } = await createDemo()
+  const initialProjects = await api.listProjects()
+  assert.ok(initialProjects.length >= 4)
+  assert.ok(
+    initialProjects.some(
+      (p) => p.path === 'C:/Projects/web-app' && p.kind === 'repository'
+    )
+  )
+  assert.ok(initialProjects.some((p) => p.path === 'C:/Projects/empty-lab'))
+
+  await api.pickAndAddFolders()
+  const withAdded = await api.listProjects()
+  assert.ok(withAdded.some((p) => p.path === 'C:/Projects/docs-site'))
+
+  await api.revokeAllowedPath('C:/Projects/docs-site')
+  const afterRevoke = await api.listProjects()
+  assert.ok(!afterRevoke.some((p) => p.path === 'C:/Projects/docs-site'))
+})
+
+test('partial scan exposes actionable scan issues and affected paths', async () => {
+  const { createDemoApi } = await import('./api.ts')
+  const { api } = createDemoApi({ actionDelayMs: 0, scenario: 'scan-partial' })
+  const summary = await api.rescan()
+  assert.equal(summary.outcome, 'partial')
+  const sourceWithIssue = summary.sources.find(
+    (source) => source.issues && source.issues.length > 0
+  )
+  assert.ok(sourceWithIssue)
+  assert.equal(sourceWithIssue?.issues?.[0].code, 'permission_required')
+})
+
+test('scan-failed scenario returns a failed scan outcome', async () => {
+  const { createDemoApi } = await import('./api.ts')
+  const { api } = createDemoApi({ actionDelayMs: 0, scenario: 'scan-failed' })
+  const summary = await api.rescan()
+  assert.equal(summary.outcome, 'failed')
+  assert.equal(summary.sources[0].status, 'failed')
+})
+
+test('listProjects handles empty and availability diagnostic scenarios', async () => {
+  const { createDemoApi } = await import('./api.ts')
+  const empty = createDemoApi({
+    actionDelayMs: 0,
+    scenario: 'projects-empty'
+  }).api
+  assert.deepEqual(await empty.listProjects(), [])
+
+  const unavailable = createDemoApi({
+    actionDelayMs: 0,
+    scenario: 'projects-unavailable'
+  }).api
+  const unavailList = await unavailable.listProjects()
+  assert.ok(unavailList.length > 0)
+  assert.ok(unavailList.every((p) => p.status === 'unavailable'))
+
+  const missing = createDemoApi({
+    actionDelayMs: 0,
+    scenario: 'projects-missing'
+  }).api
+  const missingList = await missing.listProjects()
+  assert.ok(missingList.length > 0)
+  assert.ok(missingList.every((p) => p.status === 'missing'))
+
+  const needsAccess = createDemoApi({
+    actionDelayMs: 0,
+    scenario: 'projects-needs-access'
+  }).api
+  const needsAccessList = await needsAccess.listProjects()
+  assert.ok(needsAccessList.length > 0)
+  assert.ok(needsAccessList.every((p) => p.status === 'needs_access'))
+})
+
+test('parent folder revocation removes nested child projects and skills', async () => {
+  const { api } = await createDemo()
+  // Revoking web-app removes web-app projects and its project-scoped skills
+  await api.revokeAllowedPath('C:/Projects/web-app')
+  const projects = await api.listProjects()
+  assert.ok(!projects.some((p) => p.path === 'C:/Projects/web-app'))
+  const skills = (await api.listSkills()).skills
+  assert.ok(!skills.some((s) => s.project_root === 'C:/Projects/web-app'))
+})

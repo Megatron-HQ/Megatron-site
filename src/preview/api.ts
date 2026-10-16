@@ -8,6 +8,7 @@ import type {
   ThemePreference
 } from '../../vendor/megatron/src/shared/ipc'
 import type { Api } from '../../vendor/megatron/src/preload/index.d.ts'
+import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 import {
   ADDITIONAL_PROJECT,
   CONTEXT_LIMIT,
@@ -50,12 +51,33 @@ export function createDemoApi(options: DemoOptions = {}) {
     for (const subscriber of subscriptions) subscriber()
   }
   const scanSummary = (): ScanSummary => {
-    const outcome = options.scenario === 'scan-partial' ? 'partial' : 'complete'
+    const outcome =
+      options.scenario === 'scan-failed'
+        ? 'failed'
+        : options.scenario === 'scan-partial'
+          ? 'partial'
+          : 'complete'
     return {
       outcome,
       completedAt: state.now,
-      sources: [{ name: 'Sample data', status: outcome }],
-      lastSuccessfulAt: state.now
+      sources: [
+        {
+          name: 'Sample data',
+          status: outcome,
+          ...(outcome === 'partial'
+            ? {
+                issues: [
+                  {
+                    code: 'permission_required' as const,
+                    path: 'C:/Projects/restricted-repo'
+                  }
+                ]
+              }
+            : {})
+        }
+      ],
+      lastSuccessfulAt: state.now,
+      projects: state.projects
     }
   }
 
@@ -65,7 +87,11 @@ export function createDemoApi(options: DemoOptions = {}) {
   }
 
   function currentSkills(): SkillRow[] {
-    return state.skills.map((skill) => {
+    const base =
+      options.scenario === 'projects-empty'
+        ? state.skills.filter((skill) => skill.source_type !== 'project')
+        : state.skills
+    return base.map((skill) => {
       const events =
         skill.shadowed_by_skill_id !== null
           ? []
@@ -158,7 +184,9 @@ export function createDemoApi(options: DemoOptions = {}) {
         install.enablement_known =
           install.scope === 'user' ||
           (install.project_path !== null &&
-            state.folders.some((row) => row.path === install.project_path))
+            state.folders.some((row) =>
+              isWithinProjectPath(install.project_path!, row.path)
+            ))
     }
   }
 
@@ -283,11 +311,35 @@ export function createDemoApi(options: DemoOptions = {}) {
       theme = value
     },
     async listAllowedPaths() {
+      if (options.scenario === 'projects-empty') return []
       return copy(state.folders)
+    },
+    async listProjects() {
+      checkScenario('projects')
+      if (options.scenario === 'projects-empty') return []
+      if (options.scenario === 'projects-unavailable')
+        return copy(
+          state.projects.map((p) => ({ ...p, status: 'unavailable' as const }))
+        )
+      if (options.scenario === 'projects-missing')
+        return copy(
+          state.projects.map((p) => ({ ...p, status: 'missing' as const }))
+        )
+      if (options.scenario === 'projects-needs-access')
+        return copy(
+          state.projects.map((p) => ({ ...p, status: 'needs_access' as const }))
+        )
+      return copy(state.projects)
     },
     async pickAndAddFolders() {
       if (!state.folders.some((row) => row.path === ADDITIONAL_PROJECT))
         state.folders.push({ path: ADDITIONAL_PROJECT, granted_at: state.now })
+      if (!state.projects.some((row) => row.path === ADDITIONAL_PROJECT))
+        state.projects.push({
+          path: ADDITIONAL_PROJECT,
+          kind: 'repository',
+          status: 'available'
+        })
       refreshPlugins()
       notify()
       options.onNotice?.(
@@ -299,7 +351,14 @@ export function createDemoApi(options: DemoOptions = {}) {
       if (!state.folders.some((row) => row.path === path))
         throw new RangeError('Unknown sample repository.')
       state.folders = state.folders.filter((row) => row.path !== path)
-      state.skills = state.skills.filter((row) => row.project_root !== path)
+      state.projects = state.projects.filter(
+        (row) => !isWithinProjectPath(row.path, path)
+      )
+      state.skills = state.skills.filter(
+        (row) =>
+          row.project_root === null ||
+          !isWithinProjectPath(row.project_root, path)
+      )
       refreshPlugins()
       notify()
       return copy(state.folders)

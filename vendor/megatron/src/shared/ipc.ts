@@ -7,6 +7,7 @@ export const IPC_CHANNELS = {
   setTheme: 'theme:set',
   scanComplete: 'scan:complete',
   listAllowedPaths: 'folders:list',
+  listProjects: 'projects:list',
   pickAndAddFolders: 'folders:pickAndAdd',
   revokeAllowedPath: 'folders:revoke',
   openExternal: 'shell:openExternal',
@@ -28,6 +29,12 @@ export const IPC_CHANNELS = {
 export interface AllowedPathRow {
   path: string
   granted_at: string
+}
+
+export interface ProjectFolder {
+  path: string
+  kind: 'folder' | 'repository'
+  status: 'available' | 'unavailable' | 'missing' | 'needs_access'
 }
 
 export type SourceType = 'global' | 'project' | 'plugin'
@@ -105,15 +112,28 @@ export interface SkillsListResult {
   contextBudget: ContextBudget
 }
 
+export interface ScanIssue {
+  code:
+    | 'permission_required'
+    | 'project_missing'
+    | 'settings_invalid'
+    | 'source_unavailable'
+    | 'scan_limit'
+  path: string
+}
+
 export interface ScanTaskResult {
   status: 'complete' | 'partial'
+  issues?: ScanIssue[]
+  projects?: ProjectFolder[]
 }
 
 export interface ScanSummary {
   outcome: 'complete' | 'partial' | 'failed'
   completedAt: string
-  sources: { name: string; status: 'complete' | 'partial' | 'failed' }[]
+  sources: { name: string; status: 'complete' | 'partial' | 'failed'; issues?: ScanIssue[] }[]
   lastSuccessfulAt?: string | null
+  projects?: ProjectFolder[]
 }
 
 export type FileStatus = 'ok' | 'too_large' | 'unreadable' | 'preview_limit'
@@ -155,7 +175,11 @@ export interface SkillInvocationSliceInput {
   startAt: string
   endAt: string
   skillName?: string
+  offset?: number
 }
+
+export const INVOCATION_PAGE_SIZE = 200
+export const MAX_INVOCATION_OFFSET = 10_000_000
 
 export interface SkillUsageDetail {
   byTriggerType: TriggerTypeCount[]

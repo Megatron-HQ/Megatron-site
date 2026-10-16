@@ -7,6 +7,7 @@ import type {
   PluginActionResult,
   PluginDetailResult,
   PluginRow,
+  ProjectFolder,
   SkillInvocationEntry,
   SkillInvocationRecord,
   SkillInvocationSliceInput,
@@ -21,10 +22,11 @@ interface Api {
   listSkills: () => Promise<SkillsListResult>
   openSkill: (id: number) => Promise<OpenSkillResult | null>
   openSkillMeta: (id: number) => Promise<OpenSkillMetaResult | null>
-  openSkillHistory: (id: number) => Promise<SkillInvocationEntry[]>
+  openSkillHistory: (id: number, offset?: number) => Promise<SkillInvocationEntry[]>
   getInitialTheme: () => ThemePreference
   setTheme: (theme: ThemePreference) => Promise<void>
   listAllowedPaths: () => Promise<AllowedPathRow[]>
+  listProjects: () => Promise<ProjectFolder[]>
   pickAndAddFolders: () => Promise<AllowedPathRow[]>
   revokeAllowedPath: (path: string) => Promise<AllowedPathRow[]>
   openExternal: (url: string) => Promise<void>

@@ -112,12 +112,14 @@ export async function syncRenderer(sourceRoot, destination = SNAPSHOT_ROOT) {
       'Renderer snapshot must be separate from the app repository.'
     )
   const renderer = await filesWithin(join(source, 'src/renderer/src'))
+  const shared = await filesWithin(join(source, 'src/shared'))
   const paths = [
     ...renderer
       .filter((path) => !/\.test\./.test(path))
       .map((path) => `src/renderer/src/${path}`),
-    'src/shared/ipc.ts',
-    'src/shared/version.ts',
+    ...shared
+      .filter((path) => !/\.test\./.test(path))
+      .map((path) => `src/shared/${path}`),
     'src/preload/index.d.ts',
     'LICENSE'
   ]

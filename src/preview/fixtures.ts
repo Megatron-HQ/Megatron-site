@@ -4,6 +4,7 @@ import type {
   LintFindingRow,
   PluginInstall,
   PluginRow,
+  ProjectFolder,
   SkillFile,
   SkillRow,
   TriggerType
@@ -34,6 +35,7 @@ export interface SampleState {
   skills: SkillRow[]
   plugins: PluginRow[]
   folders: AllowedPathRow[]
+  projects: ProjectFolder[]
   events: SampleEvent[]
 }
 
@@ -375,7 +377,13 @@ export function createSampleState(now: Date): SampleState {
       'C:/Projects/api',
       'C:/Projects/monorepo',
       'C:/Projects/empty-lab'
-    ].map((path) => ({ path, granted_at: timestamp }))
+    ].map((path) => ({ path, granted_at: timestamp })),
+    projects: [
+      { path: SAMPLE_PROJECT, kind: 'repository', status: 'available' },
+      { path: 'C:/Projects/api', kind: 'repository', status: 'available' },
+      { path: 'C:/Projects/monorepo', kind: 'repository', status: 'available' },
+      { path: 'C:/Projects/empty-lab', kind: 'repository', status: 'available' }
+    ]
   }
 }
 
