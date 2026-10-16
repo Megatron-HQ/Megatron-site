@@ -1,12 +1,26 @@
 # Megatron website
 
-The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage.
+The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static web application.
 
 The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user and project scopes), hierarchical project navigation and scoping, actionable scan diagnostics, project availability notices, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
-## Run locally
+## Deployment
+
+The website is deployed to Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static site with continuous deployment connected to the GitHub repository. Pushes to `main` deploy directly to production, and pull requests generate preview deployments.
+
+### Vercel configuration
+
+- **Framework Preset:** Vite
+- **Build Command:** `npm run build` (typechecks, checks renderer snapshot integrity, and builds static assets)
+- **Output Directory:** `dist`
+- **Install Command:** `npm ci`
+- **Node.js Version:** `22.x` (matches `"engines": { "node": ">=22.13.0" }` in `package.json`)
+
+All interactive preview features—including the typed browser adapter, sample state, simulated project/folder grants, and the pinned React renderer snapshot—execute entirely client-side in the visitor's browser. The deployment requires no server-side runtime, backend database, or external API keys.
+
+## Local development
 
 Requires Node.js 22.13+ (or a newer supported Node release) and npm.
 
@@ -15,14 +29,16 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. This is a local-only delivery; no hosting service or public deployment is configured.
+Open `http://127.0.0.1:5173` to access the local development server.
+
+To build and preview the production bundle locally:
 
 ```powershell
 npm run build
 npm run preview
 ```
 
-The production site is emitted to `dist/`. The production preview serves at `http://127.0.0.1:4173`.
+The production site is emitted to `dist/`. The local production preview serves at `http://127.0.0.1:4173`.
 
 ## Commands
 
@@ -49,7 +65,7 @@ The production site is emitted to `dist/`. The production preview serves at `htt
 - `src/styles.css`: Tailwind theme, layout, responsive rules, and reduced motion.
 - `src/main.js`: navigation, installation copying, and scroll effects.
 - `src/product-preview-host.js`: iframe lifecycle, section navigation, reset, expansion, and focus reveal.
-- `src/icons.js`: locally bundled marketing icons.
+- `src/icons.js`: bundled marketing icons.
 - `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, and trusted host messaging.
 - `vendor/megatron/`: 86 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
 - `scripts/preview/`: reproducible renderer import and integrity checks.
@@ -61,7 +77,7 @@ The production site is emitted to `dist/`. The production preview serves at `htt
 - `public/megatron-icon.png`: the desktop application's existing icon.
 - `design-system/MASTER.md`: approved design and content rules.
 
-Geist fonts and Lucide icons are bundled locally. The site makes no analytics requests and has no account, form submission, or local-file integration.
+Geist fonts and Lucide icons are bundled with the site. The static website makes no analytics requests and has no account, form submission, backend server, or visitor local-file integration.
 
 ## Product evidence
 
