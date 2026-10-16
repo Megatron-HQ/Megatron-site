@@ -2,7 +2,7 @@
 
 The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage.
 
-The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions.
+The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins, hierarchical project navigation, scan diagnostics, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
@@ -66,9 +66,9 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` at revision `6a8a79b471bb99f43da2ee958731284cd7ba7dcb`. Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0` at revision `3a2439c528a38bdc93aa0e83559416f95d3808cb`. Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
 
-The implementation was verified with 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 50 passing regression tests. TypeScript, provenance, lint, formatting, generated mirrors, production build, and interactive QA also passed. These results describe the pinned implementation; rerun the checks when changing it.
+The implementation was verified with 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 55 passing regression tests. TypeScript, provenance, lint, formatting, generated mirrors, production build, and interactive QA also passed. These results describe the pinned implementation; rerun the checks when changing it.
 
 See [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original audit and approach.
 
@@ -76,7 +76,7 @@ The preview uses the actual app renderer in a same-origin iframe. Marketing CSS 
 
 At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
 
-Checks cover the command palette, conditional inventory columns, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings, scoped plugin actions, all five Usage panels, independent time windows, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
+Checks cover the command palette, conditional inventory columns, hierarchical project navigation and folder expansion, actionable scan diagnostics, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings, scoped plugin actions, all five Usage panels, independent time windows, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
 
 Responsive checks cover 375px, 768px, 1024px, and 1440px. Essential page and installation content remains available with JavaScript disabled. Verification scripts are tracked in `scripts/qa/` and `.claude/skills/visual-verify/`; reports, screenshots, and temporary fixtures are saved under ignored directories.
 
