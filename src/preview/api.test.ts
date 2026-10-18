@@ -386,3 +386,139 @@ test('parent folder revocation removes nested child projects and skills', async 
   const skills = (await api.listSkills()).skills
   assert.ok(!skills.some((s) => s.project_root === 'C:/Projects/web-app'))
 })
+
+test('a user install disabled alongside an enabled project install keeps shared skills available', async () => {
+  const { api } = await createDemo()
+  await api.disablePlugin({
+    name: 'frontend',
+    marketplace: 'team-tools',
+    scope: 'user',
+    projectPath: null
+  })
+  const skills = (await api.listSkills()).skills.filter(
+    (skill) => skill.plugin_name === 'frontend@team-tools'
+  )
+  assert.ok(skills.length > 0)
+  assert.ok(skills.every((skill) => skill.disabled_reason === null))
+})
+
+test('uninstalling one version removes its skills while preserving the other install', async () => {
+  const { api } = await createDemo()
+  await api.uninstallPlugin({
+    name: 'frontend',
+    marketplace: 'team-tools',
+    scope: 'user',
+    projectPath: null
+  })
+  const detail = await api.getPluginDetail('frontend', 'team-tools')
+  assert.deepEqual(
+    detail?.skills.map((skill) => skill.name),
+    ['frontend:design']
+  )
+  assert.equal(detail?.plugin.skill_count, 1)
+  assert.equal(detail?.plugin.installs[0].scope, 'project')
+})
+
+test('granting a parent discovers descendants and revoking it preserves independently granted repositories', async () => {
+  const { api } = await createDemo()
+  await api.pickAndAddFolders()
+  await api.pickAndAddFolders()
+  assert.ok(
+    (await api.listAllowedPaths()).some(
+      (folder) => folder.path === 'C:/Projects'
+    )
+  )
+  assert.ok(
+    (await api.listProjects()).some(
+      (project) => project.path === 'C:/Projects/monorepo/tools/cli'
+    )
+  )
+  await api.revokeAllowedPath('C:/Projects')
+  assert.ok(
+    (await api.listProjects()).some(
+      (project) => project.path === 'C:/Projects/web-app'
+    )
+  )
+  assert.equal(
+    (await api.listSkills()).skills.filter(
+      (skill) => skill.project_root === 'C:/Projects/web-app'
+    ).length,
+    4
+  )
+})
+
+test('a rescan publishes matching start and completion events and clears in-progress state', async () => {
+  const { api } = await createDemo({ actionDelayMs: 10 })
+  assert.equal(typeof api.onScanStarted, 'function')
+  const starts: { id: number; isStartup: boolean }[] = []
+  const finishes: { id: number; summary: { outcome: string } }[] = []
+  api.onScanStarted((activity) => starts.push(activity))
+  api.onScanComplete((finished) => finishes.push(finished))
+  const scan = api.rescan()
+  assert.equal((await api.listSkills()).scanActivity?.id, starts[0].id)
+  await scan
+  assert.equal(starts[0].isStartup, false)
+  assert.equal(finishes[0].id, starts[0].id)
+  assert.equal(finishes[0].summary.outcome, 'complete')
+  assert.equal((await api.listSkills()).scanActivity, null)
+})
+
+test('a granted missing project reports unknown plugin enablement and blocks actions', async () => {
+  const { api } = await createDemo({ scenario: 'projects-missing' })
+  const plugin = await api.getPluginDetail('frontend', 'team-tools')
+  const install = plugin!.plugin.installs.find(
+    (row) => row.scope === 'project'
+  )!
+  assert.equal(install.project_missing, true)
+  assert.equal(install.enablement_known, false)
+  const result = await api.disablePlugin({
+    name: 'frontend',
+    marketplace: 'team-tools',
+    scope: 'project',
+    projectPath: 'C:/Projects/web-app'
+  })
+  assert.equal(result.ok, false)
+  assert.match(result.stderr!, /missing/)
+})
+
+test('revoking access while a scoped action is pending prevents the mutation', async () => {
+  const { api } = await createDemo({ actionDelayMs: 10 })
+  const action = api.disablePlugin({
+    name: 'frontend',
+    marketplace: 'team-tools',
+    scope: 'project',
+    projectPath: 'C:/Projects/web-app'
+  })
+  await api.revokeAllowedPath('C:/Projects/web-app')
+  assert.equal((await action).ok, false)
+  const detail = await api.getPluginDetail('frontend', 'team-tools')
+  assert.equal(
+    detail?.plugin.installs.find((row) => row.scope === 'project')
+      ?.disabled_reason,
+    null
+  )
+})
+
+test('updating a shared plugin version preserves the skills still used by another install', async () => {
+  const { api } = await createDemo()
+  await api.pickAndAddFolders()
+  assert.equal(
+    (
+      await api.updatePlugin({
+        name: 'docs',
+        marketplace: 'community',
+        scope: 'local',
+        projectPath: 'C:/Projects/docs-site'
+      })
+    ).ok,
+    true
+  )
+  const detail = await api.getPluginDetail('docs', 'community')
+  assert.equal(detail?.skills.length, 2)
+  assert.ok(
+    detail?.skills.some((skill) => skill.source_path.includes('/2.0.1/'))
+  )
+  assert.ok(
+    detail?.skills.some((skill) => skill.source_path.includes('/2.1.0/'))
+  )
+})

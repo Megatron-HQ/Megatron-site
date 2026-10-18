@@ -58,7 +58,7 @@ export const scenarios = [
     if (await expand.isVisible()) await expand.click()
     await app.getByRole('button', { name: /empty-lab/ }).click()
     await app
-      .getByText('No skills found in empty-lab', { exact: true })
+      .getByText('No skills found in Projects/empty-lab', { exact: true })
       .waitFor()
   }),
   sample('product-demo-skill-detail', 'demo-skills', (app) =>

@@ -1,4 +1,5 @@
 import type {
+  AllowedPathRow,
   PluginDetailResult,
   PluginInstall,
   PluginRow,
@@ -25,6 +26,21 @@ export interface FilterProject {
   path: string
   name: string
   count: number
+}
+
+export type PluginInstallBlock = 'missing-folder' | 'needs-grant' | 'unrecorded'
+
+export function pluginInstallBlock(install: PluginInstall): PluginInstallBlock | null {
+  if (install.scope === 'user') return null
+  if (install.project_path === null) return 'unrecorded'
+  if (install.project_missing) return 'missing-folder'
+  if (!install.enablement_known) return 'needs-grant'
+  return null
+}
+
+export function showsMissingProjectStatus(installs: PluginInstall[]): boolean {
+  const unknown = installs.filter((install) => !install.enablement_known)
+  return unknown.length > 0 && unknown.every((install) => install.project_missing)
 }
 
 // installed_plugins.json and a granted folder can spell one root differently — separator, drive
@@ -157,18 +173,28 @@ export function createPluginRows(
   plugins: PluginRow[],
   filter: PluginFilter = { kind: 'all' },
   projects: ProjectFolder[] = [],
-  skillSources?: Pick<SkillRow, 'source_path' | 'plugin_name'>[]
+  skillSources?: Pick<SkillRow, 'source_path' | 'plugin_name'>[],
+  folders: AllowedPathRow[] = [],
+  displayLabels?: ReadonlyMap<string, string>
 ): PluginRepositoryRow[] {
   const availability = new Map(
     projects.map((project) => [normalizeProjectPath(project.path), project.status])
   )
-  const labels = projectDisplayLabels(
-    plugins.flatMap((plugin) =>
-      plugin.installs.flatMap((install) =>
-        install.project_path === null ? [] : [install.project_path]
-      )
+  const labels =
+    displayLabels ??
+    projectDisplayLabels(
+      [
+        ...projects
+          .filter((project) => project.kind === 'repository')
+          .map((project) => project.path),
+        ...plugins.flatMap((plugin) =>
+          plugin.installs.flatMap((install) =>
+            install.project_path === null ? [] : [install.project_path]
+          )
+        )
+      ],
+      folders
     )
-  )
   return plugins.flatMap((plugin) => {
     const groups = new Map<string, { context: PluginContext; installs: PluginInstall[] }>()
     for (const install of plugin.installs) {

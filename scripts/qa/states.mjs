@@ -84,6 +84,19 @@ export async function verifyPreviewStates(page, baseUrl) {
   assert.equal(await app.locator('tbody tr').count(), 1)
 
   await app.getByRole('button', { name: 'Plugins', exact: true }).click()
+  for (const repository of ['User', 'Projects/web-app']) {
+    const row = app
+      .locator('tbody tr')
+      .filter({ hasText: 'frontend' })
+      .filter({ hasText: 'team-tools' })
+      .filter({ hasText: repository })
+    await row.waitFor()
+    assert.equal(
+      await row.getByRole('cell', { name: '1', exact: true }).count(),
+      1,
+      'Each version-specific plugin inventory must show its installed skill.'
+    )
+  }
   await selectSkill(app, 'security-review')
   await app.getByText('No description provided.', { exact: true }).waitFor()
   await app.getByRole('button', { name: 'Back to skills', exact: true }).click()
@@ -129,7 +142,10 @@ export async function verifyPreviewStates(page, baseUrl) {
     .click()
   await app.getByRole('button', { name: 'Add Folder...', exact: true }).click()
   await app
-    .getByRole('button', { name: 'Revoke access to docs-site', exact: true })
+    .getByRole('button', {
+      name: 'Revoke access to Projects/docs-site',
+      exact: true
+    })
     .waitFor()
   await app.getByRole('button', { name: 'Done', exact: true }).click()
   await app
@@ -303,21 +319,21 @@ export async function verifyPreviewStates(page, baseUrl) {
     [
       'projects-unavailable',
       async (frame) => {
-        await frame.getByRole('button', { name: /^web-app/ }).click()
+        await frame.getByRole('button', { name: /^Projects\/web-app/ }).click()
       },
       'This folder could not be fully refreshed. Showing the last available data.'
     ],
     [
       'projects-missing',
       async (frame) => {
-        await frame.getByRole('button', { name: /^web-app/ }).click()
+        await frame.getByRole('button', { name: /^Projects\/web-app/ }).click()
       },
       'This project folder is missing. Showing its last available data. Check its location if it moved.'
     ],
     [
       'projects-needs-access',
       async (frame) => {
-        await frame.getByRole('button', { name: /^web-app/ }).click()
+        await frame.getByRole('button', { name: /^Projects\/web-app/ }).click()
       },
       'Folder access is required. Grant this project or a parent folder in Settings.'
     ]
@@ -334,4 +350,72 @@ export async function verifyPreviewStates(page, baseUrl) {
       .first()
       .waitFor()
   }
+
+  const missingUrl = new URL(baseUrl)
+  missingUrl.searchParams.set('scenario', 'projects-missing')
+  await page.goto(missingUrl.href)
+  const missingApp = await preparePreview(page)
+  await missingApp.getByRole('button', { name: 'Plugins', exact: true }).click()
+  await missingApp
+    .locator('tbody tr')
+    .filter({ hasText: 'frontend' })
+    .filter({ hasText: 'team-tools' })
+    .filter({ hasText: 'Projects/web-app' })
+    .click()
+  await missingApp
+    .getByText(
+      /This install is registered to C:\/Projects\/web-app, and that folder is missing/
+    )
+    .waitFor()
+  for (const action of ['Disable', 'Update', 'Uninstall'])
+    assert.equal(
+      await missingApp
+        .getByRole('button', { name: action, exact: true })
+        .isDisabled(),
+      true
+    )
+
+  await page.goto(baseUrl)
+  const freshApp = await preparePreview(page)
+  await freshApp.getByRole('button', { name: 'Settings', exact: true }).click()
+  await freshApp.getByRole('button', { name: 'Manage…', exact: true }).click()
+  await freshApp
+    .getByRole('button', { name: 'Add Folder...', exact: true })
+    .click()
+  await freshApp
+    .getByRole('button', {
+      name: 'Revoke access to Projects/docs-site',
+      exact: true
+    })
+    .waitFor()
+  await freshApp
+    .getByRole('button', { name: 'Add Folder...', exact: true })
+    .click()
+  const revokeParent = freshApp.getByRole('button', {
+    name: 'Revoke access to Projects',
+    exact: true
+  })
+  await revokeParent.click()
+  await revokeParent.waitFor({ state: 'hidden' })
+  await freshApp.getByRole('button', { name: 'Done', exact: true }).click()
+  await freshApp
+    .getByRole('button', { name: 'All Skills', exact: true })
+    .click()
+  assert.equal(
+    await freshApp.locator('tbody tr').count(),
+    20,
+    'Removing an overlapping parent grant must preserve independently granted inventory.'
+  )
+  await freshApp
+    .getByRole('button', {
+      name: 'Expand Projects/monorepo repositories',
+      exact: true
+    })
+    .click()
+  await freshApp.getByRole('button', { name: /^monorepo\/tools\/cli/ }).click()
+  await freshApp
+    .getByText('No skills found in monorepo/tools/cli', {
+      exact: true
+    })
+    .waitFor()
 }

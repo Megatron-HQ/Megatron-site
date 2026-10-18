@@ -7,7 +7,8 @@ import { ManageFoldersDialog } from '@/components/ManageFoldersDialog'
 import { PluginActionToasts, type PluginActionToast } from '@/components/PluginActionToasts'
 import { PluginSidebar } from '@/components/PluginSidebar'
 import { SettingsDialog } from '@/components/SettingsDialog'
-import { ScanStatusBanner } from '@/components/ScanStatus'
+import { ScanStatusBanner, ScanUpdatingBanner } from '@/components/ScanStatus'
+import { useScanBanner } from '@/lib/use-scan-banner'
 import { Sidebar } from '@/components/Sidebar'
 import { UsageSidebar, type UsagePanel } from '@/components/UsageSidebar'
 import {
@@ -19,6 +20,8 @@ import { TREE_WIDTH_DEFAULT } from '@/lib/file-tree'
 import { createPluginRows, type PluginContext, type PluginFilter } from '@/lib/plugin-filter'
 import { isWithinProjectPath, normalizeProjectPath } from '../../shared/project-path'
 import { matchesFilter, type SourceFilter } from '@/lib/source-filter'
+import { createProjectLabelResolver, projectDisplayLabels } from '@/lib/project-tree'
+import { ProjectLabelContext } from '@/lib/use-project-label'
 import { SkillDetail } from './views/SkillDetail'
 import { SkillInventory } from './views/SkillInventory'
 import { SkillFileViewer } from './views/SkillFileViewer'
@@ -86,6 +89,7 @@ function App(): React.JSX.Element {
 
   const {
     data,
+    isPending: skillsPending,
     isError: skillsError,
     refetch: retrySkills
   } = useQuery({
@@ -191,8 +195,38 @@ function App(): React.JSX.Element {
     return status
   }
   const plugins = useMemo(() => pluginsData ?? [], [pluginsData])
+  const projectLabels = useMemo(
+    () =>
+      projectDisplayLabels(
+        [
+          ...projectCatalog
+            .filter((project) => project.kind === 'repository')
+            .map((project) => project.path),
+          ...skills.flatMap((skill) => (skill.project_root ? [skill.project_root] : [])),
+          ...plugins.flatMap((plugin) =>
+            plugin.installs.flatMap((install) =>
+              install.project_path ? [install.project_path] : []
+            )
+          )
+        ],
+        folders
+      ),
+    [projectCatalog, skills, plugins, folders]
+  )
   const scanComplete = data?.scanComplete ?? false
+  const resolveProjectLabel = useMemo(
+    () => createProjectLabelResolver(projectLabels, folders),
+    [projectLabels, folders]
+  )
   const contextBudget = data?.contextBudget ?? DEFAULT_CONTEXT_BUDGET
+  const { banner: scanBanner, summary: scanBannerSummary } = useScanBanner({
+    skillsLoaded: !skillsPending,
+    pluginsLoaded: !pluginsPending,
+    skillCount: skills.length,
+    pluginCount: plugins.length,
+    reportedSummary: data?.scanSummary,
+    reportedActivity: data?.scanActivity
+  })
 
   const filteredSkills = useMemo(
     () => skills.filter((skill) => matchesFilter(skill, filter)),
@@ -200,8 +234,8 @@ function App(): React.JSX.Element {
   )
 
   const filteredPlugins = useMemo(
-    () => createPluginRows(plugins, pluginFilter, projectCatalog, skills),
-    [plugins, pluginFilter, projectCatalog, skills]
+    () => createPluginRows(plugins, pluginFilter, projectCatalog, skills, folders, projectLabels),
+    [plugins, pluginFilter, projectCatalog, skills, folders, projectLabels]
   )
 
   function handleFilterChange(next: SourceFilter): void {
@@ -343,7 +377,7 @@ function App(): React.JSX.Element {
     }, SUCCESS_TOAST_DURATION_MS)
   }
 
-  return (
+  const content = (
     <TooltipProvider>
       <div className="flex h-screen flex-col">
         {window.api?.platform === 'darwin' && (
@@ -351,9 +385,10 @@ function App(): React.JSX.Element {
             <div className="drag-region absolute inset-x-1.5 top-1.5 bottom-0 rounded-xl bg-muted shadow" />
           </div>
         )}
-        {data?.scanSummary && (
+        {scanBanner.kind === 'updating' && <ScanUpdatingBanner message={scanBanner.message} />}
+        {scanBanner.kind === 'warning' && scanBannerSummary && (
           <ScanStatusBanner
-            summary={data.scanSummary}
+            summary={scanBannerSummary}
             onOpenDetails={() => setSettingsOpen(true)}
           />
         )}
@@ -440,9 +475,10 @@ function App(): React.JSX.Element {
                   name={pluginView.name}
                   marketplace={pluginView.marketplace}
                   context={pluginView.context}
-                  unavailable={
-                    pluginView.context?.kind === 'project' &&
-                    projectAvailability(pluginView.context.path) !== 'available'
+                  availability={
+                    pluginView.context?.kind === 'project'
+                      ? projectAvailability(pluginView.context.path)
+                      : undefined
                   }
                   onBack={() => setPluginView({ kind: 'list' })}
                   onViewSkills={handleViewSkillsForPlugin}
@@ -523,7 +559,7 @@ function App(): React.JSX.Element {
         themePreference={themePreference}
         onThemeChange={handleThemeChange}
         version={version}
-        scanSummary={data?.scanSummary}
+        scanSummary={scanBanner.kind === 'warning' ? scanBannerSummary : undefined}
         onManageFolders={() => {
           setSettingsOpen(false)
           setFoldersDialogOpen(true)
@@ -543,6 +579,11 @@ function App(): React.JSX.Element {
         }
       />
     </TooltipProvider>
+  )
+  return (
+    <ProjectLabelContext.Provider value={resolveProjectLabel}>
+      {content}
+    </ProjectLabelContext.Provider>
   )
 }
 

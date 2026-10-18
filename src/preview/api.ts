@@ -2,6 +2,10 @@ import type {
   AppSection,
   PluginActionInput,
   PluginActionResult,
+  PluginInstall,
+  PluginRow,
+  ScanActivity,
+  ScanFinished,
   ScanSummary,
   SkillInvocationSliceInput,
   SkillRow,
@@ -9,13 +13,17 @@ import type {
 } from '../../vendor/megatron/src/shared/ipc'
 import type { Api } from '../../vendor/megatron/src/preload/index.d.ts'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import { missingProjectInstallMessage } from '../../vendor/megatron/src/shared/missing-project.ts'
+import { SCAN_BANNER_REVEAL_MS } from '../../vendor/megatron/src/shared/scan-banner.ts'
 import {
   ADDITIONAL_PROJECT,
+  SAMPLE_PARENT,
   CONTEXT_LIMIT,
   DAY_MS,
   createSampleState,
   sampleFiles,
   sampleFindings,
+  samplePluginInstallPath,
   type SampleState
 } from './fixtures.ts'
 import {
@@ -44,11 +52,19 @@ export function createDemoApi(options: DemoOptions = {}) {
   let theme = options.initialTheme ?? 'light'
   let pendingAction = false
   let sessionRevision = 0
-  const subscriptions = new Set<() => void>()
+  let scanActivity: ScanActivity | null = null
+  let nextScanId = 0
+  const subscriptions = new Set<(finished: ScanFinished) => void>()
+  const scanStartedSubscriptions = new Set<(activity: ScanActivity) => void>()
   const delay = options.actionDelayMs ?? 450
   const copy = <T>(value: T): T => structuredClone(value)
-  const notify = () => {
-    for (const subscriber of subscriptions) subscriber()
+  const notify = (activity: ScanActivity | null = null) => {
+    if (activity?.id === scanActivity?.id) scanActivity = null
+    const finished = {
+      id: activity?.id ?? ++nextScanId,
+      summary: scanSummary()
+    }
+    for (const subscriber of subscriptions) subscriber(copy(finished))
   }
   const scanSummary = (): ScanSummary => {
     const outcome =
@@ -76,7 +92,10 @@ export function createDemoApi(options: DemoOptions = {}) {
             : {})
         }
       ],
-      lastSuccessfulAt: state.now,
+      lastSuccessfulAt:
+        outcome === 'complete'
+          ? state.now
+          : new Date(now.getTime() - DAY_MS).toISOString(),
       projects: state.projects
     }
   }
@@ -175,25 +194,119 @@ export function createDemoApi(options: DemoOptions = {}) {
       plugin.skill_count = state.skills.filter(
         (row) => row.plugin_name === `${plugin.name}@${plugin.marketplace}`
       ).length
-      const user = plugin.installs.find((row) => row.scope === 'user')
       for (const skill of state.skills.filter(
         (row) => row.plugin_name === `${plugin.name}@${plugin.marketplace}`
       ))
-        skill.disabled_reason = user?.disabled_reason ?? null
-      for (const install of plugin.installs)
+        skill.disabled_reason = plugin.disabled_reason
+      for (const install of plugin.installs) {
+        install.project_missing =
+          install.scope !== 'user' &&
+          install.project_path !== null &&
+          hasFolderAccess(install.project_path) &&
+          options.scenario === 'projects-missing'
         install.enablement_known =
           install.scope === 'user' ||
           (install.project_path !== null &&
-            state.folders.some((row) =>
-              isWithinProjectPath(install.project_path!, row.path)
-            ))
+            hasFolderAccess(install.project_path) &&
+            ![
+              'projects-missing',
+              'projects-unavailable',
+              'projects-needs-access'
+            ].includes(options.scenario ?? ''))
+      }
     }
+  }
+
+  function hasFolderAccess(path: string): boolean {
+    return state.folders.some((folder) =>
+      isWithinProjectPath(path, folder.path)
+    )
+  }
+
+  function discoverProjects(): void {
+    state.projects = [
+      ...initial.projects,
+      {
+        path: ADDITIONAL_PROJECT,
+        kind: 'repository' as const,
+        status: 'available' as const
+      },
+      {
+        path: SAMPLE_PARENT,
+        kind: 'folder' as const,
+        status: 'available' as const
+      }
+    ].filter((project) =>
+      project.kind === 'folder'
+        ? state.folders.some((folder) => folder.path === project.path)
+        : hasFolderAccess(project.path)
+    )
+    state.skills = state.skills.filter(
+      (skill) =>
+        skill.project_root === null || hasFolderAccess(skill.project_root)
+    )
+    for (const skill of initial.skills) {
+      if (
+        skill.project_root !== null &&
+        hasFolderAccess(skill.project_root) &&
+        !state.skills.some((row) => row.id === skill.id)
+      )
+        state.skills.push(copy(skill))
+    }
+  }
+
+  function updateInstallVersion(
+    plugin: PluginRow,
+    install: PluginInstall
+  ): void {
+    const previousPath = install.install_path
+    install.installed_version =
+      install.available_version ?? install.installed_version
+    install.install_path = samplePluginInstallPath(
+      plugin.name,
+      plugin.marketplace,
+      install.installed_version
+    )
+    install.last_updated = state.now
+    if (previousPath === install.install_path) return
+
+    const identity = `${plugin.name}@${plugin.marketplace}`
+    const previousSkills = state.skills.filter(
+      (skill) =>
+        skill.plugin_name === identity &&
+        isWithinProjectPath(skill.source_path, previousPath)
+    )
+    const stillInstalled = plugin.installs.some(
+      (row) => row !== install && row.install_path === previousPath
+    )
+    let nextId = Math.max(...state.skills.map((skill) => skill.id)) + 1
+    if (!stillInstalled)
+      state.skills = state.skills.filter(
+        (skill) => !previousSkills.includes(skill)
+      )
+    for (const skill of previousSkills) {
+      const sourcePath =
+        install.install_path + skill.source_path.slice(previousPath.length)
+      if (
+        !state.skills.some(
+          (row) =>
+            row.plugin_name === identity && row.source_path === sourcePath
+        )
+      )
+        state.skills.push({
+          ...skill,
+          id: stillInstalled ? nextId++ : skill.id,
+          source_path: sourcePath
+        })
+    }
+    plugin.installed_version = install.installed_version
   }
 
   async function runPluginAction(
     verb: 'enable' | 'disable' | 'update' | 'uninstall',
     input: PluginActionInput
   ): Promise<PluginActionResult> {
+    refreshPlugins()
     const plugin = state.plugins.find(
       (row) => row.name === input.name && row.marketplace === input.marketplace
     )
@@ -205,6 +318,11 @@ export function createDemoApi(options: DemoOptions = {}) {
       return { ok: false, stderr: 'This sample installation is unavailable.' }
     if (pendingAction)
       return { ok: false, stderr: 'Another sample action is still running.' }
+    if (install.project_missing && install.project_path !== null)
+      return {
+        ok: false,
+        stderr: missingProjectInstallMessage(install.project_path)
+      }
     if (
       install.scope !== 'user' &&
       (install.project_path === null || !install.enablement_known)
@@ -229,8 +347,21 @@ export function createDemoApi(options: DemoOptions = {}) {
           stderr:
             'The sample plugin action failed. Try again after resetting the preview.'
         }
+      if (install.scope !== 'user' && !install.enablement_known)
+        return {
+          ok: false,
+          stderr:
+            'Access to this sample repository was revoked before the action finished.'
+        }
       if (verb === 'uninstall') {
         plugin.installs = plugin.installs.filter((row) => row !== install)
+        state.skills = state.skills.filter(
+          (skill) =>
+            skill.plugin_name !== `${plugin.name}@${plugin.marketplace}` ||
+            plugin.installs.some((remaining) =>
+              isWithinProjectPath(skill.source_path, remaining.install_path)
+            )
+        )
         if (plugin.installs.length === 0) {
           state.plugins = state.plugins.filter((row) => row !== plugin)
           state.skills = state.skills.filter(
@@ -238,14 +369,7 @@ export function createDemoApi(options: DemoOptions = {}) {
           )
         }
       } else if (verb === 'update') {
-        install.installed_version =
-          install.available_version ?? install.installed_version
-        plugin.installed_version =
-          plugin.installs
-            .map((row) => row.installed_version)
-            .sort()
-            .at(-1) ?? plugin.installed_version
-        install.last_updated = state.now
+        updateInstallVersion(plugin, install)
       } else install.disabled_reason = verb === 'disable' ? 'plugin' : null
       refreshPlugins()
       notify()
@@ -264,6 +388,7 @@ export function createDemoApi(options: DemoOptions = {}) {
         skills,
         scanComplete: true,
         scanSummary: scanSummary(),
+        scanActivity,
         contextBudget: contextBudget(skills)
       })
     },
@@ -332,18 +457,18 @@ export function createDemoApi(options: DemoOptions = {}) {
       return copy(state.projects)
     },
     async pickAndAddFolders() {
-      if (!state.folders.some((row) => row.path === ADDITIONAL_PROJECT))
-        state.folders.push({ path: ADDITIONAL_PROJECT, granted_at: state.now })
-      if (!state.projects.some((row) => row.path === ADDITIONAL_PROJECT))
-        state.projects.push({
-          path: ADDITIONAL_PROJECT,
-          kind: 'repository',
-          status: 'available'
-        })
+      const path = state.folders.some((row) => row.path === ADDITIONAL_PROJECT)
+        ? SAMPLE_PARENT
+        : ADDITIONAL_PROJECT
+      if (!state.folders.some((row) => row.path === path))
+        state.folders.push({ path, granted_at: state.now })
+      discoverProjects()
       refreshPlugins()
       notify()
       options.onNotice?.(
-        'Added the sample docs-site repository. Your local folders are never accessed.'
+        path === SAMPLE_PARENT
+          ? 'Granted the sample Projects parent folder and discovered its repositories. Your local folders are never accessed.'
+          : 'Added the sample docs-site repository. Add Folder again to try a parent-folder grant. Your local folders are never accessed.'
       )
       return copy(state.folders)
     },
@@ -351,14 +476,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       if (!state.folders.some((row) => row.path === path))
         throw new RangeError('Unknown sample repository.')
       state.folders = state.folders.filter((row) => row.path !== path)
-      state.projects = state.projects.filter(
-        (row) => !isWithinProjectPath(row.path, path)
-      )
-      state.skills = state.skills.filter(
-        (row) =>
-          row.project_root === null ||
-          !isWithinProjectPath(row.project_root, path)
-      )
+      discoverProjects()
       refreshPlugins()
       notify()
       return copy(state.folders)
@@ -440,8 +558,18 @@ export function createDemoApi(options: DemoOptions = {}) {
       options.onSectionChange?.(value)
     },
     async rescan() {
+      const activity: ScanActivity = {
+        id: ++nextScanId,
+        startedAt: Date.now(),
+        isStartup: false,
+        revealMs: SCAN_BANNER_REVEAL_MS
+      }
+      const revision = sessionRevision
+      scanActivity = activity
+      for (const subscriber of scanStartedSubscriptions)
+        subscriber(copy(activity))
       if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
-      notify()
+      if (revision === sessionRevision) notify(activity)
       return scanSummary()
     },
     async revealDataFolder() {
@@ -450,6 +578,12 @@ export function createDemoApi(options: DemoOptions = {}) {
       )
     },
     getVersion: () => '0.1.0',
+    onScanStarted(callback) {
+      scanStartedSubscriptions.add(callback)
+      return () => {
+        scanStartedSubscriptions.delete(callback)
+      }
+    },
     onScanComplete(callback) {
       subscriptions.add(callback)
       return () => {
@@ -457,12 +591,15 @@ export function createDemoApi(options: DemoOptions = {}) {
       }
     }
   }
+  refreshPlugins()
   return {
     api,
     reset() {
       sessionRevision += 1
       pendingAction = false
+      scanActivity = null
       state = structuredClone(initial)
+      refreshPlugins()
       section = options.initialSection ?? 'skills'
       theme = options.initialTheme ?? 'light'
       notify()

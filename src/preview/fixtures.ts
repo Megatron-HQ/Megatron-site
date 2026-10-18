@@ -12,9 +12,20 @@ import type {
 
 export const SAMPLE_PROJECT = 'C:/Projects/web-app'
 export const ADDITIONAL_PROJECT = 'C:/Projects/docs-site'
+export const SAMPLE_PARENT = 'C:/Projects'
+export const NESTED_PROJECT = 'C:/Projects/monorepo/tools/cli'
+const PLUGIN_CACHE_ROOT = 'C:/Users/demo/.claude/plugins/cache'
 export const CONTEXT_LIMIT = 2666
 export const HOUR_MS = 60 * 60 * 1000
 export const DAY_MS = 24 * HOUR_MS
+
+export function samplePluginInstallPath(
+  name: string,
+  marketplace: string,
+  version: string
+): string {
+  return `${PLUGIN_CACHE_ROOT}/${marketplace}/${name}/${version}`
+}
 
 export interface SampleEvent {
   at: string
@@ -157,6 +168,7 @@ export function createSampleState(now: Date): SampleState {
       'Check responsive layouts, keyboard controls, and contrast.',
       {
         plugin_name: 'frontend@team-tools',
+        source_path: `${samplePluginInstallPath('frontend', 'team-tools', '1.4.0')}/skills/ui-audit`,
         est_listing_tokens: 218,
         modified_at: null
       }
@@ -168,6 +180,7 @@ export function createSampleState(now: Date): SampleState {
       'Apply the project’s interface design conventions.',
       {
         plugin_name: 'frontend@team-tools',
+        source_path: `${samplePluginInstallPath('frontend', 'team-tools', '1.2.0')}/skills/design`,
         est_listing_tokens: 167,
         modified_at: null
       }
@@ -177,7 +190,11 @@ export function createSampleState(now: Date): SampleState {
       'commit:commit',
       'plugin',
       'Create a clear commit from the current changes.',
-      { plugin_name: 'commit@team-tools', modified_at: null }
+      {
+        plugin_name: 'commit@team-tools',
+        source_path: `${samplePluginInstallPath('commit', 'team-tools', '1.2.0')}/skills/commit`,
+        modified_at: null
+      }
     ),
     skill(
       13,
@@ -186,6 +203,7 @@ export function createSampleState(now: Date): SampleState {
       'Write and maintain project documentation.',
       {
         plugin_name: 'docs@community',
+        source_path: `${samplePluginInstallPath('docs', 'community', '2.0.1')}/skills/docs`,
         est_listing_tokens: 88,
         modified_at: null,
         lint_status: 'warning',
@@ -199,6 +217,7 @@ export function createSampleState(now: Date): SampleState {
       'Load project review guidance at session start.',
       {
         plugin_name: 'workflow@claude-plugins-official',
+        source_path: `${samplePluginInstallPath('workflow', 'claude-plugins-official', '1.3.0')}/skills/auto-review`,
         hook_events: '["SessionStart"]',
         disabled_reason: 'plugin',
         est_listing_tokens: 35,
@@ -239,14 +258,14 @@ export function createSampleState(now: Date): SampleState {
     version: string,
     project: string | null = null,
     extra: Partial<PluginInstall> = {}
-  ): PluginInstall => ({
+  ): Omit<PluginInstall, 'install_path'> => ({
     scope,
     project_path: project,
-    install_path: `C:/Users/demo/.claude/plugins/cache/sample/${scope}/${version}`,
     installed_version: version,
     available_version: version,
     disabled_reason: null,
     enablement_known: project === null || project === SAMPLE_PROJECT,
+    project_missing: false,
     installed_at: new Date(now.getTime() - 20 * DAY_MS).toISOString(),
     last_updated: new Date(now.getTime() - 3 * DAY_MS).toISOString(),
     git_commit_sha: null,
@@ -255,7 +274,7 @@ export function createSampleState(now: Date): SampleState {
   const plugin = (
     name: string,
     marketplace: string,
-    installs: PluginInstall[]
+    installs: Omit<PluginInstall, 'install_path'>[]
   ): PluginRow => ({
     name,
     marketplace,
@@ -268,7 +287,14 @@ export function createSampleState(now: Date): SampleState {
     skill_count: skills.filter(
       (row) => row.plugin_name === `${name}@${marketplace}`
     ).length,
-    installs
+    installs: installs.map((row) => ({
+      ...row,
+      install_path: samplePluginInstallPath(
+        name,
+        marketplace,
+        row.installed_version
+      )
+    }))
   })
   const plugins = [
     plugin('frontend', 'team-tools', [
@@ -382,6 +408,7 @@ export function createSampleState(now: Date): SampleState {
       { path: SAMPLE_PROJECT, kind: 'repository', status: 'available' },
       { path: 'C:/Projects/api', kind: 'repository', status: 'available' },
       { path: 'C:/Projects/monorepo', kind: 'repository', status: 'available' },
+      { path: NESTED_PROJECT, kind: 'repository', status: 'available' },
       { path: 'C:/Projects/empty-lab', kind: 'repository', status: 'available' }
     ]
   }
@@ -393,7 +420,7 @@ export function sampleFindings(skill: SkillRow): LintFindingRow[] {
     detected_at: skill.last_scanned_at,
     detail: null,
     file_path: 'SKILL.md',
-    line_number: 18
+    line_number: 1
   }
   if (skill.id === 5)
     return [
@@ -402,7 +429,11 @@ export function sampleFindings(skill: SkillRow): LintFindingRow[] {
         id: 1,
         rule_id: 'missing-mcp-server',
         severity: 'warning',
-        message: 'Referenced MCP server “figma” is not configured.'
+        message: 'Referenced MCP server “figma” is not configured.',
+        line_number:
+          sampleDocument(skill)
+            .split('\n')
+            .findIndex((line) => line.includes('mcp__figma__')) + 1
       }
     ]
   if (skill.shadowed_by_skill_id !== null)
@@ -415,7 +446,7 @@ export function sampleFindings(skill: SkillRow): LintFindingRow[] {
         message: 'A global skill with this name always takes precedence.'
       }
     ]
-  if (skill.id === 13)
+  if (skill.name === 'docs:docs')
     return [
       {
         ...base,
@@ -423,7 +454,10 @@ export function sampleFindings(skill: SkillRow): LintFindingRow[] {
         rule_id: 'broken-file-paths',
         severity: 'warning',
         message: 'Referenced file “references/style-guide.md” was not found.',
-        line_number: 13
+        line_number:
+          sampleDocument(skill)
+            .split('\n')
+            .findIndex((line) => line.includes('references/style-guide.md')) + 1
       }
     ]
   if (skill.id === 18)
@@ -434,14 +468,33 @@ export function sampleFindings(skill: SkillRow): LintFindingRow[] {
         rule_id: 'missing-description',
         severity: 'error',
         message: 'No non-empty description was found in the frontmatter.',
-        line_number: 2
+        line_number: 3
       }
     ]
   return []
 }
 
+function sampleDocument(skill: SkillRow): string {
+  const frontmatter = [
+    '---',
+    `name: ${skill.name}`,
+    `description: ${skill.description === null ? '' : JSON.stringify(skill.description)}`,
+    ...(skill.model_invocable === 0 ? ['disable-model-invocation: true'] : []),
+    ...(skill.metadata_json ? [`metadata: ${skill.metadata_json}`] : []),
+    'allowed-tools: Read, Bash',
+    '---'
+  ].join('\n')
+  const exampleReference =
+    skill.id === 5
+      ? 'Use `mcp__figma__get_design_context` to inspect the design.\n\n'
+      : skill.name === 'docs:docs'
+        ? 'Read the [style guide](references/style-guide.md) before writing.\n\n'
+        : ''
+  return `${frontmatter}\n\n# ${skill.name}\n\n${skill.description ?? 'Document the skill’s trigger and purpose.'}\n\n${exampleReference}## Workflow\n\n1. Read the relevant code and project conventions.\n2. Identify changes that improve correctness and clarity.\n3. Verify the result and explain any remaining issues.\n\nSee the [review checklist](references/checklist.md) before finishing.\n\n## Output\n\n| Field | Description |\n| --- | --- |\n| Finding | A concrete issue and its impact |\n| Evidence | File, line, and reproducible behavior |\n\nUse \`scripts/check.ts\` for the local check.\n`
+}
+
 export function sampleFiles(skill: SkillRow): SkillFile[] {
-  const content = `---\nname: ${skill.name}\ndescription: ${skill.description ?? ''}\n${skill.model_invocable === 0 ? 'disable-model-invocation: true\n' : ''}metadata:\n  author: Megatron\n  version: 1.2.0\nallowed-tools: Read, Bash\n---\n\n# ${skill.name}\n\n${skill.description ?? 'Document the skill’s trigger and purpose.'}\n\n## Workflow\n\n1. Read the relevant code and project conventions.\n2. Identify changes that improve correctness and clarity.\n3. Verify the result and explain any remaining issues.\n\nSee the [review checklist](references/checklist.md) before finishing.\n\n## Output\n\n| Field | Description |\n| --- | --- |\n| Finding | A concrete issue and its impact |\n| Evidence | File, line, and reproducible behavior |\n\nUse \`scripts/check.ts\` for the local check.\n`
+  const content = sampleDocument(skill)
   return [
     { relativePath: 'SKILL.md', content, status: 'ok' },
     {

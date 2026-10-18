@@ -750,11 +750,15 @@ h2 {
 .plugin-scope-visual {
   display: flex;
   flex-wrap: wrap;
-  gap: 17px;
+  gap: 12px;
   align-items: center;
   justify-content: center;
   color: #9b9f8c;
   padding-top: 12px;
+}
+.plugin-copy .plugin-note {
+  font-size: 12px;
+  line-height: 1.7;
 }
 .scope-pill {
   display: flex;

@@ -18,10 +18,11 @@ import {
   PluginUpdateBadge
 } from '@/components/PluginBadges'
 import { pluginUpdateDetails } from '@/lib/plugin-update'
-import { getFolderBasename } from '@/lib/source-name'
+import { useProjectLabel } from '@/lib/use-project-label'
 import {
   getPluginFilterHeaderTitle,
   shouldShowScopeColumn,
+  showsMissingProjectStatus,
   type PluginRepositoryRow as PluginRow,
   type PluginFilter
 } from '@/lib/plugin-filter'
@@ -132,7 +133,7 @@ function installedVersionTooltip(
     const list = plugin.installs
       .map(
         (i) =>
-          `${i.scope}${i.project_path ? ` (${getFolderBasename(i.project_path)})` : ''}: ${displayVersionLabel(i.installed_version)}`
+          `${i.scope}${i.project_path ? ` (${plugin.repositoryLabel})` : ''}: ${displayVersionLabel(i.installed_version)}`
       )
       .join(', ')
     return `Mixed versions: ${list}`
@@ -249,7 +250,8 @@ const repositoryColumn = columnHelper.accessor('repositoryLabel', {
   cell: (info) => (
     <span
       title={info.row.original.repositoryPath ?? info.getValue()}
-      className="block truncate text-xs text-muted-foreground"
+      dir="ltr"
+      className="block truncate text-left text-xs text-muted-foreground"
     >
       {info.getValue()}
     </span>
@@ -278,6 +280,7 @@ const statusColumn = columnHelper.accessor('disabled_reason', {
     <PluginStatusBadge
       disabledReason={info.getValue()}
       known={enablementKnown(info.row.original)}
+      projectMissing={showsMissingProjectStatus(info.row.original.installs)}
     />
   )
 })
@@ -377,6 +380,7 @@ export function PluginInventory({
   onSelect,
   onOpenSearch
 }: PluginInventoryProps): React.JSX.Element {
+  const resolveProjectLabel = useProjectLabel()
   const [sorting, setSorting] = useState<SortingState>([])
   const [focusedIndex, setFocusedIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -386,14 +390,14 @@ export function PluginInventory({
   const showRepository = filter.kind === 'all' || (filter.kind === 'projects' && !filter.exact)
   const columnWidth: Record<string, string> = {
     ...COLUMN_WIDTH,
-    repository: 'w-[18%] max-[1000px]:w-[110px]',
+    repository: 'w-[28%] max-[1000px]:w-[160px]',
     ...(showRepository
       ? {
-          name: 'w-[20%] max-[1000px]:w-auto',
-          marketplace: 'w-[10%] max-[1000px]:hidden',
-          installed_version: 'w-[12%] max-[1000px]:w-[95px]',
-          marketplace_version: 'w-[12%] max-[1000px]:hidden',
-          scope: 'w-[12%] max-[1000px]:w-[90px]'
+          name: 'w-[18%] max-[1000px]:w-auto',
+          marketplace: 'w-[8%] max-[1000px]:hidden',
+          installed_version: 'w-[10%] max-[1000px]:w-[85px]',
+          marketplace_version: 'w-[10%] max-[1000px]:hidden',
+          scope: 'w-[10%] max-[1000px]:w-[80px]'
         }
       : {})
   }
@@ -408,6 +412,11 @@ export function PluginInventory({
   })
 
   const rows = table.getRowModel().rows
+  const headerTitle =
+    (filter.kind === 'projects' || filter.kind === 'project' || filter.kind === 'local') &&
+    filter.projectPath
+      ? `${filter.kind === 'projects' ? 'Projects' : filter.kind === 'project' ? 'Project' : 'Local'} / ${resolveProjectLabel(filter.projectPath)} Plugins`
+      : getPluginFilterHeaderTitle(filter)
   const hasRows = rows.length > 0
   const safeFocusedIndex = Math.min(focusedIndex, Math.max(rows.length - 1, 0))
   const highlightIndex =
@@ -587,8 +596,8 @@ export function PluginInventory({
     <div className="flex flex-1 flex-col overflow-hidden">
       <ProjectAvailabilityNotice status={availability} />
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
-        <h2 className="truncate text-[13px] font-semibold">
-          {getPluginFilterHeaderTitle(filter)}
+        <h2 title={headerTitle} className="truncate text-[13px] font-semibold">
+          {headerTitle}
           {!loading && <span className="font-normal text-muted-foreground"> · {rows.length}</span>}
         </h2>
         <button

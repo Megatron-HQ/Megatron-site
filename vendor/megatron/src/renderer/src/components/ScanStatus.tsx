@@ -1,5 +1,6 @@
 import { TextLink } from '@/components/TextLink'
 import type { ScanIssue, ScanSummary } from '../../../shared/ipc'
+import { MISSING_PROJECT_SCAN_MESSAGE } from '../../../shared/missing-project'
 
 const SOURCE_LABELS: Record<string, string> = {
   scanSkills: 'Skills',
@@ -12,15 +13,25 @@ const SOURCE_LABELS: Record<string, string> = {
 
 const ISSUE_MESSAGES: Record<ScanIssue['code'], string> = {
   permission_required: 'Folder access is required. Grant this folder or a parent folder.',
-  project_missing:
-    'Project folder no longer exists. If it moved, its Claude plugin records need updating.',
+  project_missing: MISSING_PROJECT_SCAN_MESSAGE,
   settings_invalid: 'Settings could not be parsed or contain invalid values.',
   source_unavailable: 'The source could not be read. Check file access and try rescanning.',
   scan_limit: 'The source exceeds the scan limit. Its cached data was preserved.'
 }
 
+const SCAN_BANNER_CLASS =
+  'flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground'
+
 interface ScanStatusProps {
   summary: ScanSummary
+}
+
+export function ScanUpdatingBanner({ message }: { message: string }): React.JSX.Element {
+  return (
+    <div role="status" className={SCAN_BANNER_CLASS}>
+      <p>{message}</p>
+    </div>
+  )
 }
 
 export function ScanStatusBanner({
@@ -32,10 +43,7 @@ export function ScanStatusBanner({
     source.issues?.some((issue) => issue.code === 'permission_required')
   )
   return (
-    <div
-      role="status"
-      className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground"
-    >
+    <div role="status" className={SCAN_BANNER_CLASS}>
       <p>
         {summary.outcome === 'failed'
           ? 'Scan failed. Showing the last available data.'

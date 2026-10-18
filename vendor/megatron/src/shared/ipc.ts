@@ -5,6 +5,7 @@ export const IPC_CHANNELS = {
   openSkillHistory: 'skills:openHistory',
   getInitialTheme: 'theme:getInitial',
   setTheme: 'theme:set',
+  scanStarted: 'scan:started',
   scanComplete: 'scan:complete',
   listAllowedPaths: 'folders:list',
   listProjects: 'projects:list',
@@ -105,10 +106,26 @@ export interface ContextBudget {
   userInvocableOnlyCount: number
 }
 
+export interface ScanActivity {
+  id: number
+  startedAt: number
+  // Only the launch scan may show app-wide progress; later refreshes stay silent.
+  isStartup: boolean
+  // How long this run stays quiet before the updating banner. A joined scan can only shorten it.
+  revealMs: number
+}
+
+export interface ScanFinished {
+  id: number
+  summary: ScanSummary
+}
+
 export interface SkillsListResult {
   skills: SkillRow[]
   scanComplete: boolean
   scanSummary?: ScanSummary
+  // Set while a scan is in progress so a renderer that missed scan:started can still time the banner.
+  scanActivity: ScanActivity | null
   contextBudget: ContextBudget
 }
 
@@ -229,6 +246,9 @@ export interface PluginInstall {
   // install whose owning project root has not been granted, so its .claude/settings*.json is
   // unreadable. Renders as an Unknown status rather than a confidently wrong Enabled.
   enablement_known: boolean
+  // true when the registered project folder is granted and is not a directory. Distinct from
+  // enablement_known: false caused by a missing grant, which still asks for folder access.
+  project_missing: boolean
 }
 
 export interface PluginRow {

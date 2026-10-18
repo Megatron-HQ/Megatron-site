@@ -2,7 +2,7 @@
 
 The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static web application.
 
-The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user and project scopes), hierarchical project navigation and scoping, actionable scan diagnostics, project availability notices, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
+The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
@@ -67,7 +67,7 @@ The production site is emitted to `dist/`. The local production preview serves a
 - `src/product-preview-host.js`: iframe lifecycle, section navigation, reset, expansion, and focus reveal.
 - `src/icons.js`: bundled marketing icons.
 - `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, and trusted host messaging.
-- `vendor/megatron/`: 86 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
+- `vendor/megatron/`: 91 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
 - `scripts/preview/`: reproducible renderer import and integrity checks.
 - `scripts/qa/`: headless Playwright verification suites and Electron reference comparison.
 - `scripts/ci/`: CI preview lifecycle orchestration and regression test harness.
@@ -83,19 +83,19 @@ Geist fonts and Lucide icons are bundled with the site. The static website makes
 
 Copy was grounded in the app's README, PRODUCT.md, DESIGN.md, main/preload IPC contracts, permission-aware scanners, deterministic linter, scoped plugin CLI actions, database cost/context queries, parent-folder discovery, and renderer views. The desktop app is not modified by this website.
 
-The GitHub releases endpoint contained no published releases as of October 16, 2026. The page therefore offers the app's documented source setup and links to releases, without advertising unavailable installers. When releases ship, update the installation section and recheck platform/signing claims before adding platform download buttons.
+The official GitHub CLI release query returned no published releases on October 18, 2026. The page therefore offers the app's documented source setup and links to releases, without advertising unavailable installers. When releases ship, update the installation section and recheck platform/signing claims before adding platform download buttons.
 
 Megatron is presented as currently free and MIT-licensed, with no commitments about future pricing. Preview metrics, skills, plugins, and definitions are illustrative, not user testimonials or product performance claims.
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` at revision `3a2439c528a38bdc93aa0e83559416f95d3808cb` (86 pinned files). Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0` at revision `7b80bd3d2be285734312a9eb8d008c65c09b8e4c` (91 pinned files). Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
 
-The implementation was verified with 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 55 passing regression tests. TypeScript, provenance, lint, formatting, generated mirrors, production build, and interactive QA also passed. These results describe the pinned implementation; rerun the checks when changing it.
+The updated implementation has 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 66 passing regression tests. The visual sweep reports zero page overflow or browser errors. These results describe the pinned implementation; rerun the checks when changing it.
 
-See [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original audit and approach.
+See the [product fidelity audit](docs/product-fidelity-audit.md) for the current capability review and corrections, [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original approach.
 
-The preview uses the actual app renderer in a same-origin iframe. Marketing CSS is isolated from its app tokens, fonts, and components. The typed browser API operates on session-only sample data; repository and parent-folder grants with cascading discovery and revocation, plugin commands at user and project scopes, rescans, actionable scan diagnostics, external links, and data-folder actions are simulated. Reload or Reset sample restores the original fixtures. The app checkout is not modified.
+The preview uses the actual app renderer in a same-origin iframe. Marketing CSS is isolated from its app tokens, fonts, and components. The typed browser API operates on session-only sample data; repository and parent-folder grants with cascading discovery and overlapping-grant revocation, plugin commands at all three scopes, scan lifecycle events, actionable scan diagnostics, external links, and data-folder actions are simulated. The first Add Folder grants the sample `docs-site` repository; a second grants its `Projects` parent. Reload or Reset sample restores the original fixtures. The app checkout is not modified.
 
 At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
 

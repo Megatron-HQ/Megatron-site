@@ -1,5 +1,3 @@
-import { projectDisplayLabels } from '@/lib/project-tree'
-import { normalizeProjectPath } from '../../../shared/project-path'
 import { ProjectAvailabilityNotice } from '@/components/ProjectAvailabilityNotice'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -32,12 +30,14 @@ import { cn } from '@/lib/utils'
 import { parseHookEvents } from '@/lib/hook-events'
 import {
   getFilterHeaderTitle,
+  projectRootForSkill,
   shouldShowSourceColumn,
   type SourceFilter
 } from '@/lib/source-filter'
 import { SYNCED_ICON } from '@/lib/source-icon'
+import { useProjectLabel } from '@/lib/use-project-label'
+import type { ProjectLabelResolver } from '@/lib/project-tree'
 import {
-  getFolderBasename,
   getPluginBareName,
   getSkillDisplayName,
   getSourceSortKey,
@@ -58,12 +58,12 @@ const features = tableFeatures({
 const columnHelper = createColumnHelper<typeof features, SkillRow>()
 
 const COLUMN_WIDTH: Record<string, string> = {
-  repository: 'w-[140px] max-[1000px]:w-[110px]',
-  name: 'w-[200px]',
-  status: 'w-[100px]',
-  source: 'w-[120px]',
-  est_listing_tokens: 'w-[90px]',
-  total_invocations: 'w-[80px]'
+  repository: 'w-[220px] max-[1000px]:w-[180px]',
+  name: 'w-[200px] max-[1000px]:w-[160px]',
+  status: 'w-[100px] max-[1000px]:w-[90px]',
+  source: 'w-[220px] max-[1000px]:w-[180px]',
+  est_listing_tokens: 'w-[90px] max-[1000px]:w-[75px]',
+  total_invocations: 'w-[80px] max-[1000px]:w-[65px]'
 }
 
 const SYNCED_TOOLTIP = getSourceTooltip('global', undefined, undefined, true)
@@ -157,24 +157,35 @@ const statusColumn = columnHelper.accessor('lint_status', {
   }
 })
 
-const sourceColumn = columnHelper.accessor(
-  (row) => getSourceSortKey(row.source_type, row.source_path, row.plugin_name, false),
-  {
-    id: 'source',
-    header: 'Source',
-    sortFn: 'text',
-    cell: (info) => {
-      const row = info.row.original
-      return (
-        <SourceBadge
-          type={row.source_type}
-          sourcePath={row.source_path}
-          pluginName={row.plugin_name}
-        />
-      )
+const sourceColumn = (
+  resolveProjectLabel: ProjectLabelResolver
+): ColumnDef<typeof features, SkillRow, string> =>
+  columnHelper.accessor(
+    (row) =>
+      row.source_type === 'project'
+        ? `1_${resolveProjectLabel(projectRootForSkill(row)).toLowerCase()}`
+        : getSourceSortKey(row.source_type, row.source_path, row.plugin_name, false),
+    {
+      id: 'source',
+      header: 'Source',
+      sortFn: 'text',
+      cell: (info) => {
+        const row = info.row.original
+        return (
+          <SourceBadge
+            label={
+              row.source_type === 'project'
+                ? resolveProjectLabel(projectRootForSkill(row))
+                : undefined
+            }
+            type={row.source_type}
+            sourcePath={row.source_path}
+            pluginName={row.plugin_name}
+          />
+        )
+      }
     }
-  }
-)
+  )
 
 const descriptionColumn = columnHelper.accessor('description', {
   header: 'Description',
@@ -208,25 +219,32 @@ const usesColumn = columnHelper.accessor('total_invocations', {
   }
 })
 
-const allColumns = columnHelper.columns([
-  nameColumn,
-  statusColumn,
-  sourceColumn,
-  descriptionColumn,
-  tokensColumn,
-  usesColumn
-])
+const allColumns = (
+  resolveProjectLabel: ProjectLabelResolver
+): ColumnDef<typeof features, SkillRow, unknown>[] =>
+  columnHelper.columns([
+    nameColumn,
+    statusColumn,
+    sourceColumn(resolveProjectLabel),
+    descriptionColumn,
+    tokensColumn,
+    usesColumn
+  ])
 
 const repositoryColumn = (
-  labels: Map<string, string>
+  resolveProjectLabel: ProjectLabelResolver
 ): ColumnDef<typeof features, SkillRow, string> =>
-  columnHelper.accessor((skill) => skill.project_root ?? '', {
+  columnHelper.accessor((skill) => resolveProjectLabel(projectRootForSkill(skill)), {
     id: 'repository',
     header: 'Repository',
     sortFn: 'text',
     cell: (info) => (
-      <span className="block truncate text-xs text-muted-foreground" title={info.getValue()}>
-        {labels.get(normalizeProjectPath(info.getValue())) ?? getFolderBasename(info.getValue())}
+      <span
+        dir="ltr"
+        className="block truncate text-left text-xs text-muted-foreground"
+        title={projectRootForSkill(info.row.original)}
+      >
+        {info.getValue()}
       </span>
     )
   })
@@ -234,18 +252,19 @@ const repositoryColumn = (
 function buildColumns(
   showSource: boolean,
   showRepository: boolean,
-  labels: Map<string, string>
+  resolveProjectLabel: ProjectLabelResolver
 ): ColumnDef<typeof features, SkillRow, unknown>[] {
   if (showRepository)
     return columnHelper.columns([
       nameColumn,
       statusColumn,
-      repositoryColumn(labels),
+      repositoryColumn(resolveProjectLabel),
       descriptionColumn,
       tokensColumn,
       usesColumn
     ])
-  return showSource ? allColumns : allColumns.filter((column) => column.id !== 'source')
+  const columns = allColumns(resolveProjectLabel)
+  return showSource ? columns : columns.filter((column) => column.id !== 'source')
 }
 
 interface SkillInventoryProps {
@@ -269,6 +288,7 @@ export function SkillInventory({
   onManageFolders,
   onGrantFolder
 }: SkillInventoryProps): React.JSX.Element {
+  const resolveProjectLabel = useProjectLabel()
   const [sorting, setSorting] = useState<SortingState>([])
   const [focusedIndex, setFocusedIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -277,16 +297,9 @@ export function SkillInventory({
 
   const showRepository = filter.kind === 'project' && !filter.exact
   const showSource = shouldShowSourceColumn(filter) && !showRepository
-  const labels = useMemo(
-    () =>
-      projectDisplayLabels(
-        skills.flatMap((skill) => (skill.project_root ? [skill.project_root] : []))
-      ),
-    [skills]
-  )
   const columns = useMemo(
-    () => buildColumns(showSource, showRepository, labels),
-    [showSource, showRepository, labels]
+    () => buildColumns(showSource, showRepository, resolveProjectLabel),
+    [showSource, showRepository, resolveProjectLabel]
   )
 
   const table = useTable({
@@ -327,15 +340,25 @@ export function SkillInventory({
         <Table className="table-fixed">
           <TableHeadGroup>
             <TableRow className="h-10">
-              <TableHead className="w-[200px] px-3 py-2">Name</TableHead>
-              <TableHead className="w-[100px] px-3 py-2">Status</TableHead>
-              {showSource && <TableHead className="w-[120px] px-3 py-2">Source</TableHead>}
-              {showRepository && <TableHead className="w-[120px] px-3 py-2">Repository</TableHead>}
+              <TableHead className={cn('px-3 py-2', COLUMN_WIDTH.name)}>Name</TableHead>
+              <TableHead className={cn('px-3 py-2', COLUMN_WIDTH.status)}>Status</TableHead>
+              {showSource && (
+                <TableHead className={cn('px-3 py-2', COLUMN_WIDTH.source)}>Source</TableHead>
+              )}
+              {showRepository && (
+                <TableHead className={cn('px-3 py-2', COLUMN_WIDTH.repository)}>
+                  Repository
+                </TableHead>
+              )}
               <TableHead className={cn('px-3 py-2', NARROW_VIEWPORT_DESCRIPTION_CLASS)}>
                 Description
               </TableHead>
-              <TableHead className="w-[90px] px-3 py-2">Tokens</TableHead>
-              <TableHead className="w-[80px] px-3 py-2">Uses</TableHead>
+              <TableHead className={cn('px-3 py-2', COLUMN_WIDTH.est_listing_tokens)}>
+                Tokens
+              </TableHead>
+              <TableHead className={cn('px-3 py-2', COLUMN_WIDTH.total_invocations)}>
+                Uses
+              </TableHead>
             </TableRow>
           </TableHeadGroup>
           <TableBody>
@@ -348,7 +371,7 @@ export function SkillInventory({
                   <Skeleton className="h-4 w-12" />
                 </TableCell>
                 {showRepository && (
-                  <TableCell className="w-[120px] px-3 py-2">
+                  <TableCell className={cn('px-3 py-2', COLUMN_WIDTH.repository)}>
                     <Skeleton className="h-4 w-20" />
                   </TableCell>
                 )}
@@ -465,7 +488,11 @@ export function SkillInventory({
     <div className="flex flex-1 flex-col overflow-hidden">
       <ProjectAvailabilityNotice status={availability} />
       <TableHeader
-        title={getFilterHeaderTitle(filter)}
+        title={
+          filter.kind === 'project' && filter.projectRoot
+            ? `Project / ${resolveProjectLabel(filter.projectRoot)} Skills`
+            : getFilterHeaderTitle(filter)
+        }
         count={loading ? null : rows.length}
         filter={filter}
         onOpenSearch={onOpenSearch}
@@ -551,13 +578,14 @@ function EmptyState({
   filter: SourceFilter
   onGrantFolder?: () => void
 }): React.JSX.Element {
+  const resolveProjectLabel = useProjectLabel()
   const isProject = filter.kind === 'project'
   let title = 'No skills found'
   let message = 'Nothing was found for this filter.'
 
   if (filter.kind === 'project') {
     if (filter.projectRoot) {
-      const projectName = getFolderBasename(filter.projectRoot)
+      const projectName = resolveProjectLabel(filter.projectRoot)
       title = `No skills found in ${projectName}`
       message = `No skills were detected in ${projectName}'s .claude/skills folder.`
     } else {

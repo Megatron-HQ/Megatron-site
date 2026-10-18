@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import type { ProjectTreeNode } from '@/lib/project-tree'
 import { normalizeProjectPath } from '../../../shared/project-path'
 import { cn } from '@/lib/utils'
+import { useProjectLabel } from '@/lib/use-project-label'
 
 interface Selection {
   path?: string
@@ -21,6 +22,7 @@ interface ProjectNavigationProps {
 }
 
 const GROUP_KEY = '$projects'
+const MAX_INDENTED_REPOSITORY_DEPTH = 4
 const IDLE = 'text-muted-foreground hover:text-accent-foreground'
 const SELECTED = 'bg-accent-lime text-accent-lime-foreground'
 const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -126,6 +128,8 @@ function ProjectNode({
   onToggle: (key: string) => void
 }): React.JSX.Element {
   const { selected, selection, expanded, onSelect, onItemHover } = navigation
+  const resolveProjectLabel = useProjectLabel()
+  const label = node.kind === 'repository' ? resolveProjectLabel(node.path) : node.label
   const hasChildren = node.children.length > 0
   const exact = !hasChildren && node.kind === 'repository'
   const samePath = selection.path !== undefined && normalizeProjectPath(selection.path) === node.key
@@ -150,7 +154,9 @@ function ProjectNode({
             }}
             className={cn('flex h-full min-w-0 flex-1 items-center gap-1.5 text-left', FOCUS)}
           >
-            <span className="truncate">{node.label}</span>
+            <span dir="ltr" className="truncate text-left">
+              {label}
+            </span>
             {unavailable && (
               <CircleAlert
                 className="size-3 shrink-0"
@@ -160,7 +166,7 @@ function ProjectNode({
             <Count count={node.count} selected={isSelected} />
           </button>
           <Disclosure
-            label={`${node.label} repositories`}
+            label={`${label} repositories`}
             expanded={expanded.has(node.key)}
             onClick={() => onToggle(node.key)}
           />
@@ -177,7 +183,9 @@ function ProjectNode({
             isSelected ? SELECTED : IDLE
           )}
         >
-          <span className="truncate">{node.label}</span>
+          <span dir="ltr" className="truncate text-left">
+            {label}
+          </span>
           {unavailable && (
             <CircleAlert
               className="size-3 shrink-0"
@@ -193,10 +201,13 @@ function ProjectNode({
           <div
             className={cn(
               'my-0.5 flex min-w-0 flex-col gap-0.5',
-              depth < 2 && 'ml-3 border-l border-border/70 pl-2'
+              depth < 2 && 'ml-3 border-l border-border/70 pl-2',
+              depth >= 2 &&
+                depth < MAX_INDENTED_REPOSITORY_DEPTH &&
+                'ml-1 border-l border-border/70 pl-1'
             )}
           >
-            {node.directCount > 0 && (
+            {(node.kind === 'repository' || node.directCount > 0) && (
               <button
                 type="button"
                 title={`${node.path} — direct items only`}
@@ -208,7 +219,9 @@ function ProjectNode({
                   selected && samePath && selection.exact ? SELECTED : IDLE
                 )}
               >
-                <span className="truncate">This folder</span>
+                <span className="truncate">
+                  {node.kind === 'repository' ? 'This repo' : 'This folder'}
+                </span>
                 <Count
                   count={node.directCount}
                   selected={selected && samePath && !!selection.exact}

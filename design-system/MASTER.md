@@ -23,11 +23,14 @@ The ui-ux-pro-max design-system searches informed the product-demo-first page st
 - Audience: Claude Code users with skills across global, project, and plugin sources.
 - Primary action: **Get Megatron**, leading to installation.
 - Offer: currently free and open source; future pricing is undecided.
-- Distribution: source setup for macOS and Windows. No published installers were present on October 9, 2026. Recheck official releases before adding download links.
+- Distribution: source setup for macOS and Windows. No published releases were present on October 18, 2026. Recheck official releases before adding download links.
 - Product tour: Skills, Plugins, and Usage with explicitly labeled sample data. The preview never reads a visitor's local files.
 - Cost language: estimated API-equivalent usage, not bills or subscription charges.
 - Context language: listing-token estimates and a qualifying cold session's measured first-turn cache write, with estimated category breakdowns.
 - No invented customer logos, testimonials, ratings, savings, or performance claims.
+- Product terminology: user, project, and local plugin installs; locally cached marketplace versions; restart Claude Code after updates. New plugin installation stays in the CLI.
+- Refresh: window focus, folder-grant changes, successful plugin actions, and Settings → Rescan now. Do not imply continuous filesystem watching.
+- The sample plugin skill paths, scoped counts, lint destinations, and project catalog must agree. See `docs/product-fidelity-audit.md` for the capability audit.
 
 ## Interaction inventory and preservation
 

@@ -1,9 +1,10 @@
 import { ArrowUpCircle, CircleCheck, CircleHelp, Power, ShieldCheck, Store } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { getFolderBasename } from '@/lib/source-name'
+import { useProjectLabel } from '@/lib/use-project-label'
 import { cn } from '@/lib/utils'
 import type { PluginScope } from '../../../shared/ipc'
+import { MISSING_PROJECT_STATUS_TOOLTIP } from '../../../shared/missing-project'
 
 function versionLabel(version: string): string {
   return `v${version.trim().replace(/^v/i, '')}`
@@ -101,10 +102,12 @@ export function MarketplaceBadge({
 // genuinely cannot say. Rendering that as Enabled would be a confident guess.
 export function PluginStatusBadge({
   disabledReason,
-  known = true
+  known = true,
+  projectMissing = false
 }: {
   disabledReason: string | null
   known?: boolean
+  projectMissing?: boolean
 }): React.JSX.Element {
   const disabled = disabledReason !== null
   const Icon = !known ? CircleHelp : disabled ? Power : CircleCheck
@@ -123,7 +126,9 @@ export function PluginStatusBadge({
       </TooltipTrigger>
       <TooltipContent side="top">
         {!known
-          ? "Grant this plugin's project folder to read whether it's enabled there."
+          ? projectMissing
+            ? MISSING_PROJECT_STATUS_TOOLTIP
+            : "Grant this plugin's project folder to read whether it's enabled there."
           : disabled
             ? 'Not loaded into context.'
             : 'Loaded into context.'}
@@ -154,7 +159,8 @@ export function PluginScopeLabel({
   scope: PluginScope
   projectPath: string | null
 }): React.JSX.Element {
-  const projectName = projectPath === null ? null : getFolderBasename(projectPath)
+  const resolveProjectLabel = useProjectLabel()
+  const projectName = projectPath === null ? null : resolveProjectLabel(projectPath)
   return (
     <Tooltip>
       <TooltipTrigger asChild>

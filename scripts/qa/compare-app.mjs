@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { build, preview } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -32,6 +32,13 @@ const directory = join(root, '.qa/app-reference')
 await mkdir(directory, { recursive: true })
 const browserImport = (path) => `/@fs/${path.replaceAll('\\', '/')}`
 const sourceRoot = join(appRoot, 'src/renderer/src')
+const referenceSource = relative(directory, sourceRoot).replaceAll('\\', '/')
+// The temporary reference root is ignored by Git. Explicitly scan the original
+// renderer so Tailwind includes classes held in its constants as well as JSX.
+await writeFile(
+  join(directory, 'reference.css'),
+  `@import '${referenceSource}/assets/main.css';\n@source '${referenceSource}';\n`
+)
 await writeFile(
   join(directory, 'index.html'),
   `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"><link rel="icon" href="data:,"><title>Megatron reference</title></head><body><div id="root"></div><script type="module" src="/entry.tsx"></script></body></html>`
@@ -39,7 +46,7 @@ await writeFile(
 await writeFile(
   join(directory, 'entry.tsx'),
   `
-import '${browserImport(join(sourceRoot, 'assets/main.css'))}'
+import './reference.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -149,6 +156,7 @@ const scenes = [
         .locator('tbody tr')
         .filter({ hasText: 'frontend' })
         .filter({ hasText: 'team-tools' })
+        .filter({ hasText: 'User' })
         .click()
       await page
         .getByRole('button', { name: 'Back to plugins', exact: true })

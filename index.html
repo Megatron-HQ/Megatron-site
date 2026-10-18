@@ -222,8 +222,9 @@
               <i data-lucide="list-checks" aria-hidden="true"></i>
               <h3>Catch the quiet failures.</h3>
               <p>
-                Broken references. Missing configuration. Shadowed names. Five
-                deterministic checks surface the problems that are easy to miss.
+                Five local checks cover YAML frontmatter, descriptions, file
+                references, MCP configuration, and name collisions. Findings
+                explain what needs attention and link to a line when available.
               </p>
             </div>
             <div class="lint-example">
@@ -251,14 +252,19 @@
             <span class="eyebrow">PLUGINS, WITH THE FULL PICTURE</span>
             <h3>A little less terminal juggling.</h3>
             <p>
-              See each install and its scope. Enable, disable, update, or
-              uninstall through Claude Code’s own CLI, with clear feedback when
-              an action finishes.
+              See user, project, and local installs, including their versions
+              and enablement. Enable, disable, update, or uninstall through
+              Claude Code’s own CLI, with feedback for each action.
+            </p>
+            <p class="plugin-note">
+              Update indicators use locally cached marketplace data. Updates
+              take effect after Claude Code restarts. Installing new plugins
+              stays in the CLI.
             </p>
           </div>
           <div
             class="plugin-scope-visual"
-            aria-label="Plugin management covers user and project installs"
+            aria-label="Plugin management covers user, project, and local installs"
           >
             <div class="scope-pill">
               <i data-lucide="user-round" aria-hidden="true"></i>User
@@ -266,6 +272,10 @@
             <span aria-hidden="true">/</span>
             <div class="scope-pill">
               <i data-lucide="folder-git-2" aria-hidden="true"></i>Project
+            </div>
+            <span aria-hidden="true">/</span>
+            <div class="scope-pill">
+              <i data-lucide="laptop" aria-hidden="true"></i>Local
             </div>
             <div class="scope-caption">
               <span class="status-dot" aria-hidden="true"></span>One plugin.
@@ -300,8 +310,8 @@
                 <div>
                   <h3>Your activity, over time.</h3>
                   <p>
-                    Prompts, sessions, active days, and project patterns across
-                    24 hours, 7 days, or 30 days.
+                    Prompts, sessions, active days, slash commands, and project
+                    patterns across 24 hours, 7 days, or 30 days.
                   </p>
                 </div>
               </article>
@@ -320,8 +330,9 @@
                 <div>
                   <h3>The skills that earn their place.</h3>
                   <p>
-                    Invocation history, trigger types, and estimated cost
-                    attribution. Follow a trend back to the recorded invocation.
+                    Invocation history, trigger types, and proportional cost
+                    estimates. Follow trends back to recorded invocations;
+                    unassigned usage appears as General work.
                   </p>
                 </div>
               </article>
@@ -553,6 +564,11 @@ npm run dev</code></pre>
                 Existing local Claude Code data populates the app. Plugin
                 actions also require the <code>claude</code> CLI on your PATH.
               </p>
+              <p>
+                Megatron refreshes when its window regains focus, after folder
+                grants change, and after plugin actions. Use
+                <strong>Settings → Rescan now</strong> for a manual refresh.
+              </p>
             </div>
           </div>
           <a
@@ -599,8 +615,10 @@ npm run dev</code></pre>
             </summary>
             <p>
               Skill inspection and analytics are read-only. Megatron does not
-              edit skill definitions or execute their scripts. Plugin management
-              is a separate capability that uses Claude Code’s own CLI commands.
+              edit skill definitions or execute their scripts or hooks. Plugin
+              management is a separate capability that uses Claude Code’s own
+              CLI commands. Those commands may access the network; inventory and
+              usage analysis run locally.
             </p>
           </details>
           <details>
