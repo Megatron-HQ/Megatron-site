@@ -412,7 +412,7 @@ export async function verifyPreviewStates(page, baseUrl) {
       exact: true
     })
     .click()
-  await freshApp.getByRole('button', { name: /^monorepo\/tools\/cli/ }).click()
+  await freshApp.getByRole('button', { name: /^tools\/cli/ }).click()
   await freshApp
     .getByText('No skills found in monorepo/tools/cli', {
       exact: true

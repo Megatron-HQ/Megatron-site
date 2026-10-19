@@ -89,9 +89,9 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` at revision `7b80bd3d2be285734312a9eb8d008c65c09b8e4c` (91 pinned files). Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0` at revision `ae0f0a1a862cac263880274fed4c46c27a9a18fc` (92 pinned files). It adds Activity day/hour details dialogs, parent-relative names for nested sidebar projects, and hides empty Git repositories nested inside another repository. Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
 
-The updated implementation has 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 66 passing regression tests. The visual sweep reports zero page overflow or browser errors. These results describe the pinned implementation; rerun the checks when changing it.
+The updated implementation has 30 pixel-identical reference captures across 15 app states at two client sizes, 125 responsive website screenshots, and 67 passing regression tests. The visual sweep reports zero page overflow or browser errors. These results describe the pinned implementation; rerun the checks when changing it.
 
 See the [product fidelity audit](docs/product-fidelity-audit.md) for the current capability review and corrections, [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original approach.
 

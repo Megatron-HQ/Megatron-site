@@ -408,6 +408,9 @@ export function createSampleState(now: Date): SampleState {
       { path: SAMPLE_PROJECT, kind: 'repository', status: 'available' },
       { path: 'C:/Projects/api', kind: 'repository', status: 'available' },
       { path: 'C:/Projects/monorepo', kind: 'repository', status: 'available' },
+      // The app hides an empty Git repository nested inside another one; this
+      // sample nested repository is listed because it has its own .claude
+      // settings, while still holding no skills.
       { path: NESTED_PROJECT, kind: 'repository', status: 'available' },
       { path: 'C:/Projects/empty-lab', kind: 'repository', status: 'available' }
     ]

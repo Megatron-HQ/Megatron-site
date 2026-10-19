@@ -116,6 +116,17 @@ export async function verifyPreview(page) {
   )
 
   await selectPanel(app, 'Activity')
+  const activeDay = app.locator('button[aria-haspopup="dialog"]').last()
+  await activeDay.click()
+  await app
+    .getByRole('dialog')
+    .getByText(/Activity details/)
+    .waitFor()
+  await page.keyboard.press('Escape')
+  assert.equal(
+    await activeDay.evaluate((button) => button === document.activeElement),
+    true
+  )
   await app.getByRole('radio', { name: '24 hours', exact: true }).click()
   await selectPanel(app, 'Cost')
   assert.equal(

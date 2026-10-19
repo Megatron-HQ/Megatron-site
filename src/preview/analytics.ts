@@ -1,4 +1,7 @@
 import type {
+  ActivityBucketDetails,
+  ActivityDay,
+  ActivityHour,
   ActivityStats,
   ActivityWindow,
   CostDay,
@@ -189,28 +192,42 @@ export function triggerCounts(events: SampleEvent[]): TriggerTypeCount[] {
     .filter((row) => row.count > 0)
 }
 
-function activityWindow(state: SampleState, days: 1 | 7 | 30): ActivityWindow {
-  const range = windowRange(state.now, days)
-  const all = eventsWithin(state.events, range.startAt, range.endAt)
-  const prompts = all.filter((row) => !row.bareSlash)
+// Shared by a whole window and each of its bars, as in the app, so a bar's
+// details always reconcile with the totals around it.
+function summarizeActivity(
+  events: SampleEvent[]
+): Omit<ActivityBucketDetails, 'startAt' | 'endAt'> {
+  const prompts = events.filter((row) => !row.bareSlash)
   return {
-    days,
-    activeDays: new Set(prompts.map((row) => localDate(row.at))).size,
+    count: prompts.length,
     sessions: sessionCount(prompts),
-    prompts: prompts.length,
-    slashCommands: all.length - prompts.length,
-    ...timeMargins(prompts, () => 1),
+    slashCommands: events.length - prompts.length,
     byProject: [
       ...grouped(
         prompts,
         (row) => row.project,
         () => 1
       )
-    ].map(([project, count]) => ({ project, count })),
-    byDay: calendarDays(range.startAt, range.endAt).map((day) => ({
-      date: day.date,
-      weekday: day.weekday,
-      count: eventsWithin(prompts, day.startAt, day.endAt).length
+    ].map(([project, count]) => ({ project, count }))
+  }
+}
+
+function activityWindow(state: SampleState, days: 1 | 7 | 30): ActivityWindow {
+  const range = windowRange(state.now, days)
+  const all = eventsWithin(state.events, range.startAt, range.endAt)
+  const prompts = all.filter((row) => !row.bareSlash)
+  const summary = summarizeActivity(all)
+  return {
+    days,
+    activeDays: new Set(prompts.map((row) => localDate(row.at))).size,
+    sessions: summary.sessions,
+    prompts: summary.count,
+    slashCommands: summary.slashCommands,
+    ...timeMargins(prompts, () => 1),
+    byProject: summary.byProject,
+    byDay: calendarDays(range.startAt, range.endAt).map((day): ActivityDay => ({
+      ...day,
+      ...summarizeActivity(eventsWithin(all, day.startAt, day.endAt))
     }))
   }
 }
@@ -451,13 +468,12 @@ export function buildUsageOverview(state: SampleState): UsageOverview {
     last24h: {
       ...activity24h,
       days: 1,
-      hourlyTrend: hourlyBuckets(start24h).map((hour) => ({
+      hourlyTrend: hourlyBuckets(start24h).map((hour): ActivityHour => ({
         key: hour.startAt,
-        count: eventsWithin(
-          state.events.filter((row) => !row.bareSlash),
-          hour.startAt,
-          hour.endAt
-        ).length
+        ...hour,
+        ...summarizeActivity(
+          eventsWithin(state.events, hour.startAt, hour.endAt)
+        )
       }))
     },
     last7d: activity7d,

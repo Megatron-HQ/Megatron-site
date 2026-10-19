@@ -1,7 +1,8 @@
 # Megatron product fidelity audit
 
-Reviewed on October 18, 2026 against the clean desktop app checkout at
-`7b80bd3d2be285734312a9eb8d008c65c09b8e4c` (Megatron 0.1.0).
+Reviewed on October 18, 2026 and updated on October 19, 2026 against the clean
+desktop app checkout at `ae0f0a1a862cac263880274fed4c46c27a9a18fc` (Megatron
+0.1.0).
 
 ## Product and website architecture
 
@@ -19,7 +20,7 @@ The website has two separate entries:
   visitor filesystem, database, terminal, or account integration.
 
 The app's components and styles are imported through `preview:sync`; the snapshot
-contains 91 source/license files and a provenance manifest. Four integration
+contains 92 source/license files and a provenance manifest. Four integration
 patches scope Tailwind discovery, support trusted host navigation, and prevent
 the two inventories from taking focus from an inactive iframe. Renderer files
 are never manually edited.
@@ -35,13 +36,13 @@ are never manually edited.
 | Plugins           | Identity is `name@marketplace`. User, project, and local installs can have different versions and enablement. Inventory rows and details retain repository context; scoped skill counts come from each install's paths. Usage labeled “all projects” is broader than a selected install.                                 |
 | Plugin actions    | Enable, disable, update, and confirmed uninstall use Claude's CLI. Project/local actions need a recorded project and readable, granted settings. Missing folders, missing grants, unknown enablement, and unrecorded projects are distinct states. New plugin installation and marketplace management remain in the CLI. |
 | Update indicators | Available versions come from local marketplace data, rather than a live remote update check. A completed update requires restarting Claude Code to take effect.                                                                                                                                                          |
-| Activity          | Prompts, sessions, active days, slash commands, chronological trends, weekday/hour patterns, and project rankings.                                                                                                                                                                                                       |
+| Activity          | Prompts, sessions, active days, slash commands, chronological trends, weekday/hour patterns, and project rankings. Nonzero day and hour bars open details with the clipped interval, sessions, prompts, slash commands, and projects; prompt text is never stored.                                                       |
 | Cost              | Estimated API-equivalent usage, model/version breakdowns, time and project allocations, and hour/day drilldowns. Recorded cumulative cost is reconciled across continuations and subagents. Allocations are approximate; missing or undated data is reported as coverage gaps. These are not subscription bills.         |
 | Models            | Logical turns, distinct models, output tokens, recorded reasoning effort, and the model/effort matrix. Absent effort is labeled “Not recorded.”                                                                                                                                                                          |
 | Usage: Skills     | Recorded invocations, unique skills, active sessions, trends, trigger types, drilldowns, and proportional cost attribution. General work accounts for unassigned usage. User/autonomous classification uses a preceding-message heuristic.                                                                               |
 | Resident tax      | One qualifying recent cold session's measured first-turn cache write. Skills, agents, SessionStart hooks, MCP instructions, and project instructions are estimated categories; the remainder is not safely itemized. The empty state explains when a sample is unavailable.                                              |
 | Listing budget    | A separate estimate for enabled, model-invocable global/plugin listings, excluding project, disabled, and user-only listings. It is not the resident-tax measurement.                                                                                                                                                    |
-| Projects          | Granted-folder and repository hierarchies, nested Git boundaries, empty repositories, aggregate and direct-item filters, and cached unavailable entries. Hierarchy labels preserve context and casing across the app.                                                                                                    |
+| Projects          | Granted-folder and repository hierarchies, nested Git boundaries, empty repositories, aggregate and direct-item filters, and cached unavailable entries. Hierarchy labels preserve context and casing; nested sidebar entries show names relative to their group. Empty Git repositories nested in another are omitted.  |
 | Settings          | Light/Dark/System appearance, folder management, rescan, data-folder reveal, and app version. Appearance and section preferences persist in the desktop app; the browser sample resets on reload.                                                                                                                        |
 
 Activity, Cost, Models, and Skills have independent rolling 24-hour, 7-day, and
@@ -82,6 +83,12 @@ LLM calls; Claude CLI plugin actions can use the network.
    labels. The native reference build explicitly scans the original renderer for
    Tailwind classes; an ignored temporary build root must not omit classes held
    in source constants.
+9. **October 19 renderer update:** imported `83da887`, `4518be1`, and `ae0f0a1`.
+   Sample Activity days and hours now carry the per-bucket details the new
+   dialog reads, reconciled with window totals. The nested `tools/cli` sample
+   represents a repository with its own `.claude` settings, so it remains listed
+   under the new empty-nested-repository rule and shows its parent-relative name.
+   The landing page notes that any Activity day or hour opens its details.
 
 ## Visual and interaction preservation
 
@@ -118,7 +125,7 @@ captures do not establish native macOS packaging or window-chrome parity.
 | Check                      | Result                                                                                                                                                                                                                                                                     |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Production build           | TypeScript, imported renderer integrity, and both Vite entries pass.                                                                                                                                                                                                       |
-| Regression tests           | 66 pass. New tests were first observed failing for the path/count, lint-line, enablement, uninstall, grant, scan-event, missing-folder, revoked-action, and shared-version defects.                                                                                        |
+| Regression tests           | 67 pass. New tests were first observed failing for the path/count, lint-line, enablement, uninstall, grant, scan-event, missing-folder, revoked-action, and shared-version defects.                                                                                        |
 | Native renderer comparison | 30 captures across 15 states at 1200×720 and 860×600, with zero differing RGBA pixels, including antialiasing. Both renderer processes report no browser errors.                                                                                                           |
 | Responsive visual sweep    | 125 captures at 375/768/1024/1440px; zero page overflow, console warnings/errors, or uncaught page errors. All 70 changed captures were reviewed and accepted; 55 matched existing baselines.                                                                              |
 | Changed content            | Complete plugin explanations and the expanded privacy FAQ answer reviewed separately at 375px and 1440px.                                                                                                                                                                  |

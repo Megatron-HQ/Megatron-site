@@ -27,6 +27,42 @@ test('slash-command-only sessions do not inflate Activity sessions or prompts', 
   assert.equal(activity.slashCommands, 1)
 })
 
+test('Activity day and hour details reconcile with their window', () => {
+  const overview = buildUsageOverview(
+    createSampleState(new Date('2026-10-09T18:00:00Z'))
+  )
+  const { last24h, last7d, last30d } = overview.activity
+  const bucketSets = [
+    { window: last24h, buckets: last24h.hourlyTrend },
+    ...[last24h, last7d, last30d].map((window) => ({
+      window,
+      buckets: window.byDay
+    }))
+  ]
+  for (const { window, buckets } of bucketSets) {
+    assert.equal(
+      buckets.reduce((sum, bucket) => sum + bucket.count, 0),
+      window.prompts
+    )
+    assert.equal(
+      buckets.reduce((sum, bucket) => sum + bucket.slashCommands, 0),
+      window.slashCommands
+    )
+    for (const bucket of buckets) {
+      assert.equal(
+        bucket.byProject.reduce((sum, project) => sum + project.count, 0),
+        bucket.count
+      )
+      assert.ok(bucket.sessions <= bucket.count)
+      assert.ok(bucket.startAt < bucket.endAt)
+    }
+  }
+  for (const { byDay } of [last7d, last30d]) {
+    assert.equal(byDay[0].partial, true)
+    assert.equal(byDay.at(-1)!.endAt, overview.activity.generatedAt)
+  }
+})
+
 test('no events produces the app’s empty cost and resident-sample states', () => {
   const state = createSampleState(new Date('2026-10-09T18:00:00Z'))
   state.events = []
