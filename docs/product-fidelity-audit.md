@@ -71,7 +71,7 @@ LLM calls; Claude CLI plugin actions can use the network.
    enabled. Missing granted projects return unknown enablement and block actions.
 5. **Folder-grant fidelity:** the sample catalog includes an empty nested
    repository. The first Add Folder grants `docs-site`; a second Add Folder grants
-   its `Projects` parent. Revoking overlapping grants preserves independently
+   its `Clients` parent. Revoking overlapping grants preserves independently
    granted repositories. Revoked access also cancels a pending scoped mutation.
 6. **Scan contract:** the browser adapter exposes matching scan-start and
    scan-finished events, active-scan state, and prior-success timestamps. Reset
@@ -89,6 +89,11 @@ LLM calls; Claude CLI plugin actions can use the network.
    represents a repository with its own `.claude` settings, so it remains listed
    under the new empty-nested-repository rule and shows its parent-relative name.
    The landing page notes that any Activity day or hour opens its details.
+10. **Real-installation data shape:** compared with a real Windows installation,
+    the sample granted each repository directly, so the sidebar showed
+    `Projects/web-app` where installations that grant a parent folder show
+    `web-app` under it. The sample now grants the `C:\Dev` parent and uses
+    native backslash paths throughout, as Windows installations record them.
 
 ## Visual and interaction preservation
 
@@ -125,8 +130,8 @@ captures do not establish native macOS packaging or window-chrome parity.
 | Check                      | Result                                                                                                                                                                                                                                                                     |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Production build           | TypeScript, imported renderer integrity, and both Vite entries pass.                                                                                                                                                                                                       |
-| Regression tests           | 67 pass. New tests were first observed failing for the path/count, lint-line, enablement, uninstall, grant, scan-event, missing-folder, revoked-action, and shared-version defects.                                                                                        |
-| Native renderer comparison | 30 captures across 15 states at 1200×720 and 860×600, with zero differing RGBA pixels, including antialiasing. Both renderer processes report no browser errors.                                                                                                           |
+| Regression tests           | 68 pass. New tests were first observed failing for the path/count, lint-line, enablement, uninstall, grant, scan-event, missing-folder, revoked-action, and shared-version defects.                                                                                        |
+| Native renderer comparison | 34 captures across 17 states at 1200×720 and 860×600, with zero differing RGBA pixels, including antialiasing. Both renderer processes report no browser errors.                                                                                                           |
 | Responsive visual sweep    | 125 captures at 375/768/1024/1440px; zero page overflow, console warnings/errors, or uncaught page errors. All 70 changed captures were reviewed and accepted; 55 matched existing baselines.                                                                              |
 | Changed content            | Complete plugin explanations and the expanded privacy FAQ answer reviewed separately at 375px and 1440px.                                                                                                                                                                  |
 | Production interaction QA  | Passes inventory/search/sort, keyboard navigation, file previews/resizing, lint and history views, scoped plugin actions, all five Usage panels/windows, reset, expansion/Escape, missing-folder action blocking, parent grants/revocation, and empty nested repositories. |

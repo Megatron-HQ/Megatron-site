@@ -20,9 +20,11 @@ import type {
   TriggerTypeCount,
   UsageOverview
 } from '../../vendor/megatron/src/shared/ipc'
+import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 import {
   DAY_MS,
   HOUR_MS,
+  SAMPLE_PROJECT,
   type SampleEvent,
   type SampleState
 } from './fixtures.ts'
@@ -155,8 +157,7 @@ export function resolveSampleSkill(
           (skill) =>
             skill.source_type !== 'project' ||
             (skill.project_root !== null &&
-              (project === skill.project_root ||
-                project.startsWith(`${skill.project_root}/`)))
+              isWithinProjectPath(project, skill.project_root))
         )
   return scoped.length === 1 ? scoped[0] : null
 }
@@ -528,7 +529,7 @@ export function buildUsageOverview(state: SampleState): UsageOverview {
             sampledAt: new Date(
               new Date(state.now).getTime() - HOUR_MS
             ).toISOString(),
-            project: 'C:/Projects/web-app',
+            project: SAMPLE_PROJECT,
             model: 'claude-sonnet-5-5',
             claudeVersion: '2.1.0',
             categories: [

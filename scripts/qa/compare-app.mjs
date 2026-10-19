@@ -177,6 +177,29 @@ const scenes = [
     }
   ],
   [
+    'activity-dialog',
+    async (page) => {
+      await selectPanel(page, 'Activity')
+      await page.locator('button[aria-haspopup="dialog"]').last().click()
+      await page.getByRole('dialog').waitFor()
+    }
+  ],
+  [
+    'project-tree',
+    async (page) => {
+      await page
+        .getByRole('button', { name: 'Expand Dev repositories', exact: true })
+        .click()
+      await page
+        .getByRole('button', {
+          name: 'Expand monorepo repositories',
+          exact: true
+        })
+        .click()
+      await page.getByRole('button', { name: /^tools\/cli/ }).waitFor()
+    }
+  ],
+  [
     'effort',
     async (page) => {
       await selectPanel(page, 'Models')

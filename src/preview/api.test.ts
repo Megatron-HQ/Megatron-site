@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import {
+  ADDITIONAL_PARENT,
+  ADDITIONAL_PROJECT,
+  EMPTY_PROJECT,
+  NESTED_PROJECT,
+  SAMPLE_PARENT,
+  SAMPLE_PROJECT
+} from './fixtures.ts'
+import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 
 async function createDemo(options: Record<string, unknown> = {}) {
   let module
@@ -57,7 +66,7 @@ test('plugin actions affect only the selected install and refresh the skill budg
     name: 'frontend',
     marketplace: 'team-tools',
     scope: 'project',
-    projectPath: 'C:/Projects/web-app'
+    projectPath: SAMPLE_PROJECT
   } as const
   const before = await api.listSkills()
   assert.equal((await api.disablePlugin(input)).ok, true)
@@ -96,7 +105,7 @@ test('unknown project installs reject actions until the sample repository is gra
     name: 'docs',
     marketplace: 'community',
     scope: 'local',
-    projectPath: 'C:/Projects/docs-site'
+    projectPath: ADDITIONAL_PROJECT
   } as const
   assert.equal((await api.disablePlugin(input)).ok, false)
   await api.pickAndAddFolders()
@@ -310,18 +319,18 @@ test('listProjects returns the project catalog and tracks folder additions/revoc
   assert.ok(initialProjects.length >= 4)
   assert.ok(
     initialProjects.some(
-      (p) => p.path === 'C:/Projects/web-app' && p.kind === 'repository'
+      (p) => p.path === SAMPLE_PROJECT && p.kind === 'repository'
     )
   )
-  assert.ok(initialProjects.some((p) => p.path === 'C:/Projects/empty-lab'))
+  assert.ok(initialProjects.some((p) => p.path === EMPTY_PROJECT))
 
   await api.pickAndAddFolders()
   const withAdded = await api.listProjects()
-  assert.ok(withAdded.some((p) => p.path === 'C:/Projects/docs-site'))
+  assert.ok(withAdded.some((p) => p.path === ADDITIONAL_PROJECT))
 
-  await api.revokeAllowedPath('C:/Projects/docs-site')
+  await api.revokeAllowedPath(ADDITIONAL_PROJECT)
   const afterRevoke = await api.listProjects()
-  assert.ok(!afterRevoke.some((p) => p.path === 'C:/Projects/docs-site'))
+  assert.ok(!afterRevoke.some((p) => p.path === ADDITIONAL_PROJECT))
 })
 
 test('partial scan exposes actionable scan issues and affected paths', async () => {
@@ -377,14 +386,34 @@ test('listProjects handles empty and availability diagnostic scenarios', async (
   assert.ok(needsAccessList.every((p) => p.status === 'needs_access'))
 })
 
+test('the sample grants a parent folder whose repositories are labeled relative to it', async () => {
+  const { api } = await createDemo()
+  assert.deepEqual(
+    (await api.listAllowedPaths()).map((folder) => folder.path),
+    [SAMPLE_PARENT]
+  )
+  const projects = await api.listProjects()
+  assert.ok(
+    projects.some(
+      (project) => project.path === SAMPLE_PARENT && project.kind === 'folder'
+    )
+  )
+  assert.ok(
+    projects.every((project) =>
+      isWithinProjectPath(project.path, SAMPLE_PARENT)
+    )
+  )
+  assert.ok(projects.every((project) => !project.path.includes('/')))
+})
+
 test('parent folder revocation removes nested child projects and skills', async () => {
   const { api } = await createDemo()
-  // Revoking web-app removes web-app projects and its project-scoped skills
-  await api.revokeAllowedPath('C:/Projects/web-app')
+  await api.revokeAllowedPath(SAMPLE_PARENT)
   const projects = await api.listProjects()
-  assert.ok(!projects.some((p) => p.path === 'C:/Projects/web-app'))
+  assert.ok(!projects.some((p) => p.path === SAMPLE_PROJECT))
+  assert.ok(!projects.some((p) => p.path === NESTED_PROJECT))
   const skills = (await api.listSkills()).skills
-  assert.ok(!skills.some((s) => s.project_root === 'C:/Projects/web-app'))
+  assert.ok(!skills.some((s) => s.project_root === SAMPLE_PROJECT))
 })
 
 test('a user install disabled alongside an enabled project install keeps shared skills available', async () => {
@@ -425,23 +454,22 @@ test('granting a parent discovers descendants and revoking it preserves independ
   await api.pickAndAddFolders()
   assert.ok(
     (await api.listAllowedPaths()).some(
-      (folder) => folder.path === 'C:/Projects'
+      (folder) => folder.path === ADDITIONAL_PARENT
     )
   )
   assert.ok(
     (await api.listProjects()).some(
-      (project) => project.path === 'C:/Projects/monorepo/tools/cli'
+      (project) =>
+        project.path === ADDITIONAL_PARENT && project.kind === 'folder'
     )
   )
-  await api.revokeAllowedPath('C:/Projects')
-  assert.ok(
-    (await api.listProjects()).some(
-      (project) => project.path === 'C:/Projects/web-app'
-    )
-  )
+  await api.revokeAllowedPath(ADDITIONAL_PARENT)
+  const projects = await api.listProjects()
+  assert.ok(projects.some((project) => project.path === ADDITIONAL_PROJECT))
+  assert.ok(!projects.some((project) => project.path === ADDITIONAL_PARENT))
   assert.equal(
     (await api.listSkills()).skills.filter(
-      (skill) => skill.project_root === 'C:/Projects/web-app'
+      (skill) => skill.project_root === SAMPLE_PROJECT
     ).length,
     4
   )
@@ -475,7 +503,7 @@ test('a granted missing project reports unknown plugin enablement and blocks act
     name: 'frontend',
     marketplace: 'team-tools',
     scope: 'project',
-    projectPath: 'C:/Projects/web-app'
+    projectPath: SAMPLE_PROJECT
   })
   assert.equal(result.ok, false)
   assert.match(result.stderr!, /missing/)
@@ -487,9 +515,9 @@ test('revoking access while a scoped action is pending prevents the mutation', a
     name: 'frontend',
     marketplace: 'team-tools',
     scope: 'project',
-    projectPath: 'C:/Projects/web-app'
+    projectPath: SAMPLE_PROJECT
   })
-  await api.revokeAllowedPath('C:/Projects/web-app')
+  await api.revokeAllowedPath(SAMPLE_PARENT)
   assert.equal((await action).ok, false)
   const detail = await api.getPluginDetail('frontend', 'team-tools')
   assert.equal(
@@ -508,7 +536,7 @@ test('updating a shared plugin version preserves the skills still used by anothe
         name: 'docs',
         marketplace: 'community',
         scope: 'local',
-        projectPath: 'C:/Projects/docs-site'
+        projectPath: ADDITIONAL_PROJECT
       })
     ).ok,
     true
@@ -516,9 +544,9 @@ test('updating a shared plugin version preserves the skills still used by anothe
   const detail = await api.getPluginDetail('docs', 'community')
   assert.equal(detail?.skills.length, 2)
   assert.ok(
-    detail?.skills.some((skill) => skill.source_path.includes('/2.0.1/'))
+    detail?.skills.some((skill) => skill.source_path.includes('\\2.0.1\\'))
   )
   assert.ok(
-    detail?.skills.some((skill) => skill.source_path.includes('/2.1.0/'))
+    detail?.skills.some((skill) => skill.source_path.includes('\\2.1.0\\'))
   )
 })

@@ -10,11 +10,23 @@ import type {
   TriggerType
 } from '../../vendor/megatron/src/shared/ipc'
 
-export const SAMPLE_PROJECT = 'C:/Projects/web-app'
-export const ADDITIONAL_PROJECT = 'C:/Projects/docs-site'
-export const SAMPLE_PARENT = 'C:/Projects'
-export const NESTED_PROJECT = 'C:/Projects/monorepo/tools/cli'
-const PLUGIN_CACHE_ROOT = 'C:/Users/demo/.claude/plugins/cache'
+// The app shows native Windows paths, so the sample uses backslash separators.
+export function windowsPath(...segments: string[]): string {
+  return segments.join('\\')
+}
+
+// Like a typical installation, the sample grants parent folders; the app labels
+// their repositories relative to the folder (`web-app` under `Dev`).
+export const SAMPLE_PARENT = windowsPath('C:', 'Dev')
+export const SAMPLE_PROJECT = windowsPath(SAMPLE_PARENT, 'web-app')
+export const API_PROJECT = windowsPath(SAMPLE_PARENT, 'api')
+export const MONOREPO_PROJECT = windowsPath(SAMPLE_PARENT, 'monorepo')
+export const NESTED_PROJECT = windowsPath(MONOREPO_PROJECT, 'tools', 'cli')
+export const EMPTY_PROJECT = windowsPath(SAMPLE_PARENT, 'empty-lab')
+export const ADDITIONAL_PARENT = windowsPath('C:', 'Clients')
+export const ADDITIONAL_PROJECT = windowsPath(ADDITIONAL_PARENT, 'docs-site')
+const USER_CLAUDE_ROOT = windowsPath('C:', 'Users', 'demo', '.claude')
+const PLUGIN_CACHE_ROOT = windowsPath(USER_CLAUDE_ROOT, 'plugins', 'cache')
 export const CONTEXT_LIMIT = 2666
 export const HOUR_MS = 60 * 60 * 1000
 export const DAY_MS = 24 * HOUR_MS
@@ -24,7 +36,7 @@ export function samplePluginInstallPath(
   marketplace: string,
   version: string
 ): string {
-  return `${PLUGIN_CACHE_ROOT}/${marketplace}/${name}/${version}`
+  return windowsPath(PLUGIN_CACHE_ROOT, marketplace, name, version)
 }
 
 export interface SampleEvent {
@@ -65,10 +77,10 @@ export function createSampleState(now: Date): SampleState {
     description,
     source_path:
       source_type === 'global'
-        ? `C:/Users/demo/.claude/skills/${name}`
+        ? windowsPath(USER_CLAUDE_ROOT, 'skills', name)
         : source_type === 'project'
-          ? `${SAMPLE_PROJECT}/.claude/skills/${name}`
-          : `C:/Users/demo/.claude/plugins/cache/${name.replace(':', '/')}`,
+          ? windowsPath(SAMPLE_PROJECT, '.claude', 'skills', name)
+          : windowsPath(PLUGIN_CACHE_ROOT, ...name.split(':')),
     plugin_name: null,
     project_root: source_type === 'project' ? SAMPLE_PROJECT : null,
     last_scanned_at: timestamp,
@@ -152,7 +164,12 @@ export function createSampleState(now: Date): SampleState {
       'Turn a request into a concise project brief.',
       {
         is_synced: 1,
-        source_path: 'C:/Users/demo/.claude/skills/synced/synced-brief',
+        source_path: windowsPath(
+          USER_CLAUDE_ROOT,
+          'skills',
+          'synced',
+          'synced-brief'
+        ),
         est_listing_tokens: 84
       }
     ),
@@ -168,7 +185,11 @@ export function createSampleState(now: Date): SampleState {
       'Check responsive layouts, keyboard controls, and contrast.',
       {
         plugin_name: 'frontend@team-tools',
-        source_path: `${samplePluginInstallPath('frontend', 'team-tools', '1.4.0')}/skills/ui-audit`,
+        source_path: windowsPath(
+          samplePluginInstallPath('frontend', 'team-tools', '1.4.0'),
+          'skills',
+          'ui-audit'
+        ),
         est_listing_tokens: 218,
         modified_at: null
       }
@@ -180,7 +201,11 @@ export function createSampleState(now: Date): SampleState {
       'Apply the project’s interface design conventions.',
       {
         plugin_name: 'frontend@team-tools',
-        source_path: `${samplePluginInstallPath('frontend', 'team-tools', '1.2.0')}/skills/design`,
+        source_path: windowsPath(
+          samplePluginInstallPath('frontend', 'team-tools', '1.2.0'),
+          'skills',
+          'design'
+        ),
         est_listing_tokens: 167,
         modified_at: null
       }
@@ -192,7 +217,11 @@ export function createSampleState(now: Date): SampleState {
       'Create a clear commit from the current changes.',
       {
         plugin_name: 'commit@team-tools',
-        source_path: `${samplePluginInstallPath('commit', 'team-tools', '1.2.0')}/skills/commit`,
+        source_path: windowsPath(
+          samplePluginInstallPath('commit', 'team-tools', '1.2.0'),
+          'skills',
+          'commit'
+        ),
         modified_at: null
       }
     ),
@@ -203,7 +232,11 @@ export function createSampleState(now: Date): SampleState {
       'Write and maintain project documentation.',
       {
         plugin_name: 'docs@community',
-        source_path: `${samplePluginInstallPath('docs', 'community', '2.0.1')}/skills/docs`,
+        source_path: windowsPath(
+          samplePluginInstallPath('docs', 'community', '2.0.1'),
+          'skills',
+          'docs'
+        ),
         est_listing_tokens: 88,
         modified_at: null,
         lint_status: 'warning',
@@ -217,7 +250,15 @@ export function createSampleState(now: Date): SampleState {
       'Load project review guidance at session start.',
       {
         plugin_name: 'workflow@claude-plugins-official',
-        source_path: `${samplePluginInstallPath('workflow', 'claude-plugins-official', '1.3.0')}/skills/auto-review`,
+        source_path: windowsPath(
+          samplePluginInstallPath(
+            'workflow',
+            'claude-plugins-official',
+            '1.3.0'
+          ),
+          'skills',
+          'auto-review'
+        ),
         hook_events: '["SessionStart"]',
         disabled_reason: 'plugin',
         est_listing_tokens: 35,
@@ -226,12 +267,19 @@ export function createSampleState(now: Date): SampleState {
     ),
     skill(15, 'deploy', 'project', 'Deploy the web application.'),
     skill(16, 'deploy', 'project', 'Deploy the API service.', {
-      project_root: 'C:/Projects/api',
-      source_path: 'C:/Projects/api/.claude/skills/deploy'
+      project_root: API_PROJECT,
+      source_path: windowsPath(API_PROJECT, '.claude', 'skills', 'deploy')
     }),
     skill(17, 'apps/web:deploy', 'project', 'Deploy the nested web package.', {
-      project_root: 'C:/Projects/monorepo',
-      source_path: 'C:/Projects/monorepo/apps/web/.claude/skills/deploy'
+      project_root: MONOREPO_PROJECT,
+      source_path: windowsPath(
+        MONOREPO_PROJECT,
+        'apps',
+        'web',
+        '.claude',
+        'skills',
+        'deploy'
+      )
     }),
     skill(18, 'security-review', 'global', null, {
       lint_status: 'error',
@@ -320,15 +368,13 @@ export function createSampleState(now: Date): SampleState {
   ]
   const projects = [
     SAMPLE_PROJECT,
-    'C:/Projects/api',
-    'C:/Projects/monorepo',
-    'C:/Projects/design-system',
-    'C:/Projects/mobile-app',
-    'C:/Projects/cli',
-    'C:/Projects/dashboard',
-    'C:/Projects/research',
-    'C:/Projects/docs-site',
-    'C:/Projects/library'
+    API_PROJECT,
+    MONOREPO_PROJECT,
+    ...['design-system', 'mobile-app', 'cli', 'dashboard', 'research'].map(
+      (name) => windowsPath(SAMPLE_PARENT, name)
+    ),
+    ADDITIONAL_PROJECT,
+    windowsPath(SAMPLE_PARENT, 'library')
   ]
   const names = [
     'code-review',
@@ -398,21 +444,17 @@ export function createSampleState(now: Date): SampleState {
     skills,
     plugins,
     events,
-    folders: [
-      SAMPLE_PROJECT,
-      'C:/Projects/api',
-      'C:/Projects/monorepo',
-      'C:/Projects/empty-lab'
-    ].map((path) => ({ path, granted_at: timestamp })),
+    folders: [{ path: SAMPLE_PARENT, granted_at: timestamp }],
     projects: [
+      { path: SAMPLE_PARENT, kind: 'folder', status: 'available' },
       { path: SAMPLE_PROJECT, kind: 'repository', status: 'available' },
-      { path: 'C:/Projects/api', kind: 'repository', status: 'available' },
-      { path: 'C:/Projects/monorepo', kind: 'repository', status: 'available' },
+      { path: API_PROJECT, kind: 'repository', status: 'available' },
+      { path: MONOREPO_PROJECT, kind: 'repository', status: 'available' },
       // The app hides an empty Git repository nested inside another one; this
       // sample nested repository is listed because it has its own .claude
       // settings, while still holding no skills.
       { path: NESTED_PROJECT, kind: 'repository', status: 'available' },
-      { path: 'C:/Projects/empty-lab', kind: 'repository', status: 'available' }
+      { path: EMPTY_PROJECT, kind: 'repository', status: 'available' }
     ]
   }
 }

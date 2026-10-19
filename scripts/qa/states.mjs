@@ -6,6 +6,14 @@ import {
   selectPanel
 } from './preview.mjs'
 
+// Sample repositories sit under the granted Dev folder, as under a parent grant in the app.
+async function openDevRepository(app, name) {
+  await app
+    .getByRole('button', { name: 'Expand Dev repositories', exact: true })
+    .click()
+  await app.getByRole('button', { name: new RegExp(`^${name}`) }).click()
+}
+
 async function selectSkill(app, name) {
   await app.getByRole('button', { name: /^Search/ }).click()
   const search = app.getByPlaceholder('Search skills, plugins, projects...')
@@ -84,7 +92,7 @@ export async function verifyPreviewStates(page, baseUrl) {
   assert.equal(await app.locator('tbody tr').count(), 1)
 
   await app.getByRole('button', { name: 'Plugins', exact: true }).click()
-  for (const repository of ['User', 'Projects/web-app']) {
+  for (const repository of ['User', 'Dev/web-app']) {
     const row = app
       .locator('tbody tr')
       .filter({ hasText: 'frontend' })
@@ -138,12 +146,12 @@ export async function verifyPreviewStates(page, baseUrl) {
     true
   )
   await app
-    .getByRole('button', { name: 'C:/Projects/docs-site', exact: true })
+    .getByRole('button', { name: 'C:\\Clients\\docs-site', exact: true })
     .click()
   await app.getByRole('button', { name: 'Add Folder...', exact: true }).click()
   await app
     .getByRole('button', {
-      name: 'Revoke access to Projects/docs-site',
+      name: 'Revoke access to Clients/docs-site',
       exact: true
     })
     .waitFor()
@@ -319,21 +327,21 @@ export async function verifyPreviewStates(page, baseUrl) {
     [
       'projects-unavailable',
       async (frame) => {
-        await frame.getByRole('button', { name: /^Projects\/web-app/ }).click()
+        await openDevRepository(frame, 'web-app')
       },
       'This folder could not be fully refreshed. Showing the last available data.'
     ],
     [
       'projects-missing',
       async (frame) => {
-        await frame.getByRole('button', { name: /^Projects\/web-app/ }).click()
+        await openDevRepository(frame, 'web-app')
       },
       'This project folder is missing. Showing its last available data. Check its location if it moved.'
     ],
     [
       'projects-needs-access',
       async (frame) => {
-        await frame.getByRole('button', { name: /^Projects\/web-app/ }).click()
+        await openDevRepository(frame, 'web-app')
       },
       'Folder access is required. Grant this project or a parent folder in Settings.'
     ]
@@ -360,11 +368,11 @@ export async function verifyPreviewStates(page, baseUrl) {
     .locator('tbody tr')
     .filter({ hasText: 'frontend' })
     .filter({ hasText: 'team-tools' })
-    .filter({ hasText: 'Projects/web-app' })
+    .filter({ hasText: 'Dev/web-app' })
     .click()
   await missingApp
     .getByText(
-      /This install is registered to C:\/Projects\/web-app, and that folder is missing/
+      /This install is registered to C:\\Dev\\web-app, and that folder is missing/
     )
     .waitFor()
   for (const action of ['Disable', 'Update', 'Uninstall'])
@@ -384,7 +392,7 @@ export async function verifyPreviewStates(page, baseUrl) {
     .click()
   await freshApp
     .getByRole('button', {
-      name: 'Revoke access to Projects/docs-site',
+      name: 'Revoke access to Clients/docs-site',
       exact: true
     })
     .waitFor()
@@ -392,7 +400,7 @@ export async function verifyPreviewStates(page, baseUrl) {
     .getByRole('button', { name: 'Add Folder...', exact: true })
     .click()
   const revokeParent = freshApp.getByRole('button', {
-    name: 'Revoke access to Projects',
+    name: 'Revoke access to Clients',
     exact: true
   })
   await revokeParent.click()
@@ -407,14 +415,14 @@ export async function verifyPreviewStates(page, baseUrl) {
     'Removing an overlapping parent grant must preserve independently granted inventory.'
   )
   await freshApp
-    .getByRole('button', {
-      name: 'Expand Projects/monorepo repositories',
-      exact: true
-    })
+    .getByRole('button', { name: 'Expand Dev repositories', exact: true })
+    .click()
+  await freshApp
+    .getByRole('button', { name: 'Expand monorepo repositories', exact: true })
     .click()
   await freshApp.getByRole('button', { name: /^tools\/cli/ }).click()
   await freshApp
-    .getByText('No skills found in monorepo/tools/cli', {
+    .getByText('No skills found in Dev/monorepo/tools/cli', {
       exact: true
     })
     .waitFor()

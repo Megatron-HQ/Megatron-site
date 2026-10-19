@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { parse } from 'yaml'
+import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 import { createSampleState, sampleFiles, sampleFindings } from './fixtures.ts'
 
 test('plugin skill sources belong to the install whose scoped inventory displays them', () => {
@@ -15,7 +16,7 @@ test('plugin skill sources belong to the install whose scoped inventory displays
     plugin.installs.map((install) =>
       skills
         .filter((skill) =>
-          skill.source_path.startsWith(`${install.install_path}/`)
+          isWithinProjectPath(skill.source_path, install.install_path)
         )
         .map((skill) => skill.name)
     ),

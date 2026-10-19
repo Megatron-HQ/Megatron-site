@@ -16,6 +16,7 @@ import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-pa
 import { missingProjectInstallMessage } from '../../vendor/megatron/src/shared/missing-project.ts'
 import { SCAN_BANNER_REVEAL_MS } from '../../vendor/megatron/src/shared/scan-banner.ts'
 import {
+  ADDITIONAL_PARENT,
   ADDITIONAL_PROJECT,
   SAMPLE_PARENT,
   CONTEXT_LIMIT,
@@ -24,6 +25,7 @@ import {
   sampleFiles,
   sampleFindings,
   samplePluginInstallPath,
+  windowsPath,
   type SampleState
 } from './fixtures.ts'
 import {
@@ -85,7 +87,7 @@ export function createDemoApi(options: DemoOptions = {}) {
                 issues: [
                   {
                     code: 'permission_required' as const,
-                    path: 'C:/Projects/restricted-repo'
+                    path: windowsPath(SAMPLE_PARENT, 'restricted-repo')
                   }
                 ]
               }
@@ -232,7 +234,7 @@ export function createDemoApi(options: DemoOptions = {}) {
         status: 'available' as const
       },
       {
-        path: SAMPLE_PARENT,
+        path: ADDITIONAL_PARENT,
         kind: 'folder' as const,
         status: 'available' as const
       }
@@ -458,7 +460,7 @@ export function createDemoApi(options: DemoOptions = {}) {
     },
     async pickAndAddFolders() {
       const path = state.folders.some((row) => row.path === ADDITIONAL_PROJECT)
-        ? SAMPLE_PARENT
+        ? ADDITIONAL_PARENT
         : ADDITIONAL_PROJECT
       if (!state.folders.some((row) => row.path === path))
         state.folders.push({ path, granted_at: state.now })
@@ -466,8 +468,8 @@ export function createDemoApi(options: DemoOptions = {}) {
       refreshPlugins()
       notify()
       options.onNotice?.(
-        path === SAMPLE_PARENT
-          ? 'Granted the sample Projects parent folder and discovered its repositories. Your local folders are never accessed.'
+        path === ADDITIONAL_PARENT
+          ? 'Granted the sample Clients parent folder and discovered its repositories. Your local folders are never accessed.'
           : 'Added the sample docs-site repository. Add Folder again to try a parent-folder grant. Your local folders are never accessed.'
       )
       return copy(state.folders)
