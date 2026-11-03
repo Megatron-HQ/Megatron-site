@@ -131,12 +131,75 @@ export const scenarios = [
     await app.getByRole('button', { name: 'Uninstall', exact: true }).click()
     await app.getByRole('dialog').waitFor()
   }),
-  ...['Activity', 'Cost', 'Models', 'Skills', 'Resident tax'].map((panel) =>
+  ...['Activity', 'Tokens', 'Cost', 'Models', 'Skills', 'Resident tax'].map(
+    (panel) =>
+      sample(
+        'product-demo-usage-' +
+          (panel === 'Resident tax' ? 'resident' : panel.toLowerCase()),
+        'demo-usage',
+        (app) => selectPanel(app, panel)
+      )
+  ),
+  sample('product-demo-usage-tokens-hourly', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Tokens')
+    await app.getByRole('radio', { name: '24 hours', exact: true }).click()
+  }),
+  sample('product-demo-usage-calendar-year', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Activity')
+    await app
+      .getByRole('navigation', { name: 'Contribution year', exact: true })
+      .getByRole('button', { name: '2024', exact: true })
+      .click()
+    await app
+      .getByRole('group', {
+        name: 'Daily activity calendar for 2024',
+        exact: true
+      })
+      .waitFor()
+  }),
+  sample('product-demo-usage-calendar-details', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Activity')
+    await app
+      .getByRole('group', {
+        name: 'Daily activity calendar for 2026',
+        exact: true
+      })
+      .locator('button[aria-haspopup="dialog"]')
+      .last()
+      .click()
+    await app
+      .getByRole('dialog')
+      .getByText(/estimated tokens processed/)
+      .waitFor()
+  }),
+  ...['Tokens', 'Activity'].map((panel) =>
     sample(
-      'product-demo-usage-' +
-        (panel === 'Resident tax' ? 'resident' : panel.toLowerCase()),
+      `product-demo-usage-${panel.toLowerCase()}-dark`,
       'demo-usage',
-      (app) => selectPanel(app, panel)
+      async (app) => {
+        await app.getByRole('button', { name: 'Settings', exact: true }).focus()
+        await app
+          .getByRole('button', { name: 'Settings', exact: true })
+          .press('Enter')
+        await app.getByRole('radio', { name: 'Dark', exact: true }).focus()
+        await app
+          .getByRole('radio', { name: 'Dark', exact: true })
+          .press('Enter')
+        await app.getByRole('button', { name: 'Close', exact: true }).focus()
+        await app
+          .getByRole('button', { name: 'Close', exact: true })
+          .press('Enter')
+        await app.getByRole('button', { name: 'Usage', exact: true }).focus()
+        await app
+          .getByRole('button', { name: 'Usage', exact: true })
+          .press('Enter')
+        const target = app
+          .getByRole('navigation', { name: 'Usage panels' })
+          .getByRole('button', { name: panel, exact: true })
+        await target.focus()
+        await target.press('Enter')
+        await app.locator('header').getByText(panel, { exact: true }).waitFor()
+      }
     )
   ),
   sample('product-demo-usage-cost-details', 'demo-usage', async (app) => {

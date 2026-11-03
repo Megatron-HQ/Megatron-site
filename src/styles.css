@@ -1225,6 +1225,9 @@ h2 {
 .faq-list summary::-webkit-details-marker {
   display: none;
 }
+.faq-list summary:focus-visible {
+  outline-offset: -2px;
+}
 .faq-list summary svg {
   width: 15px;
   height: 15px;

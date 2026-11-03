@@ -4,6 +4,7 @@ import type {
   PluginActionResult,
   PluginInstall,
   PluginRow,
+  PluginUpdateProgress,
   ScanActivity,
   ScanFinished,
   ScanSummary,
@@ -34,6 +35,7 @@ import {
   sampleInvocation,
   triggerCounts
 } from './analytics.ts'
+import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
 
 export interface DemoOptions {
   now?: Date
@@ -58,6 +60,9 @@ export function createDemoApi(options: DemoOptions = {}) {
   let nextScanId = 0
   const subscriptions = new Set<(finished: ScanFinished) => void>()
   const scanStartedSubscriptions = new Set<(activity: ScanActivity) => void>()
+  const pluginProgressSubscriptions = new Set<
+    (progress: PluginUpdateProgress) => void
+  >()
   const delay = options.actionDelayMs ?? 450
   const copy = <T>(value: T): T => structuredClone(value)
   const notify = (activity: ScanActivity | null = null) => {
@@ -336,7 +341,12 @@ export function createDemoApi(options: DemoOptions = {}) {
       }
     pendingAction = true
     const actionRevision = sessionRevision
+    const reportUpdate = (phase: PluginUpdateProgress['phase']) => {
+      for (const subscriber of pluginProgressSubscriptions)
+        subscriber(copy({ input, phase }))
+    }
     try {
+      if (verb === 'update') reportUpdate('marketplace')
       if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
       if (actionRevision !== sessionRevision)
         return {
@@ -371,7 +381,9 @@ export function createDemoApi(options: DemoOptions = {}) {
           )
         }
       } else if (verb === 'update') {
+        reportUpdate('install')
         updateInstallVersion(plugin, install)
+        reportUpdate('verify')
       } else install.disabled_reason = verb === 'disable' ? 'plugin' : null
       refreshPlugins()
       notify()
@@ -525,6 +537,22 @@ export function createDemoApi(options: DemoOptions = {}) {
         return buildUsageOverview({ ...state, events: [] })
       return copy(result)
     },
+    async getUsageCalendar(year: number) {
+      checkScenario('calendar')
+      const usageState =
+        options.scenario === 'usage-empty'
+          ? { ...state, events: [], history: [] }
+          : state
+      return copy(buildUsageCalendar(usageState, year))
+    },
+    async getUsageDay(date: string) {
+      checkScenario('calendar')
+      const usageState =
+        options.scenario === 'usage-empty'
+          ? { ...state, events: [], history: [] }
+          : state
+      return copy(buildUsageDay(usageState, date))
+    },
     async getUsageSkillInvocations(input: SkillInvocationSliceInput) {
       const start = new Date(input.startAt)
       const end = new Date(input.endAt)
@@ -580,6 +608,12 @@ export function createDemoApi(options: DemoOptions = {}) {
       )
     },
     getVersion: () => '0.1.0',
+    onPluginUpdateProgress(callback) {
+      pluginProgressSubscriptions.add(callback)
+      return () => {
+        pluginProgressSubscriptions.delete(callback)
+      }
+    },
     onScanStarted(callback) {
       scanStartedSubscriptions.add(callback)
       return () => {

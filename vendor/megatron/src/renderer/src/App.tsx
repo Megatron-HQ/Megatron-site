@@ -33,7 +33,8 @@ import type {
   ContextBudget,
   CostWindowKey,
   SkillStatsWindowKey,
-  ThemePreference
+  ThemePreference,
+  PluginUpdateProgress
 } from '../../shared/ipc'
 
 type View =
@@ -72,6 +73,8 @@ function App(): React.JSX.Element {
   const [pluginExpandedProjects, setPluginExpandedProjects] = useState(() => new Set(['$projects']))
   const [usagePanel, setUsagePanel] = useState<UsagePanel>('activity')
   const [usageActivityWindow, setUsageActivityWindow] = useState<ActivityWindowKey>('30d')
+  const [usageTokenWindow, setUsageTokenWindow] = useState<SkillStatsWindowKey>('30d')
+  const [usageCalendarYear, setUsageCalendarYear] = useState(() => new Date().getFullYear())
   const [usageCostWindow, setUsageCostWindow] = useState<CostWindowKey>('30d')
   const [usageModelWindow, setUsageModelWindow] = useState<SkillStatsWindowKey>('30d')
   const [usageSkillWindow, setUsageSkillWindow] = useState<SkillStatsWindowKey>('30d')
@@ -86,6 +89,17 @@ function App(): React.JSX.Element {
   const [pluginActionToasts, setPluginActionToasts] = useState<PluginActionToast[]>([])
   const nextToastId = useRef(0)
   usePreviewNavigation(setSection, setUsagePanel)
+  const [pluginUpdateProgress, setPluginUpdateProgress] = useState<
+    Record<string, PluginUpdateProgress>
+  >({})
+  useEffect(
+    () =>
+      window.api.onPluginUpdateProgress((progress) => {
+        const key = `${progress.input.name}@${progress.input.marketplace}`
+        setPluginUpdateProgress((current) => ({ ...current, [key]: progress }))
+      }),
+    []
+  )
 
   const {
     data,
@@ -336,16 +350,17 @@ function App(): React.JSX.Element {
   }
 
   async function handleAddFolders(): Promise<void> {
-    await window.api.pickAndAddFolders()
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['skills'] }),
-      queryClient.invalidateQueries({ queryKey: ['folders'] }),
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-    ])
+    const folders = await window.api.pickAndAddFolders()
+    await queryClient.cancelQueries({ queryKey: ['folders'] })
+    queryClient.setQueryData(['folders'], folders)
+    void queryClient.invalidateQueries({ queryKey: ['skills'] })
+    void queryClient.invalidateQueries({ queryKey: ['projects'] })
   }
 
   async function handleRevokeFolder(path: string): Promise<void> {
     const remaining = await window.api.revokeAllowedPath(path)
+    await queryClient.cancelQueries({ queryKey: ['folders'] })
+    queryClient.setQueryData(['folders'], remaining)
     const covered = (selectedPath: string): boolean =>
       remaining.some((folder) => isWithinProjectPath(selectedPath, folder.path))
     if (filter.kind === 'project' && filter.projectRoot && !covered(filter.projectRoot))
@@ -362,11 +377,8 @@ function App(): React.JSX.Element {
       !covered(pluginView.context.path)
     )
       setPluginView({ kind: 'list' })
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['skills'] }),
-      queryClient.invalidateQueries({ queryKey: ['folders'] }),
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-    ])
+    void queryClient.invalidateQueries({ queryKey: ['skills'] })
+    void queryClient.invalidateQueries({ queryKey: ['projects'] })
   }
 
   function showPluginActionToast(message: string): void {
@@ -474,6 +486,9 @@ function App(): React.JSX.Element {
                   key={`${pluginView.name}@${pluginView.marketplace}:${JSON.stringify(pluginView.context)}`}
                   name={pluginView.name}
                   marketplace={pluginView.marketplace}
+                  updateProgress={
+                    pluginUpdateProgress[`${pluginView.name}@${pluginView.marketplace}`]
+                  }
                   context={pluginView.context}
                   availability={
                     pluginView.context?.kind === 'project'
@@ -522,6 +537,10 @@ function App(): React.JSX.Element {
               <UsageView
                 panel={usagePanel}
                 activityWindow={usageActivityWindow}
+                tokenWindow={usageTokenWindow}
+                onTokenWindowChange={setUsageTokenWindow}
+                calendarYear={usageCalendarYear}
+                onCalendarYearChange={setUsageCalendarYear}
                 onActivityWindowChange={setUsageActivityWindow}
                 costWindow={usageCostWindow}
                 onCostWindowChange={setUsageCostWindow}

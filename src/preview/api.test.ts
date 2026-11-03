@@ -10,6 +10,60 @@ import {
 } from './fixtures.ts'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 
+test('usage history agrees with Activity and survives sample rescans and reset', async () => {
+  const { api, reset } = await createDemo()
+  assert.equal(typeof api.getUsageCalendar, 'function')
+  assert.equal(typeof api.getUsageDay, 'function')
+  const overview = await api.getUsageOverview()
+  assert.ok(overview.tokens.last30d.tokens!.total > 0)
+  const calendar = await api.getUsageCalendar(2026)
+  const day = await api.getUsageDay('2026-10-08')
+  assert.equal(
+    day.count,
+    calendar.days.find((row) => row.date === day.date)?.count
+  )
+  assert.equal(
+    day.count,
+    overview.activity.last7d.byDay.find((row) => row.date === day.date)?.count
+  )
+  day.count = -1
+  calendar.days[0].count = -1
+  assert.ok((await api.getUsageDay('2026-10-08')).count > 0)
+  await api.rescan()
+  reset()
+  assert.equal((await api.getUsageCalendar(2026)).prompts, calendar.prompts)
+  await assert.rejects(api.getUsageCalendar(2026.5), RangeError)
+  await assert.rejects(api.getUsageDay('2026-02-30'), RangeError)
+})
+
+test('empty Usage has no archived activity or token totals', async () => {
+  const { api } = await createDemo({ scenario: 'usage-empty' })
+  assert.equal(typeof api.getUsageCalendar, 'function')
+  assert.equal((await api.getUsageOverview()).tokens.last30d.tokens, null)
+  assert.equal((await api.getUsageCalendar(2026)).prompts, 0)
+})
+
+test('plugin update progress identifies its install and unsubscribes after completion', async () => {
+  const { api } = await createDemo()
+  assert.equal(typeof api.onPluginUpdateProgress, 'function')
+  const phases: string[] = []
+  const input = {
+    name: 'frontend',
+    marketplace: 'team-tools',
+    scope: 'user',
+    projectPath: null
+  } as const
+  const unsubscribe = api.onPluginUpdateProgress((progress) => {
+    assert.deepEqual(progress.input, input)
+    phases.push(progress.phase)
+  })
+  assert.equal((await api.updatePlugin(input)).ok, true)
+  assert.deepEqual(phases, ['marketplace', 'install', 'verify'])
+  unsubscribe()
+  await api.updatePlugin(input)
+  assert.equal(phases.length, 3)
+})
+
 async function createDemo(options: Record<string, unknown> = {}) {
   let module
   try {

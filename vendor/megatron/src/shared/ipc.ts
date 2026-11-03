@@ -17,6 +17,7 @@ export const IPC_CHANNELS = {
   enablePlugin: 'plugins:enable',
   disablePlugin: 'plugins:disable',
   updatePlugin: 'plugins:update',
+  pluginUpdateProgress: 'plugins:updateProgress',
   uninstallPlugin: 'plugins:uninstall',
   getInitialSection: 'app:getInitialSection',
   setLastSection: 'app:setLastSection',
@@ -24,6 +25,8 @@ export const IPC_CHANNELS = {
   revealDataFolder: 'app:revealDataFolder',
   getVersion: 'app:getVersion',
   usageOverview: 'usage:overview',
+  usageCalendar: 'usage:calendar',
+  usageDay: 'usage:day',
   usageSkillInvocations: 'usage:skillInvocations'
 } as const
 
@@ -278,6 +281,16 @@ export interface PluginDetailResult {
 export interface PluginActionResult {
   ok: boolean
   stderr?: string
+  // Present after a focused post-update scan; avoids reading a second, potentially stale snapshot.
+  detail?: PluginDetailResult | null
+  verificationError?: string
+}
+
+export type PluginUpdatePhase = 'marketplace' | 'install' | 'verify'
+
+export interface PluginUpdateProgress {
+  input: PluginActionInput
+  phase: PluginUpdatePhase
 }
 
 export interface PluginActionInput {
@@ -542,6 +555,7 @@ export interface ResidentTaxStats {
 }
 
 export interface UsageOverview {
+  tokens: TokenStats
   activity: ActivityStats
   // null iff pricedSessionCount === 0 — no session has usable cost-state.
   cost: CostStats | null
@@ -550,4 +564,65 @@ export interface UsageOverview {
   residentTax: ResidentTaxStats | null
   scanComplete: boolean
   scanSummary?: ScanSummary
+}
+
+export interface TokenCounts {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+  total: number
+}
+
+export interface TokenBreakdown {
+  key: string
+  tokens: TokenCounts
+}
+
+export interface TokenBucket {
+  key: string
+  startAt: string
+  endAt: string
+  tokens: TokenCounts | null
+}
+
+export interface TokenWindow {
+  startAt: string
+  endAt: string
+  tokens: TokenCounts | null
+  byModel: TokenBreakdown[]
+  byProject: TokenBreakdown[]
+  trend: TokenBucket[]
+}
+
+export interface TokenStats {
+  last24h: TokenWindow
+  last7d: TokenWindow
+  last30d: TokenWindow
+  missingSessionCount: number
+  undatedTokens: TokenCounts
+}
+
+export type HistoryCoverage = 'available' | 'partial' | 'unavailable' | 'future'
+
+export interface ContributionDay {
+  date: string
+  weekday: number
+  count: number
+  coverage: HistoryCoverage
+  tokens: TokenCounts | null
+}
+
+export interface UsageCalendar {
+  year: number
+  years: number[]
+  days: ContributionDay[]
+  thresholds: number[]
+  prompts: number
+  activeDays: number
+}
+
+export interface UsageDayDetails extends ActivityDay {
+  coverage: HistoryCoverage
+  tokens: TokenCounts | null
 }

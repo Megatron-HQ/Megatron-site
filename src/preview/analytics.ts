@@ -21,6 +21,7 @@ import type {
   UsageOverview
 } from '../../vendor/megatron/src/shared/ipc'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import { buildTokenStats } from './usage-history.ts'
 import {
   DAY_MS,
   HOUR_MS,
@@ -516,6 +517,7 @@ export function buildUsageOverview(state: SampleState): UsageOverview {
     pricedSessionsWithoutSkill: 0
   }
   return {
+    tokens: buildTokenStats(state),
     activity,
     cost: state.events.some((event) => event.costCents !== null) ? cost : null,
     models,

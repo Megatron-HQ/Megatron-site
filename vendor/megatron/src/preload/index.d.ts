@@ -4,6 +4,7 @@ import type {
   OpenSkillMetaResult,
   OpenSkillResult,
   PluginActionInput,
+  PluginUpdateProgress,
   PluginActionResult,
   PluginDetailResult,
   PluginRow,
@@ -14,6 +15,8 @@ import type {
   SkillsListResult,
   ThemePreference,
   UsageOverview,
+  UsageCalendar,
+  UsageDayDetails,
   ScanActivity,
   ScanFinished,
   ScanSummary
@@ -39,12 +42,15 @@ interface Api {
   updatePlugin: (input: PluginActionInput) => Promise<PluginActionResult>
   uninstallPlugin: (input: PluginActionInput) => Promise<PluginActionResult>
   getUsageOverview: () => Promise<UsageOverview>
+  getUsageCalendar: (year: number) => Promise<UsageCalendar>
+  getUsageDay: (date: string) => Promise<UsageDayDetails>
   getUsageSkillInvocations: (input: SkillInvocationSliceInput) => Promise<SkillInvocationRecord[]>
   getInitialSection: () => AppSection
   setLastSection: (section: AppSection) => Promise<void>
   rescan: () => Promise<ScanSummary>
   revealDataFolder: () => Promise<void>
   getVersion: () => string
+  onPluginUpdateProgress: (callback: (progress: PluginUpdateProgress) => void) => () => void
   onScanStarted: (callback: (activity: ScanActivity) => void) => () => void
   onScanComplete: (callback: (finished: ScanFinished) => void) => () => void
 }

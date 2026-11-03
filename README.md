@@ -2,7 +2,7 @@
 
 The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static web application.
 
-The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all five Usage panels, settings, the command palette, file views, and dialogs. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
+The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all six Usage panels, settings, the command palette, file views, and dialogs. Tokens includes four token categories, independent 24-hour/7-day/30-day periods, trends, and model/project breakdowns. Activity includes a yearly contribution calendar, year selection, and full-day details with available token data. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
@@ -66,8 +66,8 @@ The production site is emitted to `dist/`. The local production preview serves a
 - `src/main.js`: navigation, installation copying, and scroll effects.
 - `src/product-preview-host.js`: iframe lifecycle, section navigation, reset, expansion, and focus reveal.
 - `src/icons.js`: bundled marketing icons.
-- `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, and trusted host messaging.
-- `vendor/megatron/`: 91 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
+- `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, archived daily summaries, and trusted host messaging.
+- `vendor/megatron/`: 97 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
 - `scripts/preview/`: reproducible renderer import and integrity checks.
 - `scripts/qa/`: headless Playwright verification suites and Electron reference comparison.
 - `scripts/ci/`: CI preview lifecycle orchestration and regression test harness.
@@ -89,9 +89,9 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` at revision `ae0f0a1a862cac263880274fed4c46c27a9a18fc` (92 pinned files). It adds Activity day/hour details dialogs, parent-relative names for nested sidebar projects, and hides empty Git repositories nested inside another repository. Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0`, imported from the app working tree based on revision `a121c601b16aefce4e837e9f17578269c3475d7e` (97 pinned files). It includes Tokens, the yearly contribution calendar, historical day details, plugin update progress, and folder-action fixes. The usage feature changes were uncommitted in the app checkout when imported; exact source-file hashes pin the snapshot. Its source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
 
-The updated implementation has 34 pixel-identical reference captures across 17 app states at two client sizes, 125 responsive website screenshots, and 68 passing regression tests. The visual sweep reports zero page overflow or browser errors. These results describe the pinned implementation; rerun the checks when changing it.
+The updated implementation has 46 pixel-identical reference captures across 23 app states at two client sizes, 149 responsive website screenshots, and 77 passing regression tests. The visual sweep reports zero page overflow or browser errors. These results describe the pinned implementation; rerun the checks when changing it.
 
 See the [product fidelity audit](docs/product-fidelity-audit.md) for the current capability review and corrections, [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original approach.
 
@@ -99,7 +99,7 @@ The preview uses the actual app renderer in a same-origin iframe. Marketing CSS 
 
 At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
 
-Checks cover the command palette, conditional inventory columns, hierarchical project navigation and folder expansion, actionable scan diagnostics, project availability notices, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings, user- and project-scoped plugin actions, all five Usage panels, independent time windows, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
+Checks cover the command palette, conditional inventory columns, hierarchical project navigation and folder expansion, actionable scan diagnostics, project availability notices, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings, user- and project-scoped plugin actions, all six Usage panels, independent time windows, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
 
 Responsive checks cover 375px, 768px, 1024px, and 1440px. Essential page and installation content remains available with JavaScript disabled. Verification scripts are tracked in `scripts/qa/` and `.claude/skills/visual-verify/`; reports, screenshots, and temporary fixtures are saved under ignored directories.
 

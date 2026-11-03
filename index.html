@@ -298,8 +298,8 @@
               </h2>
               <p>
                 Your local sessions hold a useful story. See which skills
-                actually run, how you work across projects, and where estimated
-                usage goes.
+                actually run, how your activity adds up across years, and where
+                your tokens go.
               </p>
             </div>
           </div>
@@ -308,16 +308,50 @@
               <article>
                 <span class="analytics-number">01</span>
                 <div>
-                  <h3>Your activity, over time.</h3>
+                  <h3>Every kind of token, accounted for.</h3>
                   <p>
-                    Prompts, sessions, active days, slash commands, and project
-                    patterns across 24 hours, 7 days, or 30 days. Open any day
-                    or hour for its sessions, prompts, and projects.
+                    Input, output, cache reads, and cache writes across 24
+                    hours, 7 days, or 30 days. Follow hourly and daily trends,
+                    with breakdowns by model and project. Time-based figures are
+                    estimated from recorded session totals.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="tokens"
+                  >
+                    Explore tokens<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
               </article>
               <article>
                 <span class="analytics-number">02</span>
+                <div>
+                  <h3>Your activity, over time.</h3>
+                  <p>
+                    A year of prompts at a glance, with year selection and one
+                    intensity scale across your history. Hover for a summary;
+                    open a day for prompts, sessions, projects, and available
+                    token data. Recent activity also has 24-hour, 7-day, and
+                    30-day views.
+                  </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="activity"
+                  >
+                    Explore activity<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                </div>
+              </article>
+              <article>
+                <span class="analytics-number">03</span>
                 <div>
                   <h3>The models behind the work.</h3>
                   <p>
@@ -327,7 +361,7 @@
                 </div>
               </article>
               <article>
-                <span class="analytics-number">03</span>
+                <span class="analytics-number">04</span>
                 <div>
                   <h3>The skills that earn their place.</h3>
                   <p>
@@ -338,7 +372,7 @@
                 </div>
               </article>
               <article>
-                <span class="analytics-number">04</span>
+                <span class="analytics-number">05</span>
                 <div>
                   <h3>Context has a footprint, too.</h3>
                   <p>
@@ -620,6 +654,35 @@ npm run dev</code></pre>
               management is a separate capability that uses Claude Code’s own
               CLI commands. Those commands may access the network; inventory and
               usage analysis run locally.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Will my activity history stay available?<i
+                data-lucide="plus"
+                aria-hidden="true"
+              ></i>
+            </summary>
+            <p>
+              Megatron keeps a local usage archive across scans and cache
+              rebuilds, without storing prompt text in that archive. It retains
+              activity already observed when Claude Code removes older source
+              files. History deleted before Megatron saw it cannot be recovered.
+              Missing history is shown separately from days with no activity.
+            </p>
+          </details>
+          <details>
+            <summary>
+              What do the token totals include?<i
+                data-lucide="plus"
+                aria-hidden="true"
+              ></i>
+            </summary>
+            <p>
+              Total tokens processed includes input, output, cache reads, and
+              cache writes. Thinking is included in output. Figures for a time
+              period are estimated allocations of recorded session totals;
+              missing and undated token data are identified separately.
             </p>
           </details>
           <details>

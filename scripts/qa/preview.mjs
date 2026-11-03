@@ -115,6 +115,7 @@ export async function verifyPreview(page) {
     1
   )
 
+  await verifyUsageHistory(page, app)
   await selectPanel(app, 'Activity')
   const activeDay = app.locator('button[aria-haspopup="dialog"]').last()
   await activeDay.click()
@@ -213,4 +214,77 @@ export async function verifyPreview(page) {
       .evaluate((button) => button === document.activeElement),
     true
   )
+}
+
+export async function verifyUsageHistory(page, app) {
+  await selectPanel(app, 'Tokens')
+  await app
+    .getByText('Total tokens processed · estimated', { exact: true })
+    .waitFor()
+  const total = app.locator('.text-usage-stat').first()
+  const monthlyTotal = await total.textContent()
+  await app.getByRole('radio', { name: '24 hours', exact: true }).click()
+  assert.notEqual(await total.textContent(), monthlyTotal)
+  assert.equal(
+    await app
+      .getByRole('button', { name: /estimated tokens|No recorded token data/ })
+      .count(),
+    24
+  )
+  await app.getByRole('radio', { name: '7 days', exact: true }).click()
+  const weeklyTotal = await total.textContent()
+  await selectPanel(app, 'Activity')
+  await app.getByRole('radio', { name: '24 hours', exact: true }).click()
+  const years = app.getByRole('navigation', {
+    name: 'Contribution year',
+    exact: true
+  })
+  await years.getByRole('button', { name: '2024', exact: true }).click()
+  const calendar = app.getByRole('group', {
+    name: 'Daily activity calendar for 2024',
+    exact: true
+  })
+  await calendar.waitFor()
+  assert.equal(await calendar.locator('button').count(), 366)
+  assert.ok(
+    (await calendar.locator('button[aria-disabled="true"]').count()) > 0
+  )
+  const day = calendar.locator('button[aria-haspopup="dialog"]').last()
+  await day.focus()
+  await page.keyboard.press('ArrowUp')
+  assert.equal(
+    await day.evaluate((button) => button === document.activeElement),
+    false
+  )
+  await day.click()
+  await app
+    .getByRole('dialog')
+    .getByText(/Activity details/)
+    .waitFor()
+  await app
+    .getByRole('dialog')
+    .getByText(/estimated tokens processed/)
+    .waitFor()
+  await page.keyboard.press('Escape')
+  await app.getByRole('dialog').waitFor({ state: 'hidden' })
+  assert.equal(
+    await day.evaluate((button) => button === document.activeElement),
+    true
+  )
+  await app.getByRole('radio', { name: '7 days', exact: true }).click()
+  assert.equal(
+    await years
+      .getByRole('button', { name: '2024', exact: true })
+      .getAttribute('aria-current'),
+    'date'
+  )
+  await years.getByRole('button', { name: '2026', exact: true }).click()
+  await selectPanel(app, 'Tokens')
+  assert.equal(
+    await app
+      .getByRole('radio', { name: '7 days', exact: true })
+      .getAttribute('aria-checked'),
+    'true'
+  )
+  assert.equal(await total.textContent(), weeklyTotal)
 }

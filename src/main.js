@@ -156,3 +156,12 @@ requireElement('[data-show-cost]').addEventListener('click', () => {
     block: 'start'
   })
 })
+for (const button of document.querySelectorAll('[data-show-usage]')) {
+  button.addEventListener('click', () => {
+    preview.showUsage(button.dataset.showUsage)
+    requireElement('#product').scrollIntoView({
+      behavior: reducedMotion.matches ? 'instant' : 'smooth',
+      block: 'start'
+    })
+  })
+}

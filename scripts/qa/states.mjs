@@ -223,7 +223,7 @@ export async function verifyPreviewStates(page, baseUrl) {
     'code-review'
   )
   await app.getByRole('button', { name: 'Close', exact: true }).click()
-  for (const panel of ['Activity', 'Cost', 'Models', 'Skills']) {
+  for (const panel of ['Activity', 'Tokens', 'Cost', 'Models', 'Skills']) {
     await selectPanel(app, panel)
     for (const window of ['24 hours', '7 days', '30 days']) {
       await app.getByRole('radio', { name: window, exact: true }).click()
@@ -286,6 +286,16 @@ export async function verifyPreviewStates(page, baseUrl) {
       'Could not load usage data.'
     ],
     ['cost-empty', (frame) => selectPanel(frame, 'Cost'), /No cost data yet/],
+    [
+      'usage-empty',
+      (frame) => selectPanel(frame, 'Tokens'),
+      /Token usage is unavailable/
+    ],
+    [
+      'calendar-error',
+      (frame) => selectPanel(frame, 'Activity'),
+      /Could not load contribution history/
+    ],
     [
       'resident-empty',
       (frame) => selectPanel(frame, 'Resident tax'),

@@ -7,6 +7,8 @@ import type {
   ProjectFolder,
   SkillFile,
   SkillRow,
+  TokenCounts,
+  UsageDayDetails,
   TriggerType
 } from '../../vendor/megatron/src/shared/ipc'
 
@@ -50,6 +52,7 @@ export interface SampleEvent {
   model: string
   effort: EffortBucket
   outputTokens: number
+  tokens: TokenCounts | null
   costCents: number | null
 }
 
@@ -60,6 +63,63 @@ export interface SampleState {
   folders: AllowedPathRow[]
   projects: ProjectFolder[]
   events: SampleEvent[]
+  history: UsageDayDetails[]
+}
+
+function sampleTokens(output: number, seed: number): TokenCounts {
+  const input = 200 + (seed % 800)
+  const cacheRead = output * 14
+  const cacheWrite = output * 3
+  return {
+    input,
+    output,
+    cacheRead,
+    cacheWrite,
+    total: input + output + cacheRead + cacheWrite
+  }
+}
+
+function sampleHistory(now: Date): UsageDayDetails[] {
+  const cursor = new Date(now.getFullYear() - 2, 6, 1)
+  const end = new Date(now.getTime() - 30 * DAY_MS)
+  end.setHours(0, 0, 0, 0)
+  const history: UsageDayDetails[] = []
+  let index = 0
+  while (cursor < end) {
+    const next = new Date(cursor)
+    next.setDate(next.getDate() + 1)
+    const weekday = cursor.getDay()
+    const unavailable = index % 97 === 0
+    const count =
+      unavailable || weekday === 0 || weekday === 6 ? 0 : 5 + ((index * 7) % 28)
+    const primaryCount = Math.ceil(count * 0.7)
+    history.push({
+      date: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`,
+      weekday,
+      startAt: cursor.toISOString(),
+      endAt: next.toISOString(),
+      partial: false,
+      count,
+      sessions: Math.ceil(count / 4),
+      slashCommands: Math.floor(count / 9),
+      byProject:
+        count === 0
+          ? []
+          : [
+              { project: SAMPLE_PROJECT, count: primaryCount },
+              { project: API_PROJECT, count: count - primaryCount }
+            ].filter((row) => row.count > 0),
+      coverage: unavailable
+        ? 'unavailable'
+        : index % 83 === 0
+          ? 'partial'
+          : 'available',
+      tokens: count === 0 ? null : sampleTokens(count * 1800, index)
+    })
+    cursor.setDate(cursor.getDate() + 1)
+    index++
+  }
+  return history
 }
 
 export function createSampleState(now: Date): SampleState {
@@ -436,6 +496,10 @@ export function createSampleState(now: Date): SampleState {
       model: models[index % models.length],
       effort: efforts[Math.floor(index / 3) % efforts.length],
       outputTokens: 400 + ((index * 137) % 4600),
+      tokens:
+        index % 37 === 0
+          ? null
+          : sampleTokens(400 + ((index * 137) % 4600), index),
       costCents: index % 31 === 0 ? null : 18 + ((index * 23) % 145)
     }
   })
@@ -444,6 +508,7 @@ export function createSampleState(now: Date): SampleState {
     skills,
     plugins,
     events,
+    history: sampleHistory(now),
     folders: [{ path: SAMPLE_PARENT, granted_at: timestamp }],
     projects: [
       { path: SAMPLE_PARENT, kind: 'folder', status: 'available' },

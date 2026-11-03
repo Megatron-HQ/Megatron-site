@@ -163,9 +163,61 @@ const scenes = [
         .waitFor()
     }
   ],
-  ...['Activity', 'Cost', 'Models', 'Skills', 'Resident tax'].map((panel) => [
-    panel.toLowerCase().replaceAll(' ', '-'),
-    (page) => selectPanel(page, panel)
+  ...['Activity', 'Tokens', 'Cost', 'Models', 'Skills', 'Resident tax'].map(
+    (panel) => [
+      panel.toLowerCase().replaceAll(' ', '-'),
+      (page) => selectPanel(page, panel)
+    ]
+  ),
+  [
+    'tokens-hourly',
+    async (page) => {
+      await selectPanel(page, 'Tokens')
+      await page.getByRole('radio', { name: '24 hours', exact: true }).click()
+    }
+  ],
+  [
+    'calendar-year',
+    async (page) => {
+      await selectPanel(page, 'Activity')
+      await page
+        .getByRole('navigation', { name: 'Contribution year', exact: true })
+        .getByRole('button', { name: '2024', exact: true })
+        .click()
+      await page
+        .getByRole('group', {
+          name: 'Daily activity calendar for 2024',
+          exact: true
+        })
+        .waitFor()
+    }
+  ],
+  [
+    'calendar-details',
+    async (page) => {
+      await selectPanel(page, 'Activity')
+      await page
+        .getByRole('group', {
+          name: 'Daily activity calendar for 2026',
+          exact: true
+        })
+        .locator('button[aria-haspopup="dialog"]')
+        .last()
+        .click()
+      await page
+        .getByRole('dialog')
+        .getByText(/estimated tokens processed/)
+        .waitFor()
+    }
+  ],
+  ...['Tokens', 'Activity'].map((panel) => [
+    `${panel.toLowerCase()}-dark`,
+    async (page) => {
+      await page.getByRole('button', { name: 'Settings', exact: true }).click()
+      await page.getByRole('radio', { name: 'Dark', exact: true }).click()
+      await page.getByRole('button', { name: 'Close', exact: true }).click()
+      await selectPanel(page, panel)
+    }
   ]),
   [
     'cost-dialog',

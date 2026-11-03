@@ -89,6 +89,17 @@ try {
   await page
     .locator('#product')
     .screenshot({ path: join(directory, 'cost-preview.png') })
+  for (const [panel, name] of [
+    ['tokens', 'Tokens'],
+    ['activity', 'Activity']
+  ]) {
+    await page.locator(`[data-show-usage="${panel}"]`).click()
+    await app.locator('header').getByText(name, { exact: true }).waitFor()
+    assert.equal(
+      await page.locator('#preview-usage').getAttribute('aria-selected'),
+      'true'
+    )
+  }
   await page.locator('[data-copy-install]').click()
   await page.waitForFunction(
     () =>
@@ -112,7 +123,7 @@ try {
       .count()
   )
   results.push(
-    'Host arrow-key tabs, Cost CTA, installation copy and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, Tokens/Activity/Cost links, installation copy and keyboard FAQ disclosure passed.'
   )
   await page.goto(baseUrl)
   await verifyPreviewStates(page, baseUrl)
@@ -127,6 +138,7 @@ try {
     await checkOverflow(page, width)
     for (const panel of [
       'Activity',
+      'Tokens',
       'Cost',
       'Models',
       'Skills',
@@ -191,7 +203,7 @@ try {
     }
   }
   results.push(
-    'All five Usage views at 375/768/1024/1440px: no page overflow; contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
+    'All six Usage views at 375/768/1024/1440px: no page overflow; contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
   )
 
   const motionPage = await context.newPage()

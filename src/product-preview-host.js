@@ -1,4 +1,5 @@
 import { refreshIcons } from './icons.js'
+import { USAGE_PANELS } from './preview/protocol.ts'
 export { refreshIcons } from './icons.js'
 
 const SECTIONS = [
@@ -174,6 +175,11 @@ export function mountProductDemo(root) {
     tabs[next].focus({ preventScroll: true })
   })
   return Object.freeze({
+    showUsage(panel) {
+      if (!USAGE_PANELS.includes(panel))
+        throw new RangeError('Unknown Usage panel.')
+      navigate('usage', panel)
+    },
     showCost() {
       navigate('usage', 'cost')
     }

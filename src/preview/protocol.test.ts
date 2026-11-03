@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+test('Tokens deep links navigate only within Usage', async () => {
+  const { parsePreviewCommand } = await protocol()
+  const command = {
+    type: 'megatron-preview:navigate',
+    section: 'usage',
+    panel: 'tokens'
+  }
+  assert.deepEqual(parsePreviewCommand(command), command)
+  assert.equal(parsePreviewCommand({ ...command, section: 'skills' }), null)
+})
+
 async function protocol() {
   try {
     return await import('./protocol.ts')

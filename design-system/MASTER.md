@@ -26,6 +26,8 @@ The ui-ux-pro-max design-system searches informed the product-demo-first page st
 - Distribution: source setup for macOS and Windows. No published releases were present on October 18, 2026. Recheck official releases before adding download links.
 - Product tour: Skills, Plugins, and Usage with explicitly labeled sample data. The preview never reads a visitor's local files.
 - Cost language: estimated API-equivalent usage, not bills or subscription charges.
+- Token language: input + output + cache reads + cache writes; thinking is included in output. Time-based figures are estimated shares of recorded session totals. Missing and undated data are identified separately.
+- Activity history: annual prompt-based contributions, year selection, a shared intensity scale across years, and full-day details. The desktop app archives usage locally without prompt text; the website shows session-only examples.
 - Context language: listing-token estimates and a qualifying cold session's measured first-turn cache write, with estimated category breakdowns.
 - No invented customer logos, testimonials, ratings, savings, or performance claims.
 - Product terminology: user, project, and local plugin installs; locally cached marketplace versions; restart Claude Code after updates. New plugin installation stays in the CLI.
@@ -36,9 +38,11 @@ The ui-ux-pro-max design-system searches informed the product-demo-first page st
 
 The interactive preview uses the pinned actual Megatron renderer in `vendor/megatron/`; its stylesheet and components are authoritative inside the iframe. Marketing tokens above apply to the surrounding website. Keep these style scopes separate. Renderer updates go through `scripts/preview/sync-renderer.mjs` and record all patches in provenance.
 
+Contribution squares use darker neutral shades in light mode and lighter shades in dark mode. Hover and keyboard focus show summaries; clicking opens day details with focus restored on close. Year selection is independent of the Activity period selector. Tokens has its own period selector.
+
 The app's rail/sidebar hover, command palette, row sorting and keyboard navigation, lint inspection, file tree and Markdown links, dialogs, plugin management, chart interactions, and independent windows remain app-owned. Folder selection, native plugin commands, rescan, external links, and data-folder reveal act on session-only illustrative data and announce their browser behavior through the host.
 
-External section tabs and Cost navigation synchronize with app state. Reset restores the sample session. Expansion uses the same iframe in a native modal dialog, preserves app state, and restores focus on close. App dialogs, tooltips, file/detail back paths, and effort selection get Escape first. The preview retains an 860px minimum client width on small screens, with contained horizontal panning and automatic focus reveal. Vertical scrolling continues into the page at a preview edge.
+External section tabs and Tokens/Activity/Cost navigation synchronize with app state. Reset restores the sample session. Expansion uses the same iframe in a native modal dialog, preserves app state, and restores focus on close. App dialogs, tooltips, file/detail back paths, and effort selection get Escape first. The preview retains an 860px minimum client width on small screens, with contained horizontal panning and automatic focus reveal. Vertical scrolling continues into the page at a preview edge.
 
 Marketing navigation, mobile menu/Escape, native FAQ disclosure, installation copying, scroll effects, and reduced motion are preserved. The old mobile dropdowns and generic chart pinning are replaced by the app's actual controls.
 
