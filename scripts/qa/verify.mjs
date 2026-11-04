@@ -91,10 +91,16 @@ try {
     .screenshot({ path: join(directory, 'cost-preview.png') })
   for (const [panel, name] of [
     ['tokens', 'Tokens'],
+    ['activity', 'Activity'],
     ['history', 'History'],
-    ['activity', 'Activity']
+    ['models', 'Models'],
+    ['skills', 'Skills'],
+    ['resident-tax', 'Resident tax']
   ]) {
-    await page.locator(`[data-show-usage="${panel}"]`).click()
+    const link = page.locator(`[data-show-usage="${panel}"]`)
+    assert.equal(await link.count(), 1, `Missing analytics link for ${name}.`)
+    await link.focus()
+    await link.press('Enter')
     await app.locator('header').getByText(name, { exact: true }).waitFor()
     assert.equal(
       await page.locator('#preview-usage').getAttribute('aria-selected'),
@@ -124,7 +130,7 @@ try {
       .count()
   )
   results.push(
-    'Host arrow-key tabs, Tokens/Activity/History/Cost links, installation copy and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, keyboard navigation from all six analytics entries, Cost navigation, installation copy and keyboard FAQ disclosure passed.'
   )
   await page.goto(baseUrl)
   await verifyPreviewStates(page, baseUrl)

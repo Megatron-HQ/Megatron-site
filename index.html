@@ -331,13 +331,11 @@
               <article>
                 <span class="analytics-number">02</span>
                 <div>
-                  <h3>Recent activity. Years of history.</h3>
+                  <h3>Your recent activity, in view.</h3>
                   <p>
-                    Activity shows your recent prompts and sessions across 24
-                    hours, 7 days, or 30 days. History has its own yearly
-                    calendar, year selection, and shared intensity scale. Hover
-                    for a summary; open a day for prompts, sessions, projects,
-                    and available token data.
+                    Prompts, sessions, and active days across 24 hours, 7 days,
+                    or 30 days. Follow daily and hourly patterns, compare
+                    projects, and open a day or hour for its details.
                   </p>
                   <button
                     type="button"
@@ -349,6 +347,18 @@
                       aria-hidden="true"
                     ></i>
                   </button>
+                </div>
+              </article>
+              <article>
+                <span class="analytics-number">03</span>
+                <div>
+                  <h3>Years of history, at a glance.</h3>
+                  <p>
+                    A yearly prompt calendar with year selection and one
+                    intensity scale across your history. Hover for a summary;
+                    open a day for prompts, sessions, projects, and available
+                    token data.
+                  </p>
                   <button
                     type="button"
                     class="text-link"
@@ -362,17 +372,27 @@
                 </div>
               </article>
               <article>
-                <span class="analytics-number">03</span>
+                <span class="analytics-number">04</span>
                 <div>
                   <h3>The models behind the work.</h3>
                   <p>
                     Model usage, output tokens, and recorded reasoning effort,
                     with a model-by-effort breakdown.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="models"
+                  >
+                    Explore models<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
               </article>
               <article>
-                <span class="analytics-number">04</span>
+                <span class="analytics-number">05</span>
                 <div>
                   <h3>The skills that earn their place.</h3>
                   <p>
@@ -380,16 +400,36 @@
                     estimates. Follow trends back to recorded invocations;
                     unassigned usage appears as General work.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="skills"
+                  >
+                    Explore skills<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
               </article>
               <article>
-                <span class="analytics-number">05</span>
+                <span class="analytics-number">06</span>
                 <div>
                   <h3>Context has a footprint, too.</h3>
                   <p>
                     Estimated listing tokens and a sampled first-turn context
                     breakdown help make the overhead visible.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="resident-tax"
+                  >
+                    Explore context<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
               </article>
             </div>
