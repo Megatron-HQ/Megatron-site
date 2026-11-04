@@ -10,6 +10,125 @@ import {
 } from './fixtures.ts'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 
+test('context baseline is independent of session usage and separates deferred and reserved space', async () => {
+  const { api } = await createDemo({ scenario: 'usage-empty' })
+  assert.equal(typeof api.getContextBaseline, 'function')
+  const result = await api.getContextBaseline()
+  assert.equal(result.ok, true)
+  if (!result.ok) return
+  assert.equal(result.usage.totalTokens, 32000)
+  assert.equal(result.usage.windowTokens, 1000000)
+  assert.equal(
+    result.usage.categories
+      .filter((row) => row.group === 'used')
+      .reduce((sum, row) => sum + row.tokens, 0),
+    32000
+  )
+  assert.ok(
+    result.usage.categories.some(
+      (row) => row.group === 'deferred' && row.tokens > 0
+    )
+  )
+  assert.ok(
+    result.usage.categories.some(
+      (row) => row.group === 'buffer' && row.tokens > 0
+    )
+  )
+  assert.ok(
+    result.usage.categories.some(
+      (row) => row.group === 'free' && row.tokens > 0
+    )
+  )
+  result.usage.categories[0].name = 'Changed by caller'
+  const next = await api.getContextBaseline()
+  assert.ok(next.ok && next.usage.categories[0].name !== 'Changed by caller')
+})
+
+test('recorded context contains self-consistent synthetic request details without sharing mutable data', async () => {
+  const { api } = await createDemo()
+  assert.equal(typeof api.getRecordedRequest, 'function')
+  const request = await api.getRecordedRequest()
+  assert.ok(request)
+  assert.equal(request.cwd, SAMPLE_PROJECT)
+  for (const block of [
+    ...request.systemBlocks,
+    ...request.hookOutputs,
+    ...request.mcpInstructions
+  ])
+    assert.equal(block.chars, block.text.length)
+  for (const tool of request.tools)
+    assert.equal(
+      tool.chars,
+      JSON.stringify(JSON.parse(tool.definitionJson)).length
+    )
+  assert.ok(
+    request.tools.every(
+      (tool, index, rows) => index === 0 || rows[index - 1].chars >= tool.chars
+    )
+  )
+  assert.ok(request.cacheBreakpoints.some((row) => row.path === 'system[1]'))
+  request.systemBlocks[0].text = 'Changed by caller'
+  assert.notEqual(
+    (await api.getRecordedRequest())!.systemBlocks[0].text,
+    'Changed by caller'
+  )
+})
+
+test('context measurement distinguishes CLI failure, unreadable output, and unavailable recordings', async () => {
+  for (const scenario of ['context-unavailable', 'context-unreadable']) {
+    const { api } = await createDemo({ scenario })
+    assert.equal(typeof api.getContextBaseline, 'function')
+    const result = await api.getContextBaseline()
+    assert.equal(result.ok, false)
+    if (result.ok) continue
+    assert.ok(result.error.length > 0)
+    assert.equal(
+      typeof result.raw === 'string',
+      scenario === 'context-unreadable'
+    )
+  }
+  const { api } = await createDemo({ scenario: 'recorded-empty' })
+  assert.equal(typeof api.getRecordedRequest, 'function')
+  assert.equal(await api.getRecordedRequest(), null)
+})
+
+test('reset suppresses notices from a pending context measurement', async () => {
+  const notices: string[] = []
+  const { api, reset } = await createDemo({
+    actionDelayMs: 10,
+    onNotice: (message: string) => notices.push(message)
+  })
+  assert.equal(typeof api.getContextBaseline, 'function')
+  const pending = api.getContextBaseline()
+  reset()
+  await pending
+  assert.equal(notices.length, 0)
+  await api.getContextBaseline()
+  assert.equal(notices.length, 1)
+  assert.match(notices[0], /sample|synthetic/i)
+})
+
+test('missing project scans retain cached projects and distinguish genuine warnings', async () => {
+  const { api } = await createDemo({ scenario: 'projects-missing' })
+  const result = await api.rescan()
+  assert.equal(result.outcome, 'partial')
+  const issues = result.sources.flatMap((source) => source.issues ?? [])
+  assert.ok(issues.length > 0)
+  assert.ok(issues.every((issue) => issue.code === 'project_missing'))
+  assert.ok(result.projects!.every((project) => project.status === 'missing'))
+  const mixed = await createDemo({ scenario: 'projects-missing-warning' })
+  assert.equal((await mixed.api.listSkills()).scanSummary?.isStartup, true)
+  mixed.reset()
+  assert.equal((await mixed.api.listSkills()).scanSummary?.isStartup, true)
+  const warning = await mixed.api.rescan()
+  assert.equal(warning.isStartup, false)
+  assert.ok(
+    warning.sources.some((source) =>
+      source.issues?.some((issue) => issue.code === 'permission_required')
+    )
+  )
+})
+
 test('rescans publish archive progress before finishing the matching run', async () => {
   const { api } = await createDemo({ actionDelayMs: 1 })
   assert.equal(typeof api.onScanProgress, 'function')

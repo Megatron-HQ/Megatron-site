@@ -1,5 +1,6 @@
 import {
   openSkill,
+  openResidentCategory,
   preparePreview,
   selectPanel
 } from '../../../scripts/qa/preview.mjs'
@@ -144,9 +145,82 @@ export const scenarios = [
       'product-demo-usage-' +
         (panel === 'Resident tax' ? 'resident' : panel.toLowerCase()),
       'demo-usage',
-      (app) => selectPanel(app, panel)
+      async (app) => {
+        await selectPanel(app, panel)
+        if (panel === 'Resident tax')
+          await app.getByText('Global baseline', { exact: true }).waitFor()
+      }
     )
   ),
+  ...[
+    'Skills',
+    'Custom agents',
+    'Memory files',
+    'MCP tools',
+    'System prompt',
+    'System tools',
+    'Messages',
+    'MCP server instructions'
+  ].map((category) =>
+    sample(
+      `product-demo-resident-${category.toLowerCase().replaceAll(' ', '-')}`,
+      'demo-usage',
+      async (app) => {
+        await openResidentCategory(app, category)
+        await app
+          .getByRole('dialog')
+          .locator('table, summary')
+          .first()
+          .waitFor()
+      }
+    )
+  ),
+  ...['Tools', 'Cache breakpoints'].map((view) =>
+    sample(
+      `product-demo-resident-system-detail-${view.toLowerCase().replaceAll(' ', '-')}`,
+      'demo-usage',
+      async (app) => {
+        await openResidentCategory(app, 'System prompt')
+        const detailView = app
+          .getByRole('dialog')
+          .getByRole('radio', { name: view, exact: true })
+        await detailView.focus()
+        await detailView.press('Enter')
+        if (view === 'Tools') {
+          const disclosure = app.getByRole('dialog').locator('summary').first()
+          await disclosure.focus()
+          await disclosure.press('Enter')
+        }
+      }
+    )
+  ),
+  ...[
+    ['context-unavailable', "Couldn't measure resident context"],
+    ['context-unreadable', /An illustrative unrecognized output format/],
+    ['recorded-empty', 'No interactive Claude Code 2.1.300+ session yet'],
+    ['projects-missing', 'Missing project folders'],
+    ['projects-missing-warning', 'Scan needs attention']
+  ].map(([scenario, message]) => ({
+    name: `product-demo-${scenario}`,
+    screen: scenario.startsWith('projects') ? 'demo-skills' : 'demo-usage',
+    async run(page) {
+      const url = new URL(page.url())
+      url.searchParams.set('scenario', scenario)
+      await page.goto(url.href)
+      await product(page, async (app) => {
+        if (scenario.startsWith('projects'))
+          await app
+            .getByRole('button', { name: 'Settings', exact: true })
+            .click()
+        else if (scenario === 'recorded-empty')
+          await openResidentCategory(app, 'System prompt')
+        else await selectPanel(app, 'Resident tax')
+        await app
+          .getByText(message, { exact: typeof message === 'string' })
+          .waitFor()
+      })
+    }
+  })),
   sample('product-demo-usage-tokens-hourly', 'demo-usage', async (app) => {
     await selectPanel(app, 'Tokens')
     await app.getByRole('radio', { name: '24 hours', exact: true }).click()
@@ -203,9 +277,9 @@ export const scenarios = [
       .getByText(/estimated tokens processed/)
       .waitFor()
   }),
-  ...['Tokens', 'Activity', 'History'].map((panel) =>
+  ...['Tokens', 'Activity', 'History', 'Resident tax'].map((panel) =>
     sample(
-      `product-demo-usage-${panel.toLowerCase()}-dark`,
+      `product-demo-usage-${panel.toLowerCase().replaceAll(' ', '-')}-dark`,
       'demo-usage',
       async (app) => {
         await app.getByRole('button', { name: 'Settings', exact: true }).focus()
@@ -230,6 +304,8 @@ export const scenarios = [
         await target.focus()
         await target.press('Enter')
         await app.locator('header').getByText(panel, { exact: true }).waitFor()
+        if (panel === 'Resident tax')
+          await app.getByText('Global baseline', { exact: true }).waitFor()
       }
     )
   ),

@@ -21,6 +21,7 @@ import {
   ADDITIONAL_PARENT,
   ADDITIONAL_PROJECT,
   SAMPLE_PARENT,
+  SAMPLE_PROJECT,
   CONTEXT_LIMIT,
   DAY_MS,
   createSampleState,
@@ -37,6 +38,14 @@ import {
   triggerCounts
 } from './analytics.ts'
 import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
+import { sampleContextBaseline, sampleRecordedRequest } from './context.ts'
+
+const STARTUP_SCAN_SCENARIOS = [
+  'scan-failed',
+  'scan-partial',
+  'projects-missing',
+  'projects-missing-warning'
+]
 
 export interface DemoOptions {
   now?: Date
@@ -59,8 +68,9 @@ export function createDemoApi(options: DemoOptions = {}) {
   let sessionRevision = 0
   let scanActivity: ScanActivity | null = null
   let nextScanId = 0
-  let lastScanWasStartup =
-    options.scenario === 'scan-failed' || options.scenario === 'scan-partial'
+  let lastScanWasStartup = STARTUP_SCAN_SCENARIOS.includes(
+    options.scenario ?? ''
+  )
   const subscriptions = new Set<(finished: ScanFinished) => void>()
   const scanStartedSubscriptions = new Set<(activity: ScanActivity) => void>()
   const scanProgressSubscriptions = new Set<(progress: ScanProgress) => void>()
@@ -78,10 +88,17 @@ export function createDemoApi(options: DemoOptions = {}) {
     for (const subscriber of subscriptions) subscriber(copy(finished))
   }
   const scanSummary = (): ScanSummary => {
+    const missingProjects = [
+      'projects-missing',
+      'projects-missing-warning'
+    ].includes(options.scenario ?? '')
+    const hasPermissionWarning =
+      options.scenario === 'scan-partial' ||
+      options.scenario === 'projects-missing-warning'
     const outcome =
       options.scenario === 'scan-failed'
         ? 'failed'
-        : options.scenario === 'scan-partial'
+        : hasPermissionWarning || missingProjects
           ? 'partial'
           : 'complete'
     return {
@@ -89,6 +106,17 @@ export function createDemoApi(options: DemoOptions = {}) {
       completedAt: state.now,
       isStartup: lastScanWasStartup,
       sources: [
+        ...(missingProjects
+          ? [
+              {
+                name: 'scanSkills',
+                status: 'partial' as const,
+                issues: [
+                  { code: 'project_missing' as const, path: SAMPLE_PROJECT }
+                ]
+              }
+            ]
+          : []),
         {
           name: 'scanTranscripts',
           status: outcome === 'failed' ? 'failed' : 'complete',
@@ -102,8 +130,8 @@ export function createDemoApi(options: DemoOptions = {}) {
         },
         {
           name: 'scanPromptHistory',
-          status: outcome === 'partial' ? 'partial' : 'complete',
-          ...(outcome === 'partial'
+          status: hasPermissionWarning ? 'partial' : 'complete',
+          ...(hasPermissionWarning
             ? {
                 issues: [
                   {
@@ -116,14 +144,19 @@ export function createDemoApi(options: DemoOptions = {}) {
         },
         {
           name: 'archivePrompts',
-          status: outcome === 'partial' ? 'partial' : 'complete'
+          status: hasPermissionWarning ? 'partial' : 'complete'
         }
       ],
       lastSuccessfulAt:
         outcome === 'complete'
           ? state.now
           : new Date(now.getTime() - DAY_MS).toISOString(),
-      projects: state.projects
+      projects: missingProjects
+        ? state.projects.map((project) => ({
+            ...project,
+            status: 'missing' as const
+          }))
+        : state.projects
     }
   }
 
@@ -230,7 +263,9 @@ export function createDemoApi(options: DemoOptions = {}) {
           install.scope !== 'user' &&
           install.project_path !== null &&
           hasFolderAccess(install.project_path) &&
-          options.scenario === 'projects-missing'
+          ['projects-missing', 'projects-missing-warning'].includes(
+            options.scenario ?? ''
+          )
         install.enablement_known =
           install.scope === 'user' ||
           (install.project_path !== null &&
@@ -480,7 +515,11 @@ export function createDemoApi(options: DemoOptions = {}) {
         return copy(
           state.projects.map((p) => ({ ...p, status: 'unavailable' as const }))
         )
-      if (options.scenario === 'projects-missing')
+      if (
+        ['projects-missing', 'projects-missing-warning'].includes(
+          options.scenario ?? ''
+        )
+      )
         return copy(
           state.projects.map((p) => ({ ...p, status: 'missing' as const }))
         )
@@ -551,11 +590,37 @@ export function createDemoApi(options: DemoOptions = {}) {
     async getUsageOverview() {
       checkScenario('usage')
       const result = buildUsageOverview(state)
-      if (options.scenario === 'resident-empty') result.residentTax = null
       if (options.scenario === 'cost-empty') result.cost = null
       if (options.scenario === 'usage-empty')
         return buildUsageOverview({ ...state, events: [] })
       return copy(result)
+    },
+    async getContextBaseline() {
+      checkScenario('context')
+      const revision = sessionRevision
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+      if (revision === sessionRevision)
+        options.onNotice?.(
+          'This is a synthetic /context sample. The preview never runs Claude Code, hooks, or MCP servers.'
+        )
+      if (options.scenario === 'context-unavailable')
+        return {
+          ok: false as const,
+          error:
+            'Claude Code CLI was not found. This is a simulated measurement failure.'
+        }
+      if (options.scenario === 'context-unreadable')
+        return {
+          ok: false as const,
+          error: "Megatron couldn't read Claude Code's /context output.",
+          raw: '## Context Usage\n\nAn illustrative unrecognized output format.'
+        }
+      return sampleContextBaseline(state.now)
+    },
+    async getRecordedRequest() {
+      checkScenario('recorded')
+      if (options.scenario === 'recorded-empty') return null
+      return sampleRecordedRequest(state.now)
     },
     async getUsageCalendar(year: number) {
       checkScenario('calendar')
@@ -667,9 +732,9 @@ export function createDemoApi(options: DemoOptions = {}) {
       sessionRevision += 1
       pendingAction = false
       scanActivity = null
-      lastScanWasStartup =
-        options.scenario === 'scan-failed' ||
-        options.scenario === 'scan-partial'
+      lastScanWasStartup = STARTUP_SCAN_SCENARIOS.includes(
+        options.scenario ?? ''
+      )
       state = structuredClone(initial)
       refreshPlugins()
       section = options.initialSection ?? 'skills'

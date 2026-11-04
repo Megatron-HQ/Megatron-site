@@ -29,10 +29,10 @@ The ui-ux-pro-max design-system searches informed the product-demo-first page st
 - Token language: input + output + cache reads + cache writes; thinking is included in output. Time-based figures are estimated shares of recorded session totals. Missing and undated data are identified separately.
 - Activity and History: Activity shows recent windows; the separate History panel has annual prompt-based contributions, independent year selection, a shared intensity scale across years, and full-day details. Unavailable prompt history remains dashed even when token details are available. The desktop app archives usage locally without prompt text; the website shows session-only examples.
 - Token display: compact values expose exact counts on hover and keyboard focus across usage views. Exact counts retain the source data's estimation limits.
-- Context language: listing-token estimates and a qualifying cold session's measured first-turn cache write, with estimated category breakdowns.
+- Context language: the configured skill-listing budget is separate from Resident tax. Resident tax uses Claude Code's own /context, measured from an empty folder as a global baseline; show used/window/percentage, deferred tools outside the total, and the autocompact reserve. Measurement happens on first open per launch and on Refresh. Category tables use /context's token values; recorded-request details use exact character sizes without inventing token estimates.
 - No invented customer logos, testimonials, ratings, savings, or performance claims.
 - Product terminology: user, project, and local plugin installs; locally cached marketplace versions; restart Claude Code after updates. New plugin installation stays in the CLI.
-- Refresh: window focus, folder-grant changes, successful plugin actions, and Settings → Rescan now. Do not imply continuous filesystem watching.
+- Refresh: inventory and usage refresh on window focus, folder-grant changes, successful plugin actions, and Settings → Rescan now. Resident tax measures independently through its own Refresh. Missing-only project scans are informational; retain genuine source warnings. Automatic project discovery skips temporary/build directories while preserving explicit grants. Do not imply continuous filesystem watching.
 - The sample plugin skill paths, scoped counts, lint destinations, and project catalog must agree. See `docs/product-fidelity-audit.md` for the capability audit.
 
 ## Interaction inventory and preservation
@@ -42,6 +42,8 @@ The interactive preview uses the pinned actual Megatron renderer in `vendor/mega
 Contribution squares use darker neutral shades in light mode and lighter shades in dark mode. Hover and keyboard focus show summaries; clicking opens day details with focus restored on close. Year selection is independent of the Activity period selector. Tokens has its own period selector.
 
 The app's rail/sidebar hover, command palette, row sorting and keyboard navigation, lint inspection, file tree and Markdown links, dialogs, plugin management, chart interactions, and independent windows remain app-owned. Folder selection, native plugin commands, rescan, external links, and data-folder reveal act on session-only illustrative data and announce their browser behavior through the host.
+
+Resident tax retains the app's synchronized bar/row hover and focus, neutral fills, reserved-space hatch, deferred-tool list, refresh spinner, category dialogs, disclosure rows, and focus restoration. Baseline/category data and recorded requests are synthetic in the website. The desktop /context command can start configured SessionStart hooks and MCP servers; the website simulates it without running commands. Recorded details can include project configuration even though the measured baseline excludes it.
 
 External section tabs and Tokens/Activity/History/Cost navigation synchronize with app state. Reset restores the sample session and cancels pending scan progress. Expansion uses the same iframe in a native modal dialog, preserves app state, and restores focus on close. App dialogs, tooltips, file/detail back paths, and effort selection get Escape first. The preview retains an 860px minimum client width on small screens, with contained horizontal panning and automatic focus reveal. Vertical scrolling continues into the page at a preview edge.
 

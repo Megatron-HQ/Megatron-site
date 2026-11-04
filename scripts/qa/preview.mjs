@@ -38,6 +38,69 @@ export async function selectPanel(app, name) {
   await app.locator('header').getByText(name, { exact: true }).waitFor()
 }
 
+export async function openResidentCategory(app, name) {
+  await selectPanel(app, 'Resident tax')
+  const trigger = app
+    .getByRole('button', { name: new RegExp(`^${name} `) })
+    .first()
+  await trigger.click()
+  await app.getByRole('dialog').getByRole('heading').waitFor()
+  return trigger
+}
+
+async function verifyResidentContext(page, app) {
+  await selectPanel(app, 'Resident tax')
+  await app.getByText('Global baseline', { exact: true }).waitFor()
+  await app.getByText('Deferred, not loaded', { exact: true }).waitFor()
+  assert.equal(await app.getByRole('img', { name: /deferred/i }).count(), 0)
+  await app.getByRole('button', { name: 'Refresh', exact: true }).click()
+  assert.equal(
+    await app
+      .getByRole('button', { name: 'Measuring…', exact: true })
+      .isDisabled(),
+    true
+  )
+  await app.getByRole('button', { name: 'Refresh', exact: true }).waitFor()
+  for (const [category, expected] of [
+    ['Skills', 'sample-design'],
+    ['Custom agents', 'sample:architect'],
+    ['Memory files', /CLAUDE\.md/],
+    ['MCP tools', 'mcp__sample_browser__navigate'],
+    ['System prompt', 'System blocks'],
+    ['System tools', 'Tools'],
+    ['Messages', 'Sample SessionStart'],
+    ['MCP server instructions', 'sample_docs']
+  ]) {
+    const trigger = await openResidentCategory(app, category)
+    const dialog = app.getByRole('dialog')
+    await dialog
+      .getByText(expected, { exact: typeof expected === 'string' })
+      .first()
+      .waitFor()
+    if (category === 'System prompt') {
+      await dialog.locator('summary').first().click()
+      await dialog
+        .getByText(/Synthetic system instructions/)
+        .last()
+        .waitFor()
+      await dialog
+        .getByRole('radio', { name: 'Cache breakpoints', exact: true })
+        .click()
+      await dialog.getByText('system[1]', { exact: true }).waitFor()
+      await dialog.getByRole('radio', { name: 'Tools', exact: true }).click()
+      await dialog.locator('summary').first().click()
+      await dialog.locator('details[open] pre').waitFor()
+    }
+    await dialog.getByRole('button', { name: 'Close', exact: true }).focus()
+    await page.keyboard.press('Escape')
+    await dialog.waitFor({ state: 'hidden' })
+    assert.equal(
+      await trigger.evaluate((button) => button === document.activeElement),
+      true
+    )
+  }
+}
+
 export async function verifyPreview(page) {
   const app = await preparePreview(page)
   assert.equal(await app.locator('tbody tr').count(), 20)
@@ -179,10 +242,7 @@ export async function verifyPreview(page) {
     .click()
   await app.getByRole('dialog').getByLabel('Search invocations').waitFor()
   await app.getByRole('button', { name: 'Close', exact: true }).click()
-  await selectPanel(app, 'Resident tax')
-  await app
-    .getByText('Measured turn-one resident tokens', { exact: true })
-    .waitFor()
+  await verifyResidentContext(page, app)
 
   await page.getByRole('button', { name: 'Reset sample', exact: true }).click()
   await app

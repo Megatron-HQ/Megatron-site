@@ -3,6 +3,7 @@ import {
   preparePreview,
   previewFrame,
   openSkill,
+  openResidentCategory,
   selectPanel
 } from './preview.mjs'
 
@@ -297,9 +298,19 @@ export async function verifyPreviewStates(page, baseUrl) {
       /Could not load contribution history/
     ],
     [
-      'resident-empty',
+      'context-unavailable',
       (frame) => selectPanel(frame, 'Resident tax'),
-      'No cold-session sample yet'
+      "Couldn't measure resident context"
+    ],
+    [
+      'context-unreadable',
+      (frame) => selectPanel(frame, 'Resident tax'),
+      /An illustrative unrecognized output format/
+    ],
+    [
+      'recorded-empty',
+      (frame) => openResidentCategory(frame, 'System prompt'),
+      'No interactive Claude Code 2.1.300+ session yet'
     ],
     [
       'usage-empty',
@@ -373,6 +384,27 @@ export async function verifyPreviewStates(page, baseUrl) {
   missingUrl.searchParams.set('scenario', 'projects-missing')
   await page.goto(missingUrl.href)
   const missingApp = await preparePreview(page)
+  assert.equal(
+    await missingApp
+      .getByRole('button', { name: 'Scan details', exact: true })
+      .count(),
+    0
+  )
+  await missingApp
+    .getByRole('button', { name: 'Settings', exact: true })
+    .click()
+  await missingApp
+    .getByText('Missing project folders', { exact: true })
+    .waitFor()
+  await missingApp
+    .getByRole('button', { name: 'Rescan now', exact: true })
+    .click()
+  await missingApp.getByText('Scan complete.', { exact: true }).waitFor()
+  assert.equal(
+    await missingApp.getByText('Scan needs attention', { exact: true }).count(),
+    0
+  )
+  await missingApp.getByRole('button', { name: 'Close', exact: true }).click()
   await missingApp.getByRole('button', { name: 'Plugins', exact: true }).click()
   await missingApp
     .locator('tbody tr')
@@ -392,6 +424,22 @@ export async function verifyPreviewStates(page, baseUrl) {
         .isDisabled(),
       true
     )
+
+  const mixedUrl = new URL(baseUrl)
+  mixedUrl.searchParams.set('scenario', 'projects-missing-warning')
+  await page.goto(mixedUrl.href)
+  const mixedApp = await preparePreview(page)
+  await mixedApp
+    .getByRole('button', { name: 'Scan details', exact: true })
+    .click()
+  await mixedApp.getByText('Scan needs attention', { exact: true }).waitFor()
+
+  const usageErrorUrl = new URL(baseUrl)
+  usageErrorUrl.searchParams.set('scenario', 'usage-error')
+  await page.goto(usageErrorUrl.href)
+  const independentApp = await preparePreview(page)
+  await selectPanel(independentApp, 'Resident tax')
+  await independentApp.getByText('Global baseline', { exact: true }).waitFor()
 
   await page.goto(baseUrl)
   const freshApp = await preparePreview(page)

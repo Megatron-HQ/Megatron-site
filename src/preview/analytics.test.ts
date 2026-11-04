@@ -63,11 +63,10 @@ test('Activity day and hour details reconcile with their window', () => {
   }
 })
 
-test('no events produces the app’s empty cost and resident-sample states', () => {
+test('no events produces empty cost and model activity', () => {
   const state = createSampleState(new Date('2026-10-09T18:00:00Z'))
   state.events = []
   const result = buildUsageOverview(state)
   assert.equal(result.cost, null)
-  assert.equal(result.residentTax, null)
   assert.equal(result.models.last30d.turnCount, 0)
 })

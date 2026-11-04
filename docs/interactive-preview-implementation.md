@@ -4,8 +4,8 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `25659e3e7a133491c77634089d0ac9965d87807f`, version `0.1.0`; exact source hashes pin the imported files.
-- Snapshot: 100 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
+- App revision: `e1def740b3d5c86dbdddf1f51862eab497a883b6`, version `0.1.0`; exact source hashes pin the imported files.
+- Snapshot: 102 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
 - Four recorded integration patches: scoped Tailwind discovery, trusted host navigation, and inactive-frame autofocus guards in the two inventories. App tokens, layouts, labels, icons, and motion rules are preserved.
 - `npm run build` checks TypeScript and snapshot hashes before building the marketing and preview entries. Normal builds and CI require no sibling app checkout.
 - The original app repository remains unchanged.
@@ -28,7 +28,17 @@ A comparison with a real Windows installation found two sample-data differences.
 
 The November 3 update imports Tokens, the annual contribution calendar and historical day details, plus plugin progress and folder-action fixes. `src/preview/usage-history.ts` derives token windows and calendar responses from synthetic token records and archived daily summaries. The current and two preceding years share one intensity scale. Recent calendar details and Activity totals use the same session events. Missing token data stays distinct from zero, and dates before sample coverage stay distinct from inactive days. The website stores no visitor history; the sample resets on reload.
 
-## Verification evidence
+The November 4 refresh imports the `/context` rebuild and removed-folder scan
+fixes. `src/preview/context.ts` supplies independent synthetic baseline and
+recorded-request responses for the new preload APIs. The real renderer owns
+Refresh, deferred/reserved/free display, category tables, recorded system/tool/
+breakpoint disclosures, hook and MCP details, failure states, and focus return.
+Missing-only scans produce informational Settings details and successful manual
+rescan feedback; genuine mixed warnings remain visible. Marketing and FAQ copy
+now describe /context and its ability to start configured hooks/MCP servers.
+See the [detailed upstream review](upstream-sync-2026-11-04.md) for this run's evidence.
+
+## Previous verification evidence (November 3)
 
 | Check                   | Result                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

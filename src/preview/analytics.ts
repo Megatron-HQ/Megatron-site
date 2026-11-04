@@ -25,7 +25,6 @@ import { buildTokenStats } from './usage-history.ts'
 import {
   DAY_MS,
   HOUR_MS,
-  SAMPLE_PROJECT,
   type SampleEvent,
   type SampleState
 } from './fixtures.ts'
@@ -522,36 +521,6 @@ export function buildUsageOverview(state: SampleState): UsageOverview {
     cost: state.events.some((event) => event.costCents !== null) ? cost : null,
     models,
     skills,
-    scanComplete: true,
-    residentTax:
-      state.events.length === 0
-        ? null
-        : {
-            measuredTokens: 18200,
-            sampledAt: new Date(
-              new Date(state.now).getTime() - HOUR_MS
-            ).toISOString(),
-            project: SAMPLE_PROJECT,
-            model: 'claude-sonnet-5-5',
-            claudeVersion: '2.1.0',
-            categories: [
-              { key: 'skills', tokens: 1800, itemCount: 20, estimated: true },
-              { key: 'agents', tokens: 2400, itemCount: 4, estimated: true },
-              { key: 'hooks', tokens: 1100, itemCount: 2, estimated: true },
-              { key: 'mcp', tokens: 3700, itemCount: 3, estimated: true },
-              {
-                key: 'instructions',
-                tokens: 2900,
-                itemCount: 2,
-                estimated: true
-              },
-              {
-                key: 'remainder',
-                tokens: 6300,
-                itemCount: null,
-                estimated: false
-              }
-            ]
-          }
+    scanComplete: true
   }
 }

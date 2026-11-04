@@ -9,7 +9,7 @@ import { _electron } from 'playwright-core'
 import { PNG } from 'pngjs'
 import pixelmatch from 'pixelmatch'
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
-import { openSkill, selectPanel } from './preview.mjs'
+import { openSkill, openResidentCategory, selectPanel } from './preview.mjs'
 
 const root = resolve(import.meta.dirname, '../..')
 const appRoot = process.argv[2] && resolve(process.argv[2])
@@ -173,7 +173,39 @@ const scenes = [
     'Resident tax'
   ].map((panel) => [
     panel.toLowerCase().replaceAll(' ', '-'),
-    (page) => selectPanel(page, panel)
+    async (page) => {
+      await selectPanel(page, panel)
+      if (panel === 'Resident tax')
+        await page.getByText('Global baseline', { exact: true }).waitFor()
+    }
+  ]),
+  ...[
+    'Skills',
+    'Custom agents',
+    'Memory files',
+    'MCP tools',
+    'System prompt',
+    'System tools',
+    'Messages',
+    'MCP server instructions'
+  ].map((category) => [
+    `resident-${category.toLowerCase().replaceAll(' ', '-')}`,
+    async (page) => {
+      await openResidentCategory(page, category)
+      await page.getByRole('dialog').locator('table, summary').first().waitFor()
+    }
+  ]),
+  ...['Tools', 'Cache breakpoints'].map((view) => [
+    `resident-system-detail-${view.toLowerCase().replaceAll(' ', '-')}`,
+    async (page) => {
+      await openResidentCategory(page, 'System prompt')
+      await page
+        .getByRole('dialog')
+        .getByRole('radio', { name: view, exact: true })
+        .click()
+      if (view === 'Tools')
+        await page.getByRole('dialog').locator('summary').first().click()
+    }
   ]),
   [
     'tokens-hourly',
@@ -246,13 +278,15 @@ const scenes = [
         .waitFor()
     }
   ],
-  ...['Tokens', 'Activity', 'History'].map((panel) => [
-    `${panel.toLowerCase()}-dark`,
+  ...['Tokens', 'Activity', 'History', 'Resident tax'].map((panel) => [
+    `${panel.toLowerCase().replaceAll(' ', '-')}-dark`,
     async (page) => {
       await page.getByRole('button', { name: 'Settings', exact: true }).click()
       await page.getByRole('radio', { name: 'Dark', exact: true }).click()
       await page.getByRole('button', { name: 'Close', exact: true }).click()
       await selectPanel(page, panel)
+      if (panel === 'Resident tax')
+        await page.getByText('Global baseline', { exact: true }).waitFor()
     }
   ]),
   [

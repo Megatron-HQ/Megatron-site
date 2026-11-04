@@ -417,8 +417,8 @@
                 <div>
                   <h3>Context has a footprint, too.</h3>
                   <p>
-                    Estimated listing tokens and a sampled first-turn context
-                    breakdown help make the overhead visible.
+                    Claude Code’s own /context breakdown shows the global
+                    baseline, with category details and a refresh on demand.
                   </p>
                   <button
                     type="button"
@@ -435,54 +435,58 @@
             </div>
             <div class="context-visual">
               <div class="context-header">
-                <span class="eyebrow">RESIDENT CONTEXT</span
+                <span class="eyebrow">CLAUDE CODE /CONTEXT</span
                 ><span class="sample-tag">SAMPLE</span>
               </div>
               <div class="context-total">
-                <span>18.2<span>k</span></span>
-                <p>tokens before the work begins</p>
+                <span>32<span>k</span></span>
+                <p>
+                  of a 1M context window · 3% used before your first message
+                </p>
               </div>
               <div
                 class="context-stack"
-                aria-label="Illustrative context composition: skills 1.8k, agents 2.4k, hooks 1.1k, MCP instructions 3.7k, project instructions 2.9k, remaining context 6.3k tokens"
+                role="img"
+                aria-label="Illustrative 32k used-token composition: system prompt and tools 16k, skills 10k, MCP instructions 2k, memory files 1.5k, custom agents 600, messages 1.9k. Deferred tools are outside this total."
               >
-                <span style="flex: 18" data-context="Skills"></span
-                ><span style="flex: 24" data-context="Agents"></span
-                ><span style="flex: 11" data-context="Hooks"></span
-                ><span style="flex: 37" data-context="MCP"></span
-                ><span style="flex: 29" data-context="Instructions"></span
-                ><span style="flex: 63" data-context="Remainder"></span>
+                <span style="flex: 160" data-context="System"></span
+                ><span style="flex: 100" data-context="Skills"></span
+                ><span style="flex: 20" data-context="MCP instructions"></span
+                ><span style="flex: 15" data-context="Memory"></span
+                ><span style="flex: 6" data-context="Agents"></span
+                ><span style="flex: 19" data-context="Messages"></span>
               </div>
               <div class="context-legend">
                 <div>
                   <span class="context-key" style="--key-color: #e4f222"></span
-                  >Skills<strong>1.8k</strong>
+                  >System prompt + tools<strong>16k</strong>
                 </div>
                 <div>
                   <span class="context-key" style="--key-color: #aeb76d"></span
-                  >Agents<strong>2.4k</strong>
+                  >Skills<strong>10k</strong>
                 </div>
                 <div>
                   <span class="context-key" style="--key-color: #7c8255"></span
-                  >SessionStart hooks<strong>1.1k</strong>
+                  >MCP instructions<strong>2k</strong>
                 </div>
                 <div>
                   <span class="context-key" style="--key-color: #f3f3e9"></span
-                  >MCP instructions<strong>3.7k</strong>
+                  >Memory files<strong>1.5k</strong>
                 </div>
                 <div>
                   <span class="context-key" style="--key-color: #a7a8a0"></span
-                  >Project instructions<strong>2.9k</strong>
+                  >Custom agents<strong>600</strong>
                 </div>
                 <div>
                   <span class="context-key" style="--key-color: #565750"></span
-                  >Remaining context<strong>6.3k</strong>
+                  >Messages<strong>1.9k</strong>
                 </div>
               </div>
               <p class="context-note">
-                Illustrative sample. The app measures a qualifying cold
-                session’s first-turn cache write; category breakdowns are
-                estimates.
+                Illustrative global baseline from an empty folder, excluding
+                project configuration. The window also has a 33k autocompact
+                reserve and 935k free. Another 24.3k of deferred tools stays out
+                of context until loaded.
               </p>
             </div>
           </div>
@@ -648,14 +652,16 @@ npm run dev</code></pre>
               </p>
               <p>
                 Existing local Claude Code data populates the app. Plugin
-                actions also require the <code>claude</code> CLI on your PATH.
+                actions and Resident tax measurements also require the
+                <code>claude</code> CLI on your PATH.
               </p>
               <p>
                 Megatron refreshes when its window regains focus, after folder
                 grants change, and after plugin actions. Use
                 <strong>Settings → Rescan now</strong> for a manual refresh.
                 Settings shows scan progress and any sources that could not be
-                refreshed, including usage history.
+                refreshed, including usage history. Missing project folders keep
+                their cached data and are listed separately from scan failures.
               </p>
             </div>
           </div>
@@ -702,11 +708,11 @@ npm run dev</code></pre>
               ></i>
             </summary>
             <p>
-              Skill inspection and analytics are read-only. Megatron does not
-              edit skill definitions or execute their scripts or hooks. Plugin
-              management is a separate capability that uses Claude Code’s own
-              CLI commands. Those commands may access the network; inventory and
-              usage analysis run locally.
+              Skill inspection does not edit definitions or execute skill
+              scripts. Resident tax runs Claude Code’s local /context command,
+              which can start configured SessionStart hooks and MCP servers.
+              Plugin management uses Claude Code’s own CLI commands, which may
+              access the network. Inventory and usage analysis run locally.
             </p>
           </details>
           <details>
@@ -741,6 +747,25 @@ npm run dev</code></pre>
               missing and undated token data are identified separately. Compact
               values show their exact counts on hover or keyboard focus; those
               counts retain the same estimation limits.
+            </p>
+          </details>
+          <details>
+            <summary>
+              How is resident context measured?<i
+                data-lucide="plus"
+                aria-hidden="true"
+              ></i>
+            </summary>
+            <p>
+              Resident tax runs Claude Code’s /context from an empty folder to
+              measure your global baseline, excluding project instructions,
+              skills, and MCP servers. It measures on first open each launch and
+              again when you choose Refresh. Deferred tools and the autocompact
+              buffer are shown separately. Category tables come from /context;
+              other details read the first request of your newest interactive
+              Claude Code 2.1.300+ session on demand, without storing it. Those
+              session details can include project configuration. The website
+              preview uses synthetic examples throughout.
             </p>
           </details>
           <details>
@@ -792,6 +817,8 @@ npm run dev</code></pre>
               folders → Manage…, add your repository or parent folder containing
               multiple projects, and rescan if needed. Analytics also depend on
               the local history and transcripts retained by Claude Code.
+              Automatic discovery skips temporary and build directories;
+              explicitly granting a repository inside one still includes it.
             </p>
           </details>
         </div>

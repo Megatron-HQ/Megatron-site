@@ -1,6 +1,10 @@
 # Interactive preview parity plan
 
-Status: proposed implementation, pending approval. This audit changes no implementation files.
+Status: historical October 9 plan, since implemented and superseded by the
+[current implementation](interactive-preview-implementation.md) and
+[November 4 upstream review](upstream-sync-2026-11-04.md). Descriptions below,
+including the former cold-session Resident tax design, document the original
+proposal rather than the current product.
 
 Prepared on October 9, 2026, against:
 
