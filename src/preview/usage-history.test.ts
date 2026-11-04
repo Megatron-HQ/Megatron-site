@@ -2,6 +2,56 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createSampleState, SAMPLE_PROJECT, API_PROJECT } from './fixtures.ts'
 
+test('archived token-only days keep prompt coverage unavailable and retain token details', async () => {
+  const { buildUsageCalendar, buildUsageDay } = await history()
+  const state = createSampleState(new Date(2026, 9, 9, 12))
+  const day = buildUsageDay(state, '2024-07-01')
+  assert.equal(day.coverage, 'unavailable')
+  assert.equal(day.count, 0)
+  assert.equal(day.tokens?.total, 162200)
+  const square = buildUsageCalendar(state, 2024).days.find(
+    (row) => row.date === day.date
+  )!
+  assert.equal(square.coverage, 'unavailable')
+  assert.equal(square.tokens?.total, 162200)
+})
+
+test('day details and token trends reset to local midnight after a daylight-saving jump', async () => {
+  const { buildUsageDay, buildTokenStats } = await history()
+  const previousTimezone = process.env.TZ
+  process.env.TZ = 'America/Sao_Paulo'
+  try {
+    const state = createSampleState(new Date('2018-11-06T14:00:00.000Z'))
+    const template = state.events[0]
+    state.history = []
+    state.events = ['2018-11-04T03:30:00.000Z', '2018-11-05T02:30:00.000Z'].map(
+      (at) => ({
+        ...template,
+        at,
+        bareSlash: false,
+        tokens: {
+          input: 100,
+          output: 200,
+          cacheRead: 300,
+          cacheWrite: 400,
+          total: 1000
+        }
+      })
+    )
+    const day = buildUsageDay(state, '2018-11-04')
+    assert.equal(day.endAt, '2018-11-05T02:00:00.000Z')
+    assert.equal(day.count, 1)
+    const followingDay = buildTokenStats(state).last7d.trend.find(
+      (bucket) => bucket.key === '2018-11-05'
+    )!
+    assert.equal(followingDay.startAt, '2018-11-05T02:00:00.000Z')
+    assert.equal(followingDay.tokens?.total, 1000)
+  } finally {
+    if (previousTimezone === undefined) delete process.env.TZ
+    else process.env.TZ = previousTimezone
+  }
+})
+
 async function history() {
   try {
     return await import('./usage-history.ts')

@@ -29,6 +29,7 @@ export const ADDITIONAL_PARENT = windowsPath('C:', 'Clients')
 export const ADDITIONAL_PROJECT = windowsPath(ADDITIONAL_PARENT, 'docs-site')
 const USER_CLAUDE_ROOT = windowsPath('C:', 'Users', 'demo', '.claude')
 const PLUGIN_CACHE_ROOT = windowsPath(USER_CLAUDE_ROOT, 'plugins', 'cache')
+const TOKEN_ONLY_SAMPLE_OUTPUT = 9000
 export const CONTEXT_LIMIT = 2666
 export const HOUR_MS = 60 * 60 * 1000
 export const DAY_MS = 24 * HOUR_MS
@@ -114,7 +115,12 @@ function sampleHistory(now: Date): UsageDayDetails[] {
         : index % 83 === 0
           ? 'partial'
           : 'available',
-      tokens: count === 0 ? null : sampleTokens(count * 1800, index)
+      tokens:
+        unavailable && index % 2 === 0
+          ? sampleTokens(TOKEN_ONLY_SAMPLE_OUTPUT, index)
+          : count === 0
+            ? null
+            : sampleTokens(count * 1800, index)
     })
     cursor.setDate(cursor.getDate() + 1)
     index++

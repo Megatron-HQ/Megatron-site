@@ -23,6 +23,10 @@ function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+function nextLocalMidnight(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
+}
+
 function sumTokens(rows: TokenCounts[]): TokenCounts {
   const counts = rows.reduce(
     (sum, row) => ({
@@ -78,12 +82,12 @@ function tokenWindow(state: SampleState, days: number): TokenWindow {
   if (days !== 1) cursor.setHours(0, 0, 0, 0)
   const trend: TokenBucket[] = []
   while (cursor < end && (days !== 1 || trend.length < 24)) {
-    const next = new Date(cursor)
-    if (days === 1)
-      next.setTime(
-        trend.length === 23 ? end.getTime() : cursor.getTime() + HOUR_MS
-      )
-    else next.setDate(next.getDate() + 1)
+    const next =
+      days === 1
+        ? new Date(
+            trend.length === 23 ? end.getTime() : cursor.getTime() + HOUR_MS
+          )
+        : nextLocalMidnight(cursor)
     const bucketStart = new Date(
       Math.max(cursor.getTime(), start.getTime())
     ).toISOString()
@@ -141,8 +145,7 @@ export function buildUsageDay(
   const archived = state.history.find((day) => day.date === date)
   if (archived) return structuredClone(archived)
   const now = new Date(state.now)
-  const next = new Date(start)
-  next.setDate(next.getDate() + 1)
+  const next = nextLocalMidnight(start)
   const future = start > now
   const end = future
     ? next

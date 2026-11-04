@@ -10,6 +10,57 @@ import {
 } from './fixtures.ts'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 
+test('rescans publish archive progress before finishing the matching run', async () => {
+  const { api } = await createDemo({ actionDelayMs: 1 })
+  assert.equal(typeof api.onScanProgress, 'function')
+  const events: { type: string; id: number; source?: string }[] = []
+  api.onScanStarted(({ id }) => events.push({ type: 'start', id }))
+  const unsubscribe = api.onScanProgress(({ id, source }) => {
+    events.push({ type: 'progress', id, source: source.name })
+    source.name = 'Changed by subscriber'
+  })
+  api.onScanComplete(({ id }) => events.push({ type: 'finish', id }))
+  const scan = api.rescan()
+  const activity = (await api.listSkills()).scanActivity!
+  const summary = await scan
+  assert.deepEqual(events, [
+    { type: 'start', id: activity.id },
+    { type: 'progress', id: activity.id, source: 'scanTranscripts' },
+    { type: 'progress', id: activity.id, source: 'archiveTokens' },
+    { type: 'progress', id: activity.id, source: 'scanPromptHistory' },
+    { type: 'progress', id: activity.id, source: 'archivePrompts' },
+    { type: 'finish', id: activity.id }
+  ])
+  assert.equal(summary.isStartup, false)
+  assert.equal(summary.sources[1].name, 'archiveTokens')
+  assert.equal((await api.listSkills()).scanActivity, null)
+  unsubscribe()
+  events.length = 0
+  await api.rescan()
+  assert.deepEqual(
+    events.map((event) => event.type),
+    ['start', 'finish']
+  )
+})
+
+test('reset cancels archive progress and completion from a pending rescan', async () => {
+  const { api, reset } = await createDemo({ actionDelayMs: 10 })
+  assert.equal(typeof api.onScanProgress, 'function')
+  let progressCount = 0
+  const finishedIds: number[] = []
+  api.onScanProgress(() => {
+    progressCount += 1
+  })
+  api.onScanComplete(({ id }) => finishedIds.push(id))
+  const scan = api.rescan()
+  const pendingId = (await api.listSkills()).scanActivity!.id
+  reset()
+  await scan
+  assert.equal(progressCount, 0)
+  assert.ok(!finishedIds.includes(pendingId))
+  assert.equal((await api.listSkills()).scanActivity, null)
+})
+
 test('usage history agrees with Activity and survives sample rescans and reset', async () => {
   const { api, reset } = await createDemo()
   assert.equal(typeof api.getUsageCalendar, 'function')

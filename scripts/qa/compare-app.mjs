@@ -163,12 +163,18 @@ const scenes = [
         .waitFor()
     }
   ],
-  ...['Activity', 'Tokens', 'Cost', 'Models', 'Skills', 'Resident tax'].map(
-    (panel) => [
-      panel.toLowerCase().replaceAll(' ', '-'),
-      (page) => selectPanel(page, panel)
-    ]
-  ),
+  ...[
+    'Activity',
+    'History',
+    'Tokens',
+    'Cost',
+    'Models',
+    'Skills',
+    'Resident tax'
+  ].map((panel) => [
+    panel.toLowerCase().replaceAll(' ', '-'),
+    (page) => selectPanel(page, panel)
+  ]),
   [
     'tokens-hourly',
     async (page) => {
@@ -179,7 +185,7 @@ const scenes = [
   [
     'calendar-year',
     async (page) => {
-      await selectPanel(page, 'Activity')
+      await selectPanel(page, 'History')
       await page
         .getByRole('navigation', { name: 'Contribution year', exact: true })
         .getByRole('button', { name: '2024', exact: true })
@@ -195,7 +201,7 @@ const scenes = [
   [
     'calendar-details',
     async (page) => {
-      await selectPanel(page, 'Activity')
+      await selectPanel(page, 'History')
       await page
         .getByRole('group', {
           name: 'Daily activity calendar for 2026',
@@ -210,7 +216,37 @@ const scenes = [
         .waitFor()
     }
   ],
-  ...['Tokens', 'Activity'].map((panel) => [
+  [
+    'tokens-exact',
+    async (page) => {
+      await selectPanel(page, 'Tokens')
+      await page.locator('.text-usage-stat [tabindex="0"]').first().focus()
+      await page
+        .getByRole('tooltip')
+        .getByText(/exact tokens/)
+        .waitFor()
+    }
+  ],
+  [
+    'history-token-only',
+    async (page) => {
+      await selectPanel(page, 'History')
+      await page
+        .getByRole('navigation', { name: 'Contribution year', exact: true })
+        .getByRole('button', { name: '2024', exact: true })
+        .click()
+      await page
+        .getByRole('button', {
+          name: /^(?:July 1, 2024|1 July 2024) · Prompt history unavailable$/
+        })
+        .focus()
+      await page
+        .getByRole('tooltip')
+        .getByText('162,200 exact tokens', { exact: true })
+        .waitFor()
+    }
+  ],
+  ...['Tokens', 'Activity', 'History'].map((panel) => [
     `${panel.toLowerCase()}-dark`,
     async (page) => {
       await page.getByRole('button', { name: 'Settings', exact: true }).click()

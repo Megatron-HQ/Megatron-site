@@ -1,6 +1,7 @@
 export const PREVIEW_SECTIONS = ['skills', 'plugins', 'usage'] as const
 export const USAGE_PANELS = [
   'activity',
+  'history',
   'tokens',
   'cost',
   'models',

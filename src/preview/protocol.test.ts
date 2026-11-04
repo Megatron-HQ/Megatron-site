@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+test('History links reach the separate Usage panel and reject cross-section navigation', async () => {
+  const { parsePreviewCommand } = await protocol()
+  const command = {
+    type: 'megatron-preview:navigate',
+    section: 'usage',
+    panel: 'history'
+  }
+  assert.deepEqual(parsePreviewCommand(command), command)
+  assert.equal(parsePreviewCommand({ ...command, section: 'plugins' }), null)
+})
+
 test('Tokens deep links navigate only within Usage', async () => {
   const { parsePreviewCommand } = await protocol()
   const command = {

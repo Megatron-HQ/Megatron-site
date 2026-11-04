@@ -131,21 +131,52 @@ export const scenarios = [
     await app.getByRole('button', { name: 'Uninstall', exact: true }).click()
     await app.getByRole('dialog').waitFor()
   }),
-  ...['Activity', 'Tokens', 'Cost', 'Models', 'Skills', 'Resident tax'].map(
-    (panel) =>
-      sample(
-        'product-demo-usage-' +
-          (panel === 'Resident tax' ? 'resident' : panel.toLowerCase()),
-        'demo-usage',
-        (app) => selectPanel(app, panel)
-      )
+  ...[
+    'Activity',
+    'History',
+    'Tokens',
+    'Cost',
+    'Models',
+    'Skills',
+    'Resident tax'
+  ].map((panel) =>
+    sample(
+      'product-demo-usage-' +
+        (panel === 'Resident tax' ? 'resident' : panel.toLowerCase()),
+      'demo-usage',
+      (app) => selectPanel(app, panel)
+    )
   ),
   sample('product-demo-usage-tokens-hourly', 'demo-usage', async (app) => {
     await selectPanel(app, 'Tokens')
     await app.getByRole('radio', { name: '24 hours', exact: true }).click()
   }),
+  sample('product-demo-usage-tokens-exact', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Tokens')
+    await app.locator('.text-usage-stat [tabindex="0"]').first().focus()
+    await app
+      .getByRole('tooltip')
+      .getByText(/exact tokens/)
+      .waitFor()
+  }),
+  sample('product-demo-usage-history-token-only', 'demo-usage', async (app) => {
+    await selectPanel(app, 'History')
+    await app
+      .getByRole('navigation', { name: 'Contribution year', exact: true })
+      .getByRole('button', { name: '2024', exact: true })
+      .click()
+    await app
+      .getByRole('button', {
+        name: /^(?:July 1, 2024|1 July 2024) · Prompt history unavailable$/
+      })
+      .focus()
+    await app
+      .getByRole('tooltip')
+      .getByText('162,200 exact tokens', { exact: true })
+      .waitFor()
+  }),
   sample('product-demo-usage-calendar-year', 'demo-usage', async (app) => {
-    await selectPanel(app, 'Activity')
+    await selectPanel(app, 'History')
     await app
       .getByRole('navigation', { name: 'Contribution year', exact: true })
       .getByRole('button', { name: '2024', exact: true })
@@ -158,7 +189,7 @@ export const scenarios = [
       .waitFor()
   }),
   sample('product-demo-usage-calendar-details', 'demo-usage', async (app) => {
-    await selectPanel(app, 'Activity')
+    await selectPanel(app, 'History')
     await app
       .getByRole('group', {
         name: 'Daily activity calendar for 2026',
@@ -172,7 +203,7 @@ export const scenarios = [
       .getByText(/estimated tokens processed/)
       .waitFor()
   }),
-  ...['Tokens', 'Activity'].map((panel) =>
+  ...['Tokens', 'Activity', 'History'].map((panel) =>
     sample(
       `product-demo-usage-${panel.toLowerCase()}-dark`,
       'demo-usage',

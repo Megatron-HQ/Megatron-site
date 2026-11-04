@@ -293,7 +293,7 @@ export async function verifyPreviewStates(page, baseUrl) {
     ],
     [
       'calendar-error',
-      (frame) => selectPanel(frame, 'Activity'),
+      (frame) => selectPanel(frame, 'History'),
       /Could not load contribution history/
     ],
     [
@@ -331,7 +331,7 @@ export async function verifyPreviewStates(page, baseUrl) {
     [
       'scan-failed',
       async () => {},
-      'Scan failed. Showing the last available data.'
+      'The startup scan could not finish. Open Scan details for more information.'
     ],
     ['projects-empty', async () => {}, 'No project folders'],
     [

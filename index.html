@@ -313,7 +313,8 @@
                     Input, output, cache reads, and cache writes across 24
                     hours, 7 days, or 30 days. Follow hourly and daily trends,
                     with breakdowns by model and project. Time-based figures are
-                    estimated from recorded session totals.
+                    estimated from recorded session totals. Hover or focus a
+                    compact token value to see its exact count.
                   </p>
                   <button
                     type="button"
@@ -330,13 +331,13 @@
               <article>
                 <span class="analytics-number">02</span>
                 <div>
-                  <h3>Your activity, over time.</h3>
+                  <h3>Recent activity. Years of history.</h3>
                   <p>
-                    A year of prompts at a glance, with year selection and one
-                    intensity scale across your history. Hover for a summary;
-                    open a day for prompts, sessions, projects, and available
-                    token data. Recent activity also has 24-hour, 7-day, and
-                    30-day views.
+                    Activity shows your recent prompts and sessions across 24
+                    hours, 7 days, or 30 days. History has its own yearly
+                    calendar, year selection, and shared intensity scale. Hover
+                    for a summary; open a day for prompts, sessions, projects,
+                    and available token data.
                   </p>
                   <button
                     type="button"
@@ -344,6 +345,16 @@
                     data-show-usage="activity"
                   >
                     Explore activity<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="history"
+                  >
+                    Explore history<i
                       data-lucide="arrow-up-right"
                       aria-hidden="true"
                     ></i>
@@ -603,6 +614,8 @@ npm run dev</code></pre>
                 Megatron refreshes when its window regains focus, after folder
                 grants change, and after plugin actions. Use
                 <strong>Settings → Rescan now</strong> for a manual refresh.
+                Settings shows scan progress and any sources that could not be
+                refreshed, including usage history.
               </p>
             </div>
           </div>
@@ -668,7 +681,10 @@ npm run dev</code></pre>
               rebuilds, without storing prompt text in that archive. It retains
               activity already observed when Claude Code removes older source
               files. History deleted before Megatron saw it cannot be recovered.
-              Missing history is shown separately from days with no activity.
+              The History panel separates missing history from days with no
+              activity. A day can still show token details when its prompt
+              history is unavailable. Incomplete source scans preserve the
+              previously archived history.
             </p>
           </details>
           <details>
@@ -682,7 +698,9 @@ npm run dev</code></pre>
               Total tokens processed includes input, output, cache reads, and
               cache writes. Thinking is included in output. Figures for a time
               period are estimated allocations of recorded session totals;
-              missing and undated token data are identified separately.
+              missing and undated token data are identified separately. Compact
+              values show their exact counts on hover or keyboard focus; those
+              counts retain the same estimation limits.
             </p>
           </details>
           <details>

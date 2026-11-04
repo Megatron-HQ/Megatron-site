@@ -91,6 +91,7 @@ try {
     .screenshot({ path: join(directory, 'cost-preview.png') })
   for (const [panel, name] of [
     ['tokens', 'Tokens'],
+    ['history', 'History'],
     ['activity', 'Activity']
   ]) {
     await page.locator(`[data-show-usage="${panel}"]`).click()
@@ -123,7 +124,7 @@ try {
       .count()
   )
   results.push(
-    'Host arrow-key tabs, Tokens/Activity/Cost links, installation copy and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, Tokens/Activity/History/Cost links, installation copy and keyboard FAQ disclosure passed.'
   )
   await page.goto(baseUrl)
   await verifyPreviewStates(page, baseUrl)
@@ -138,6 +139,7 @@ try {
     await checkOverflow(page, width)
     for (const panel of [
       'Activity',
+      'History',
       'Tokens',
       'Cost',
       'Models',
@@ -203,7 +205,7 @@ try {
     }
   }
   results.push(
-    'All six Usage views at 375/768/1024/1440px: no page overflow; contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
+    'All seven Usage views at 375/768/1024/1440px: no page overflow; contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
   )
 
   const motionPage = await context.newPage()

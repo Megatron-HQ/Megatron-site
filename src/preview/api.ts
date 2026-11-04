@@ -7,6 +7,7 @@ import type {
   PluginUpdateProgress,
   ScanActivity,
   ScanFinished,
+  ScanProgress,
   ScanSummary,
   SkillInvocationSliceInput,
   SkillRow,
@@ -58,8 +59,11 @@ export function createDemoApi(options: DemoOptions = {}) {
   let sessionRevision = 0
   let scanActivity: ScanActivity | null = null
   let nextScanId = 0
+  let lastScanWasStartup =
+    options.scenario === 'scan-failed' || options.scenario === 'scan-partial'
   const subscriptions = new Set<(finished: ScanFinished) => void>()
   const scanStartedSubscriptions = new Set<(activity: ScanActivity) => void>()
+  const scanProgressSubscriptions = new Set<(progress: ScanProgress) => void>()
   const pluginProgressSubscriptions = new Set<
     (progress: PluginUpdateProgress) => void
   >()
@@ -83,10 +87,22 @@ export function createDemoApi(options: DemoOptions = {}) {
     return {
       outcome,
       completedAt: state.now,
+      isStartup: lastScanWasStartup,
       sources: [
         {
-          name: 'Sample data',
-          status: outcome,
+          name: 'scanTranscripts',
+          status: outcome === 'failed' ? 'failed' : 'complete',
+          ...(outcome === 'failed'
+            ? { failureReason: 'scan_error' as const }
+            : {})
+        },
+        {
+          name: 'archiveTokens',
+          status: outcome === 'failed' ? 'partial' : 'complete'
+        },
+        {
+          name: 'scanPromptHistory',
+          status: outcome === 'partial' ? 'partial' : 'complete',
           ...(outcome === 'partial'
             ? {
                 issues: [
@@ -97,6 +113,10 @@ export function createDemoApi(options: DemoOptions = {}) {
                 ]
               }
             : {})
+        },
+        {
+          name: 'archivePrompts',
+          status: outcome === 'partial' ? 'partial' : 'complete'
         }
       ],
       lastSuccessfulAt:
@@ -588,6 +608,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       options.onSectionChange?.(value)
     },
     async rescan() {
+      lastScanWasStartup = false
       const activity: ScanActivity = {
         id: ++nextScanId,
         startedAt: Date.now(),
@@ -599,7 +620,13 @@ export function createDemoApi(options: DemoOptions = {}) {
       for (const subscriber of scanStartedSubscriptions)
         subscriber(copy(activity))
       if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
-      if (revision === sessionRevision) notify(activity)
+      if (revision === sessionRevision) {
+        for (const source of scanSummary().sources) {
+          for (const subscriber of scanProgressSubscriptions)
+            subscriber(copy({ id: activity.id, source }))
+        }
+        notify(activity)
+      }
       return scanSummary()
     },
     async revealDataFolder() {
@@ -625,6 +652,12 @@ export function createDemoApi(options: DemoOptions = {}) {
       return () => {
         subscriptions.delete(callback)
       }
+    },
+    onScanProgress(callback) {
+      scanProgressSubscriptions.add(callback)
+      return () => {
+        scanProgressSubscriptions.delete(callback)
+      }
     }
   }
   refreshPlugins()
@@ -634,6 +667,9 @@ export function createDemoApi(options: DemoOptions = {}) {
       sessionRevision += 1
       pendingAction = false
       scanActivity = null
+      lastScanWasStartup =
+        options.scenario === 'scan-failed' ||
+        options.scenario === 'scan-partial'
       state = structuredClone(initial)
       refreshPlugins()
       section = options.initialSection ?? 'skills'

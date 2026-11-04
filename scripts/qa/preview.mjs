@@ -99,6 +99,18 @@ export async function verifyPreview(page) {
   await app.getByRole('radio', { name: 'Dark', exact: true }).click()
   assert.equal(await app.locator('html').getAttribute('class'), 'dark')
   await app.getByRole('radio', { name: 'Light', exact: true }).click()
+  await app.getByRole('button', { name: 'Rescan now', exact: true }).click()
+  await app
+    .getByRole('status')
+    .filter({ hasText: 'Scanning Claude Code data…' })
+    .waitFor()
+  assert.equal(
+    await app
+      .getByRole('button', { name: 'Rescanning…', exact: true })
+      .isDisabled(),
+    true
+  )
+  await app.getByText('Scan complete.', { exact: true }).waitFor()
   await app.getByRole('button', { name: 'Close', exact: true }).click()
 
   await app.getByRole('button', { name: 'Plugins', exact: true }).click()
@@ -222,6 +234,16 @@ export async function verifyUsageHistory(page, app) {
     .getByText('Total tokens processed · estimated', { exact: true })
     .waitFor()
   const total = app.locator('.text-usage-stat').first()
+  const tokenValue = total.locator('[tabindex="0"][aria-label$=" tokens"]')
+  const exactLabel = await tokenValue.getAttribute('aria-label')
+  assert.match(exactLabel, /^[\d,]+ tokens$/)
+  assert.match(await tokenValue.textContent(), /[KMB]/)
+  await tokenValue.focus()
+  await app
+    .getByRole('tooltip')
+    .getByText(exactLabel.replace(' tokens', ' exact tokens'), { exact: true })
+    .waitFor()
+  await tokenValue.press('Escape')
   const monthlyTotal = await total.textContent()
   await app.getByRole('radio', { name: '24 hours', exact: true }).click()
   assert.notEqual(await total.textContent(), monthlyTotal)
@@ -235,6 +257,19 @@ export async function verifyUsageHistory(page, app) {
   const weeklyTotal = await total.textContent()
   await selectPanel(app, 'Activity')
   await app.getByRole('radio', { name: '24 hours', exact: true }).click()
+  assert.equal(
+    await app
+      .getByRole('navigation', { name: 'Contribution year', exact: true })
+      .count(),
+    0
+  )
+  await selectPanel(app, 'History')
+  assert.equal(
+    await app
+      .getByRole('radiogroup', { name: 'Activity window', exact: true })
+      .count(),
+    0
+  )
   const years = app.getByRole('navigation', {
     name: 'Contribution year',
     exact: true
@@ -245,6 +280,32 @@ export async function verifyUsageHistory(page, app) {
     exact: true
   })
   await calendar.waitFor()
+  const tokenOnlyDay = calendar.getByRole('button', {
+    name: /^(?:July 1, 2024|1 July 2024) · Prompt history unavailable$/
+  })
+  assert.equal(
+    await tokenOnlyDay.evaluate(
+      (button) => getComputedStyle(button).borderTopStyle
+    ),
+    'dashed'
+  )
+  assert.equal(await tokenOnlyDay.getAttribute('aria-haspopup'), 'dialog')
+  await tokenOnlyDay.focus()
+  await app
+    .getByRole('tooltip')
+    .getByText('162,200 exact tokens', { exact: true })
+    .waitFor()
+  await tokenOnlyDay.click()
+  await app
+    .getByRole('dialog')
+    .getByText(/Prompt history is unavailable for this day/)
+    .waitFor()
+  await app
+    .getByRole('dialog')
+    .getByText(/estimated tokens processed/)
+    .waitFor()
+  await page.keyboard.press('Escape')
+  await app.getByRole('dialog').waitFor({ state: 'hidden' })
   assert.equal(await calendar.locator('button').count(), 366)
   assert.ok(
     (await calendar.locator('button[aria-disabled="true"]').count()) > 0
@@ -271,7 +332,15 @@ export async function verifyUsageHistory(page, app) {
     await day.evaluate((button) => button === document.activeElement),
     true
   )
+  await selectPanel(app, 'Activity')
+  assert.equal(
+    await app
+      .getByRole('radio', { name: '24 hours', exact: true })
+      .getAttribute('aria-checked'),
+    'true'
+  )
   await app.getByRole('radio', { name: '7 days', exact: true }).click()
+  await selectPanel(app, 'History')
   assert.equal(
     await years
       .getByRole('button', { name: '2024', exact: true })
