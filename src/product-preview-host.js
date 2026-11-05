@@ -28,6 +28,20 @@ export function mountProductDemo(root) {
       <div class="preview-switcher" role="tablist" aria-label="Product preview sections">${SECTIONS.map((section) => `<button type="button" id="preview-${section.id}" role="tab" aria-selected="${section.id === 'skills'}" aria-controls="preview-screen" tabindex="${section.id === 'skills' ? 0 : -1}" class="preview-tab" data-preview-section="${section.id}"><i data-lucide="${section.icon}" aria-hidden="true"></i>${section.label}</button>`).join('')}</div>
       <div class="preview-host-actions"><span class="preview-sample-label">INTERACTIVE / SAMPLE DATA</span><button type="button" class="preview-host-button" data-preview-reset>Reset sample</button><button type="button" class="preview-host-button" data-preview-expand aria-expanded="false">Expand preview</button></div>
     </div>
+    <div class="preview-live-controls">
+      <span class="preview-live-label">TRY LIVE REFRESH</span>
+      <label class="sr-only" for="preview-file-change">Sample file change</label>
+      <select id="preview-file-change" class="preview-host-select" data-preview-change-kind>
+        <option value="add-skill">Add a skill to web-app</option>
+        <option value="edit-skill">Edit the deploy skill</option>
+        <option value="delete-skill">Delete the deploy skill</option>
+        <option value="move-project">Move the web-app project</option>
+        <option value="delete-project">Delete the web-app project</option>
+        <option value="unavailable-project">Make web-app unreadable</option>
+      </select>
+      <button type="button" class="preview-host-button" data-preview-change disabled>Simulate change</button>
+      <span class="preview-live-hint">Sample files only. Reset to start again.</span>
+    </div>
     <div class="preview-viewport" id="preview-screen" role="tabpanel" aria-labelledby="preview-skills"><iframe class="preview-frame" data-preview-frame src="${previewUrl.href}" title="Megatron app preview with sample data" referrerpolicy="no-referrer"></iframe></div>
     <p class="preview-host-notice" data-preview-notice role="status" aria-live="polite">Loading the Megatron preview…</p>
   </dialog>`
@@ -37,6 +51,8 @@ export function mountProductDemo(root) {
   const viewport = root.querySelector('.preview-viewport')
   const notice = root.querySelector('[data-preview-notice]')
   const expandButton = root.querySelector('[data-preview-expand]')
+  const changeButton = root.querySelector('[data-preview-change]')
+  const changeKind = root.querySelector('[data-preview-change-kind]')
   let ready = false
   let pendingCommand = null
   let previousOverflow = ''
@@ -105,6 +121,7 @@ export function mountProductDemo(root) {
     if (message.type === 'megatron-preview:ready') {
       ready = true
       host.dataset.ready = 'true'
+      changeButton.disabled = false
       window.clearTimeout(loadTimeout)
       notice.textContent =
         'Explore every view. On smaller screens, swipe sideways or expand the preview.'
@@ -114,7 +131,9 @@ export function mountProductDemo(root) {
         pendingCommand = null
         send(command)
       }
-    } else if (message.type === 'megatron-preview:section')
+    } else if (message.type === 'megatron-preview:inventory-finished')
+      changeButton.disabled = false
+    else if (message.type === 'megatron-preview:section')
       selectSection(message.section)
     else if (
       message.type === 'megatron-preview:notice' &&
@@ -146,9 +165,17 @@ export function mountProductDemo(root) {
     if (!button || !root.contains(button)) return
     if (button.dataset.previewSection) navigate(button.dataset.previewSection)
     else if (button.hasAttribute('data-preview-reset')) {
+      changeKind.value = 'add-skill'
       if (ready) send({ type: 'megatron-preview:reset' })
       else frame.src = previewUrl.href
       viewport.scrollLeft = 0
+    } else if (button.hasAttribute('data-preview-change')) {
+      changeButton.disabled = true
+      notice.textContent = 'Applying the sample file change…'
+      send({
+        type: 'megatron-preview:inventory-change',
+        action: changeKind.value
+      })
     } else if (button.hasAttribute('data-preview-expand'))
       setExpanded(host.dataset.expanded !== 'true')
   })

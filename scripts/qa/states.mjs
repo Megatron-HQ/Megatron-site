@@ -355,7 +355,7 @@ export async function verifyPreviewStates(page, baseUrl) {
       async (frame) => {
         await openDevRepository(frame, 'web-app')
       },
-      'This folder could not be fully refreshed. Showing the last available data.'
+      'This folder could not be refreshed. Showing its last available data. Megatron will retry automatically.'
     ],
     [
       'projects-missing',

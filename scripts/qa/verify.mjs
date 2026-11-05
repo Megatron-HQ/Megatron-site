@@ -9,6 +9,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { verifyPreviewStates } from './states.mjs'
+import { verifyInventoryChanges } from './inventory.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -136,6 +137,10 @@ try {
   await verifyPreviewStates(page, baseUrl)
   results.push(
     'Source/chevron behavior, conditional columns, budget audit filters, palette cross-section navigation, remaining file statuses, folder grants, scoped updates, invocation return filters, every time window, and loading/error/empty/action-failure states passed.'
+  )
+  await verifyInventoryChanges(page, baseUrl, join(directory, 'inventory'))
+  results.push(
+    'Live sample additions/edits/deletions, moves, project/detail recovery, child-only warnings, preserved Usage periods, and retained manual-rescan feedback passed at all four widths.'
   )
 
   for (const width of [375, 768, 1024, 1440]) {

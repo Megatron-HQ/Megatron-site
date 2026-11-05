@@ -67,7 +67,7 @@ The production site is emitted to `dist/`. The local production preview serves a
 - `src/product-preview-host.js`: iframe lifecycle, section navigation, reset, expansion, and focus reveal.
 - `src/icons.js`: bundled marketing icons.
 - `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, archived daily summaries, and trusted host messaging.
-- `vendor/megatron/`: 100 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
+- `vendor/megatron/`: 104 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
 - `scripts/preview/`: reproducible renderer import and integrity checks.
 - `scripts/qa/`: headless Playwright verification suites and Electron reference comparison.
 - `scripts/ci/`: CI preview lifecycle orchestration and regression test harness.
@@ -89,9 +89,9 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` (104 pinned files). It includes History's annual summary and monthly project timeline, the rebuilt `/context` Resident tax panel, independent Refresh, category and recorded-request drilldowns, missing-project scan fixes, exact-token tooltips, and scan progress. Its source revision, exact source hashes, and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0` at `da368fe` (104 pinned files). It includes live inventory reconciliation, removed-selection recovery, folder-specific warnings, and manual-rescan result retention, alongside History's annual summary, the `/context` Resident tax panel, exact-token tooltips, and scan progress. Its source revision, exact source hashes, and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
 
-The [November 4 upstream review](docs/upstream-sync-2026-11-04.md) details all 66 changed app files, their website impact, and current verification evidence. Rerun the checks below when changing the implementation.
+The [November 5 upstream review](docs/upstream-sync-2026-11-05.md) details all 31 newly changed app files and their website impact. The [November 4 review](docs/upstream-sync-2026-11-04.md) records the earlier `/context` integration. Rerun the checks below when changing the implementation.
 
 See the [product fidelity audit](docs/product-fidelity-audit.md) for the current capability review and corrections, [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original approach.
 
@@ -100,6 +100,10 @@ The preview uses the actual app renderer in a same-origin iframe. Marketing CSS 
 Resident tax's `/context` baseline and recorded requests are independent synthetic examples in `src/preview/context.ts`. The sample shows used, deferred, reserved, and free categories, category tables, system blocks/tools/cache breakpoints, hook output, and MCP instructions. It simulates measurement failures and unavailable recordings. The desktop measurement runs Claude Code from an empty folder and can start configured SessionStart hooks and MCP servers; the browser never runs the CLI or reads transcripts. The landing-page illustration groups system prompt and system tools and agrees with the preview's 32k used / 1M window, 33k reserve, 935k free, and 24.3k deferred sample.
 
 At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
+
+The preview's **Try live refresh** controls simulate adding, editing, or deleting a skill, moving or deleting a discovered project, and a temporarily unreadable child. Inventory-only completion events update the actual renderer without refetching open Usage/history queries. Deleted selections recover to their surviving parent; shared user plugin installs survive cleanup. Sample moves leave historical project paths unchanged. Reset cancels pending examples and restores the original session. These controls never watch or change visitor files.
+
+The desktop watches approved inventory locations after changes settle and reconciles missed events periodically. Full startup, focus, folder-grant, plugin-action, and manual scans retain their existing behavior. Confirmed missing discovered children beneath readable grants are pruned; missing directly granted roots and unreadable sources retain cached inventory. Warnings remain scoped to the affected folder. Settings retains the manual-rescan result while its source details reflect the latest background scan.
 
 Checks cover the command palette, conditional inventory columns, hierarchical project navigation and folder expansion, actionable scan diagnostics, project availability notices, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings and manual rescan, user- and project-scoped plugin actions, all seven Usage panels, independent time windows and history years, exact-token tooltips, token-only days with unavailable prompt history, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
 

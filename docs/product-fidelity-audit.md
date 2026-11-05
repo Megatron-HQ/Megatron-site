@@ -1,7 +1,7 @@
 # Megatron product fidelity audit
 
-Reviewed on October 18, 2026 and updated on November 4, 2026 against the
-desktop app at `e1def740b3d5c86dbdddf1f51862eab497a883b6`
+Reviewed on October 18, 2026 and updated on November 5, 2026 against the
+desktop app at `da368fef9e681840fa40f3e85df6638ba9345205`
 (Megatron 0.1.0). The renderer provenance records the exact source-file hashes.
 
 ## Product and website architecture
@@ -20,7 +20,7 @@ The website has two separate entries:
   visitor filesystem, database, terminal, or account integration.
 
 The app's components and styles are imported through `preview:sync`; the snapshot
-contains 102 source/license files and a provenance manifest. Four integration
+contains 104 source/license files and a provenance manifest. Four integration
 patches scope Tailwind discovery, support trusted host navigation, and prevent
 the two inventories from taking focus from an inactive iframe. Renderer files
 are never manually edited.
@@ -55,8 +55,27 @@ History has a prompt-based yearly contribution calendar with year selection, one
 Activity, Tokens, Cost, Models, and Skills have independent rolling 24-hour, 7-day, and
 30-day windows. Resident tax uses its qualifying session sample instead.
 
-The desktop app refreshes on focus, folder-grant changes, successful plugin
-actions, and manual rescan. It does not continuously watch the filesystem.
+The desktop watches approved project folders, global skills, plugin stores, and
+user configuration. Changes settle for one second before an inventory-only scan;
+a five-second cap prevents starvation and a 30-second reconciliation recovers
+missed events. These are scheduling intervals, not latency guarantees. Inventory
+refreshes do not ingest Usage or invalidate open Usage/history queries. Startup,
+focus, folder-grant changes, successful plugin actions, and manual full scans retain
+their existing behavior. Resident tax still measures independently.
+
+Confirmed missing discovered children below readable grants are removed from
+the catalog and derived skill/plugin index. Deleting a `.claude` directory also
+removes stale skills. Missing directly granted roots and unreadable sources keep
+cached data. An unreadable child does not mark its healthy parent or siblings
+unavailable. Removed selections recover to the nearest available ancestor and
+removed details close. Moves rediscover paths without rewriting Claude's registry
+or reassigning historical Usage. Settings retains the user's manual-rescan result
+while current source details show newer background results.
+
+The host's six sample-change examples exercise live reconciliation without native
+watchers, commands, or file access. The missing-project scenarios now explicitly
+grant the retained missing repository and keep its readable parent available.
+See [the November 5 review](upstream-sync-2026-11-05.md) for the full source audit.
 Core inventory and analysis run locally without Megatron telemetry or external
 LLM calls; Claude CLI plugin actions can use the network. Resident tax's /context
 can start configured SessionStart hooks and MCP servers. Its recorded drilldowns
@@ -157,6 +176,11 @@ it does not run scanners or inspect personal Claude sessions. Windows reference
 captures do not establish native macOS packaging or window-chrome parity.
 
 ## Previous verification results (November 3)
+
+The current [November 5 verification](upstream-sync-2026-11-05.md#verification)
+records 102 passing tests, 241 responsive captures without overflow or browser
+errors, passing full production QA, and 82 exact native renderer comparisons.
+The historical results below describe the earlier integration.
 
 | Check                      | Result                                                                                                                                                                                                                                                                      |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

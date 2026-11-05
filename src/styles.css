@@ -465,6 +465,43 @@ h1 {
 .preview-host-button:hover {
   background: #33352e;
 }
+.preview-host-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.preview-live-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid #3e4137;
+}
+.preview-live-label {
+  color: #d1d5c3;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.045em;
+}
+.preview-host-select {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #515449;
+  border-radius: 4px;
+  padding: 7px 10px;
+  background: #292b24;
+  color: #eceee0;
+  font-size: 11px;
+}
+.preview-host-select:focus-visible,
+.preview-live-controls .preview-host-button:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 3px;
+}
+.preview-live-hint {
+  color: #b4b6aa;
+  font-size: 10px;
+}
 .preview-viewport {
   height: clamp(500px, 72vh, 720px);
   overflow-x: auto;

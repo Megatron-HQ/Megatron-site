@@ -1,6 +1,29 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+test('inventory messages accept only the supported sample changes', async () => {
+  const { parsePreviewCommand } = await protocol()
+  for (const action of [
+    'add-skill',
+    'edit-skill',
+    'delete-skill',
+    'move-project',
+    'delete-project',
+    'unavailable-project'
+  ]) {
+    const command = { type: 'megatron-preview:inventory-change', action }
+    assert.deepEqual(parsePreviewCommand(command), command)
+  }
+  for (const action of [undefined, null, '__proto__', 'read-local-files', 1])
+    assert.equal(
+      parsePreviewCommand({
+        type: 'megatron-preview:inventory-change',
+        action
+      }),
+      null
+    )
+})
+
 test('History links reach the separate Usage panel and reject cross-section navigation', async () => {
   const { parsePreviewCommand } = await protocol()
   const command = {

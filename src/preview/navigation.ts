@@ -27,6 +27,14 @@ export function usePreviewNavigation(
         window.dispatchEvent(new Event('megatron-preview:reset'))
         return
       }
+      if (command.type === 'megatron-preview:inventory-change') {
+        window.dispatchEvent(
+          new CustomEvent('megatron-preview:inventory-change', {
+            detail: command.action
+          })
+        )
+        return
+      }
       setSection(command.section)
       if (command.panel) setPanel(command.panel)
       void window.api.setLastSection(command.section)

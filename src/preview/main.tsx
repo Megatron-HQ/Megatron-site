@@ -11,7 +11,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '../../vendor/megatron/src/renderer/src/App'
 import { createDemoApi } from './api.ts'
-import { parsePreviewCommand } from './protocol.ts'
+import { parsePreviewCommand, type InventoryChange } from './protocol.ts'
 import { sendPreviewMessage } from './navigation.ts'
 
 const parameters = new URLSearchParams(window.location.search)
@@ -66,6 +66,23 @@ class PreviewErrorBoundary extends Component<
 function Preview() {
   const [revision, setRevision] = useState(0)
   useEffect(() => {
+    async function changeInventory(event: Event) {
+      try {
+        await demo.simulateInventoryChange(
+          (event as CustomEvent<InventoryChange>).detail
+        )
+      } catch (error) {
+        sendPreviewMessage({
+          type: 'megatron-preview:notice',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'The sample change could not be completed.'
+        })
+      } finally {
+        sendPreviewMessage({ type: 'megatron-preview:inventory-finished' })
+      }
+    }
     const reset = () => {
       demo.reset()
       queryClient.clear()
@@ -73,6 +90,10 @@ function Preview() {
       setRevision((value) => value + 1)
     }
     window.addEventListener('megatron-preview:reset', reset)
+    window.addEventListener(
+      'megatron-preview:inventory-change',
+      changeInventory
+    )
     function revealFocus(event: FocusEvent) {
       const target = event.target
       if (!(target instanceof HTMLElement)) return
@@ -86,6 +107,10 @@ function Preview() {
     document.addEventListener('focusin', revealFocus)
     return () => {
       window.removeEventListener('megatron-preview:reset', reset)
+      window.removeEventListener(
+        'megatron-preview:inventory-change',
+        changeInventory
+      )
       document.removeEventListener('focusin', revealFocus)
     }
   }, [])

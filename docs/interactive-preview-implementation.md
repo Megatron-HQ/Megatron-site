@@ -4,7 +4,7 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `e1def740b3d5c86dbdddf1f51862eab497a883b6`, version `0.1.0`; exact source hashes pin the imported files.
+- App revision: `da368fef9e681840fa40f3e85df6638ba9345205`, version `0.1.0`; exact source hashes pin the imported files.
 - Snapshot: 102 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
 - Four recorded integration patches: scoped Tailwind discovery, trusted host navigation, and inactive-frame autofocus guards in the two inventories. App tokens, layouts, labels, icons, and motion rules are preserved.
 - `npm run build` checks TypeScript and snapshot hashes before building the marketing and preview entries. Normal builds and CI require no sibling app checkout.
@@ -17,6 +17,27 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 The preview retains an 860px minimum client width. At narrower website widths, visitors pan the contained desktop viewport; keyboard focus reveals controls. The landing page itself has no horizontal overflow. Marketing navigation, mobile menu/Escape, installation copying, FAQ, scroll effects, and reduced motion remain intact.
 
 `src/preview/api.ts` provides the complete typed browser API over session-only sample state. Folder grants, native plugin commands, rescans, external app links, and data-folder reveal are simulated. No visitor filesystem, CLI, database, backend, or telemetry access is introduced. Reset cancels stale pending actions and restores the original state.
+
+The November 5 snapshot imports `da368fe` through the existing sync tool. The
+actual renderer handles inventory-only query invalidation, deleted-selection
+recovery, child-scoped availability notices, and retained manual-rescan feedback.
+`src/preview/inventory.ts` applies six sample changes to an independent inventory
+source, so subsequent folder grants cannot resurrect deleted files or projects.
+Moves produce new skill identities while preserving historical project paths;
+cleanup removes only scoped installs and their unshared skill definitions.
+
+The host's labeled native select and Simulate change button send a validated
+`megatron-preview:inventory-change` command through the existing origin/source
+checks. The adapter emits `scanSkills`, `scanPluginRegistry`, and `runLinter`
+completion sources without re-ingesting Usage. A completion acknowledgment releases
+the host button even when a sequence requires Reset. Reset suppresses pending
+mutations and notices. Unreadable sample children retain cached entries; directly
+granted missing sample repositories are retained independently of healthy parents.
+No timer, native watcher, new IPC method, or renderer integration patch is added.
+
+`scripts/qa/inventory.mjs` verifies these flows at 375, 768, 1024, and 1440px and
+captures unreadable, moved, removed-plugin, preserved-Usage, and retained-rescan
+states under `.qa/inventory/`. It is included in production QA.
 
 The October 18 product review corrected version-specific plugin paths/counts, shared-install updates and uninstalls, aggregate enablement, missing-folder state, overlapping parent grants, scan lifecycle events, and lint line destinations. Add Folder first grants the sample `C:\Clients\docs-site` repository; a second click grants its `Clients` parent. See the [product fidelity audit](product-fidelity-audit.md) for the complete capability and content review.
 
@@ -53,10 +74,20 @@ See the [detailed upstream review](upstream-sync-2026-11-04.md) for this run's e
 
 Local evidence lives in `.qa/app-reference/`, `.qa/results.json`, and `.visual-verify/`. Screenshot baselines are local and ignored. Reference comparison excludes operating-system window chrome and verifies the listed Windows renderer states; it is not a native macOS test. Native actions remain deliberately simulated in the browser.
 
+Current verification is recorded in the [November 5 upstream review](upstream-sync-2026-11-05.md#verification): 102 passing tests, 241 responsive captures, full production interaction QA including all six live-refresh examples, and 82 exact renderer comparisons. The earlier table remains historical evidence for the initial integration.
+
 ## Maintenance
 
 Run `npm run preview:sync -- <reviewed-app-checkout>` to refresh the snapshot, then review provenance and dependency changes. Run all quality gates and `node scripts/qa/compare-app.mjs <app-checkout>` before accepting a new reference. The comparison uses zero pixel tolerance, including antialiasing. Never hand-edit the snapshot or generated `AGENTS.md`/`.agents/skills/` mirrors.
 
 The reference build imports the original app stylesheet and explicitly includes its renderer directory in Tailwind source discovery. The reference's ignored temporary build root otherwise omits classes stored in constants, producing an incomplete reference stylesheet. This source declaration changes no app token, component, or style rule. Both reference and website still use identical synthetic API data, fonts, platform, viewport, clock, and theme.
+
+The reference also imports the preview's document mounting rules from
+`src/preview/styles.css`: full-height roots, zero body margin, and hidden outer
+body overflow. This gives both renderers the same usable client width. Without
+that normalization, Windows Electron adds an outer 10px scrollbar on narrow
+History screens, shifting their layout despite identical renderer source.
+Internal app scrolling remains app-owned. This comparison measures renderer
+parity at matching client dimensions, not native window or outer-document chrome.
 
 The host controller is named `src/product-preview-host.js`, and fixtures/derivations live in `src/preview/fixtures.ts` and `analytics.ts`; these replace the old filenames proposed in the original plan.

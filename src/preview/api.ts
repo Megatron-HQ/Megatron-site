@@ -39,6 +39,8 @@ import {
 } from './analytics.ts'
 import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
 import { sampleContextBaseline, sampleRecordedRequest } from './context.ts'
+import { applyInventoryChange } from './inventory.ts'
+import { INVENTORY_CHANGES, type InventoryChange } from './protocol.ts'
 
 const STARTUP_SCAN_SCENARIOS = [
   'scan-failed',
@@ -61,13 +63,27 @@ export interface DemoOptions {
 export function createDemoApi(options: DemoOptions = {}) {
   const now = options.now ?? new Date()
   const initial = createSampleState(now)
+  if (
+    ['projects-missing', 'projects-missing-warning'].includes(
+      options.scenario ?? ''
+    )
+  ) {
+    initial.folders.push({ path: SAMPLE_PROJECT, granted_at: initial.now })
+    initial.projects.find(
+      (project) => project.path === SAMPLE_PROJECT
+    )!.status = 'missing'
+  }
   let state: SampleState = structuredClone(initial)
+  let inventorySource = structuredClone(initial)
+  let inventoryOnly = false
   let section = options.initialSection ?? 'skills'
   let theme = options.initialTheme ?? 'light'
   let pendingAction = false
   let sessionRevision = 0
   let scanActivity: ScanActivity | null = null
   let nextScanId = 0
+  let completedScanCount = 0
+  let completedAt = initial.now
   let lastScanWasStartup = STARTUP_SCAN_SCENARIOS.includes(
     options.scenario ?? ''
   )
@@ -80,6 +96,7 @@ export function createDemoApi(options: DemoOptions = {}) {
   const delay = options.actionDelayMs ?? 450
   const copy = <T>(value: T): T => structuredClone(value)
   const notify = (activity: ScanActivity | null = null) => {
+    completedAt = new Date(now.getTime() + ++completedScanCount).toISOString()
     if (activity?.id === scanActivity?.id) scanActivity = null
     const finished = {
       id: activity?.id ?? ++nextScanId,
@@ -95,68 +112,102 @@ export function createDemoApi(options: DemoOptions = {}) {
     const hasPermissionWarning =
       options.scenario === 'scan-partial' ||
       options.scenario === 'projects-missing-warning'
+    const unavailableProjects = state.projects.filter(
+      (project) => project.status === 'unavailable'
+    )
     const outcome =
       options.scenario === 'scan-failed'
         ? 'failed'
-        : hasPermissionWarning || missingProjects
+        : hasPermissionWarning ||
+            missingProjects ||
+            unavailableProjects.length > 0
           ? 'partial'
           : 'complete'
     return {
       outcome,
-      completedAt: state.now,
+      completedAt,
       isStartup: lastScanWasStartup,
       sources: [
-        ...(missingProjects
+        ...(inventoryOnly || unavailableProjects.length > 0 || missingProjects
           ? [
               {
                 name: 'scanSkills',
-                status: 'partial' as const,
-                issues: [
-                  { code: 'project_missing' as const, path: SAMPLE_PROJECT }
-                ]
-              }
+                status:
+                  unavailableProjects.length > 0 || missingProjects
+                    ? ('partial' as const)
+                    : ('complete' as const),
+                ...(unavailableProjects.length > 0 || missingProjects
+                  ? {
+                      issues: [
+                        ...unavailableProjects.map((project) => ({
+                          code: 'source_unavailable' as const,
+                          path: project.path
+                        })),
+                        ...(missingProjects
+                          ? [
+                              {
+                                code: 'project_missing' as const,
+                                path: SAMPLE_PROJECT
+                              }
+                            ]
+                          : [])
+                      ]
+                    }
+                  : {})
+              },
+              { name: 'scanPluginRegistry', status: 'complete' as const },
+              { name: 'runLinter', status: 'complete' as const }
             ]
           : []),
-        {
-          name: 'scanTranscripts',
-          status: outcome === 'failed' ? 'failed' : 'complete',
-          ...(outcome === 'failed'
-            ? { failureReason: 'scan_error' as const }
-            : {})
-        },
-        {
-          name: 'archiveTokens',
-          status: outcome === 'failed' ? 'partial' : 'complete'
-        },
-        {
-          name: 'scanPromptHistory',
-          status: hasPermissionWarning ? 'partial' : 'complete',
-          ...(hasPermissionWarning
-            ? {
-                issues: [
-                  {
-                    code: 'permission_required' as const,
-                    path: windowsPath(SAMPLE_PARENT, 'restricted-repo')
-                  }
-                ]
+        ...(!inventoryOnly
+          ? [
+              {
+                name: 'scanTranscripts',
+                status:
+                  outcome === 'failed'
+                    ? ('failed' as const)
+                    : ('complete' as const),
+                ...(outcome === 'failed'
+                  ? { failureReason: 'scan_error' as const }
+                  : {})
+              },
+              {
+                name: 'archiveTokens',
+                status:
+                  outcome === 'failed'
+                    ? ('partial' as const)
+                    : ('complete' as const)
+              },
+              {
+                name: 'scanPromptHistory',
+                status: hasPermissionWarning
+                  ? ('partial' as const)
+                  : ('complete' as const),
+                ...(hasPermissionWarning
+                  ? {
+                      issues: [
+                        {
+                          code: 'permission_required' as const,
+                          path: windowsPath(SAMPLE_PARENT, 'restricted-repo')
+                        }
+                      ]
+                    }
+                  : {})
+              },
+              {
+                name: 'archivePrompts',
+                status: hasPermissionWarning
+                  ? ('partial' as const)
+                  : ('complete' as const)
               }
-            : {})
-        },
-        {
-          name: 'archivePrompts',
-          status: hasPermissionWarning ? 'partial' : 'complete'
-        }
+            ]
+          : [])
       ],
       lastSuccessfulAt:
         outcome === 'complete'
           ? state.now
           : new Date(now.getTime() - DAY_MS).toISOString(),
-      projects: missingProjects
-        ? state.projects.map((project) => ({
-            ...project,
-            status: 'missing' as const
-          }))
-        : state.projects
+      projects: state.projects
     }
   }
 
@@ -263,13 +314,20 @@ export function createDemoApi(options: DemoOptions = {}) {
           install.scope !== 'user' &&
           install.project_path !== null &&
           hasFolderAccess(install.project_path) &&
-          ['projects-missing', 'projects-missing-warning'].includes(
-            options.scenario ?? ''
+          state.projects.some(
+            (project) =>
+              project.path === install.project_path &&
+              project.status === 'missing'
           )
         install.enablement_known =
           install.scope === 'user' ||
           (install.project_path !== null &&
             hasFolderAccess(install.project_path) &&
+            !state.projects.some(
+              (project) =>
+                project.path === install.project_path &&
+                project.status !== 'available'
+            ) &&
             ![
               'projects-missing',
               'projects-unavailable',
@@ -287,7 +345,7 @@ export function createDemoApi(options: DemoOptions = {}) {
 
   function discoverProjects(): void {
     state.projects = [
-      ...initial.projects,
+      ...inventorySource.projects,
       {
         path: ADDITIONAL_PROJECT,
         kind: 'repository' as const,
@@ -307,7 +365,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       (skill) =>
         skill.project_root === null || hasFolderAccess(skill.project_root)
     )
-    for (const skill of initial.skills) {
+    for (const skill of inventorySource.skills) {
       if (
         skill.project_root !== null &&
         hasFolderAccess(skill.project_root) &&
@@ -441,6 +499,13 @@ export function createDemoApi(options: DemoOptions = {}) {
         reportUpdate('verify')
       } else install.disabled_reason = verb === 'disable' ? 'plugin' : null
       refreshPlugins()
+      inventorySource.skills = [
+        ...copy(state.skills),
+        ...inventorySource.skills.filter(
+          (skill) =>
+            skill.project_root !== null && !hasFolderAccess(skill.project_root)
+        )
+      ]
       notify()
       return { ok: true }
     } finally {
@@ -514,14 +579,6 @@ export function createDemoApi(options: DemoOptions = {}) {
       if (options.scenario === 'projects-unavailable')
         return copy(
           state.projects.map((p) => ({ ...p, status: 'unavailable' as const }))
-        )
-      if (
-        ['projects-missing', 'projects-missing-warning'].includes(
-          options.scenario ?? ''
-        )
-      )
-        return copy(
-          state.projects.map((p) => ({ ...p, status: 'missing' as const }))
         )
       if (options.scenario === 'projects-needs-access')
         return copy(
@@ -673,6 +730,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       options.onSectionChange?.(value)
     },
     async rescan() {
+      inventoryOnly = false
       lastScanWasStartup = false
       const activity: ScanActivity = {
         id: ++nextScanId,
@@ -686,6 +744,7 @@ export function createDemoApi(options: DemoOptions = {}) {
         subscriber(copy(activity))
       if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
       if (revision === sessionRevision) {
+        inventoryOnly = false
         for (const source of scanSummary().sources) {
           for (const subscriber of scanProgressSubscriptions)
             subscriber(copy({ id: activity.id, source }))
@@ -728,6 +787,29 @@ export function createDemoApi(options: DemoOptions = {}) {
   refreshPlugins()
   return {
     api,
+    async simulateInventoryChange(action: InventoryChange) {
+      if (!INVENTORY_CHANGES.includes(action))
+        throw new RangeError('Unknown sample inventory change.')
+      const revision = sessionRevision
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+      if (revision !== sessionRevision) return
+      const result = applyInventoryChange(
+        {
+          ...state,
+          skills: inventorySource.skills,
+          projects: inventorySource.projects
+        },
+        action
+      )
+      inventorySource = copy(result.state)
+      state = result.state
+      discoverProjects()
+      refreshPlugins()
+      inventoryOnly = true
+      lastScanWasStartup = false
+      notify()
+      options.onNotice?.(result.message)
+    },
     reset() {
       sessionRevision += 1
       pendingAction = false
@@ -736,6 +818,8 @@ export function createDemoApi(options: DemoOptions = {}) {
         options.scenario ?? ''
       )
       state = structuredClone(initial)
+      inventorySource = structuredClone(initial)
+      inventoryOnly = false
       refreshPlugins()
       section = options.initialSection ?? 'skills'
       theme = options.initialTheme ?? 'light'

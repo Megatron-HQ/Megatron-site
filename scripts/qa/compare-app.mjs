@@ -33,11 +33,15 @@ await mkdir(directory, { recursive: true })
 const browserImport = (path) => `/@fs/${path.replaceAll('\\', '/')}`
 const sourceRoot = join(appRoot, 'src/renderer/src')
 const referenceSource = relative(directory, sourceRoot).replaceAll('\\', '/')
+const referenceMountStyles = relative(
+  directory,
+  join(root, 'src/preview/styles.css')
+).replaceAll('\\', '/')
 // The temporary reference root is ignored by Git. Explicitly scan the original
 // renderer so Tailwind includes classes held in its constants as well as JSX.
 await writeFile(
   join(directory, 'reference.css'),
-  `@import '${referenceSource}/assets/main.css';\n@source '${referenceSource}';\n`
+  `@import '${referenceSource}/assets/main.css';\n@import '${referenceMountStyles}';\n@source '${referenceSource}';\n`
 )
 await writeFile(
   join(directory, 'index.html'),

@@ -115,7 +115,14 @@ test('missing project scans retain cached projects and distinguish genuine warni
   const issues = result.sources.flatMap((source) => source.issues ?? [])
   assert.ok(issues.length > 0)
   assert.ok(issues.every((issue) => issue.code === 'project_missing'))
-  assert.ok(result.projects!.every((project) => project.status === 'missing'))
+  assert.equal(
+    result.projects!.find((project) => project.path === SAMPLE_PROJECT)!.status,
+    'missing'
+  )
+  assert.equal(
+    result.projects!.find((project) => project.path === SAMPLE_PARENT)!.status,
+    'available'
+  )
   const mixed = await createDemo({ scenario: 'projects-missing-warning' })
   assert.equal((await mixed.api.listSkills()).scanSummary?.isStartup, true)
   mixed.reset()
@@ -599,7 +606,10 @@ test('listProjects handles empty and availability diagnostic scenarios', async (
   }).api
   const missingList = await missing.listProjects()
   assert.ok(missingList.length > 0)
-  assert.ok(missingList.every((p) => p.status === 'missing'))
+  assert.deepEqual(
+    missingList.filter((p) => p.status === 'missing').map((p) => p.path),
+    [SAMPLE_PROJECT]
+  )
 
   const needsAccess = createDemoApi({
     actionDelayMs: 0,

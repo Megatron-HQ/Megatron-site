@@ -182,7 +182,8 @@
               <p>
                 Global, project, and plugin skills, brought into the same view.
                 Search, inspect definitions, and explore bundled files without
-                editing a thing.
+                editing a thing. Skills and plugins stay in sync as files
+                change.
               </p>
             </div>
             <div class="source-map" aria-label="The three skill sources">
@@ -656,12 +657,17 @@ npm run dev</code></pre>
                 <code>claude</code> CLI on your PATH.
               </p>
               <p>
-                Megatron refreshes when its window regains focus, after folder
-                grants change, and after plugin actions. Use
+                Megatron watches approved inventory locations and updates skills
+                and plugins as files are added, edited, moved, or deleted. These
+                background updates leave Usage history alone. Full refreshes
+                also run when its window regains focus, after folder grants
+                change, and after plugin actions. Use
                 <strong>Settings → Rescan now</strong> for a manual refresh.
                 Settings shows scan progress and any sources that could not be
-                refreshed, including usage history. Missing project folders keep
-                their cached data and are listed separately from scan failures.
+                refreshed, including usage history. Deleted projects discovered
+                under a readable parent are removed from the inventory. Missing
+                folders you granted directly and unreadable folders retain
+                cached data; unreadable sources retry automatically.
               </p>
             </div>
           </div>
@@ -805,6 +811,27 @@ npm run dev</code></pre>
               Megatron is currently free and open source under the MIT license.
               You can inspect the code, run it locally, and contribute on
               GitHub.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Does the inventory update automatically?<i
+                data-lucide="plus"
+                aria-hidden="true"
+              ></i>
+            </summary>
+            <p>
+              Yes. Megatron watches global skills, plugin stores, user
+              configuration, and approved project folders. It updates after file
+              changes settle and periodically checks for missed changes. Live
+              inventory updates leave Usage views and historical activity alone.
+              If a discovered project is deleted, its inventory entries are
+              removed and a selected project returns to the nearest available
+              parent. Missing folders granted directly and unreadable folders
+              retain cached data. Warnings stay with the affected folder, and
+              unreadable sources retry automatically. Settings keeps the result
+              of your manual rescan through later background updates. The
+              website demonstrates these behaviors with sample files only.
             </p>
           </details>
           <details>
