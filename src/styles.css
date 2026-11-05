@@ -865,97 +865,47 @@ h2 {
   color: var(--muted);
 }
 .context-visual {
-  background: #25271e;
+  align-self: start;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--rule);
   border-radius: 7px;
-  color: #f2f3e8;
-  padding: 29px;
+  padding: 24px;
 }
 .context-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
-  color: #d0d5b8;
+  color: var(--muted);
 }
 .context-header .eyebrow {
   font-size: 9px;
 }
-.context-total {
-  margin-top: 26px;
+.context-preview-viewport {
+  overflow-x: auto;
+  margin-top: 18px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
 }
-.context-total > span {
-  font-size: 77px;
-  font-weight: 400;
-  letter-spacing: -0.065em;
-  line-height: 1.1;
+.context-preview-viewport:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
 }
-.context-total > span > span {
-  font-size: 40px;
-  margin-left: 2px;
-  color: #c4c99f;
-}
-.context-total > p {
-  color: #b9bf9f;
-  font-size: 11px;
-  margin-top: 7px;
-}
-.context-stack {
-  display: flex;
-  gap: 3px;
-  height: 37px;
-  margin-top: 24px;
-}
-.context-stack > span {
-  background: var(--color-lime);
-  position: relative;
-  transition: opacity 180ms;
-}
-.context-stack > span:nth-child(2) {
-  background: #aeb76d;
-}
-.context-stack > span:nth-child(3) {
-  background: #7c8255;
-}
-.context-stack > span:nth-child(4) {
-  background: #f3f3e9;
-}
-.context-stack > span:nth-child(5) {
-  background: #a7a8a0;
-}
-.context-stack > span:nth-child(6) {
-  background: #565750;
-}
-.context-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 26px;
-  margin-top: 27px;
-  font-size: 10px;
-}
-.context-legend > div {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  min-width: 0;
-}
-.context-legend strong {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 400;
-  margin-left: auto;
-  color: #b8bea0;
-}
-.context-key {
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  background: var(--key-color);
-  flex-shrink: 0;
+.context-preview {
+  display: block;
+  width: 100%;
+  min-width: 440px;
+  height: 960px;
+  border: 0;
+  background: #fff;
 }
 .context-note {
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.75;
-  color: #b7bca2;
-  margin-top: 27px;
+  color: var(--muted);
+  margin-top: 18px;
   max-width: 450px;
 }
 .cost-footnote {
@@ -1377,10 +1327,6 @@ h2 {
   .faq-section {
     gap: 55px;
   }
-  .context-legend {
-    column-gap: 18px;
-    font-size: 9px;
-  }
   .plugin-feature {
     gap: 35px;
   }
@@ -1527,20 +1473,6 @@ h2 {
   }
   .context-visual {
     padding: 22px;
-  }
-  .context-total > span {
-    font-size: 65px;
-  }
-  .context-legend {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .context-stack {
-    height: 26px;
-  }
-  .context-note {
-    margin-top: 18px;
-    font-size: 8px;
   }
   .cost-footnote {
     align-items: flex-start;
@@ -1823,21 +1755,6 @@ h2 {
   .context-visual {
     padding: 27px;
   }
-  .context-total > span {
-    font-size: 75px;
-  }
-  .context-legend {
-    grid-template-columns: 1fr 1fr;
-    font-size: 10px;
-    gap: 14px 25px;
-  }
-  .context-stack {
-    height: 36px;
-  }
-  .context-note {
-    font-size: 10px;
-    margin-top: 24px;
-  }
   .cost-footnote {
     flex-wrap: wrap;
     margin-top: 30px;
@@ -1985,13 +1902,6 @@ h2 {
   }
   .context-visual {
     padding: 23px;
-  }
-  .context-legend {
-    font-size: 9px;
-    column-gap: 16px;
-  }
-  .context-note {
-    font-size: 9px;
   }
   .local-section h2 {
     font-size: 42px;

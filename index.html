@@ -421,7 +421,9 @@
                   <h3>Context has a footprint, too.</h3>
                   <p>
                     Claude Code’s own /context breakdown shows the global
-                    baseline, with category details and a refresh on demand.
+                    baseline before your first message. Category colors identify
+                    skills, MCP, memory, and agents. Inspect the details and
+                    refresh on demand.
                   </p>
                   <button
                     type="button"
@@ -438,58 +440,27 @@
             </div>
             <div class="context-visual">
               <div class="context-header">
-                <span class="eyebrow">CLAUDE CODE /CONTEXT</span
-                ><span class="sample-tag">SAMPLE</span>
-              </div>
-              <div class="context-total">
-                <span>32<span>k</span></span>
-                <p>
-                  of a 1M context window · 3% used before your first message
-                </p>
+                <span class="eyebrow">RESIDENT TAX / GLOBAL BASELINE</span>
+                <span class="sample-tag">LIVE SAMPLE</span>
               </div>
               <div
-                class="context-stack"
-                role="img"
-                aria-label="Illustrative 32k used-token composition: system prompt and tools 16k, skills 10k, MCP instructions 2k, memory files 1.5k, custom agents 600, messages 1.9k. Deferred tools are outside this total."
+                class="context-preview-viewport"
+                tabindex="0"
+                role="region"
+                aria-label="Resident Tax sample; scroll horizontally on narrow screens"
               >
-                <span style="flex: 160" data-context="System"></span
-                ><span style="flex: 100" data-context="Skills"></span
-                ><span style="flex: 20" data-context="MCP instructions"></span
-                ><span style="flex: 15" data-context="Memory"></span
-                ><span style="flex: 6" data-context="Agents"></span
-                ><span style="flex: 19" data-context="Messages"></span>
-              </div>
-              <div class="context-legend">
-                <div>
-                  <span class="context-key" style="--key-color: #e4f222"></span
-                  >System prompt + tools<strong>16k</strong>
-                </div>
-                <div>
-                  <span class="context-key" style="--key-color: #aeb76d"></span
-                  >Skills<strong>10k</strong>
-                </div>
-                <div>
-                  <span class="context-key" style="--key-color: #7c8255"></span
-                  >MCP instructions<strong>2k</strong>
-                </div>
-                <div>
-                  <span class="context-key" style="--key-color: #f3f3e9"></span
-                  >Memory files<strong>1.5k</strong>
-                </div>
-                <div>
-                  <span class="context-key" style="--key-color: #a7a8a0"></span
-                  >Custom agents<strong>600</strong>
-                </div>
-                <div>
-                  <span class="context-key" style="--key-color: #565750"></span
-                  >Messages<strong>1.9k</strong>
-                </div>
+                <iframe
+                  class="context-preview"
+                  data-resident-tax-frame
+                  src="./preview/index.html?sample=resident-tax"
+                  title="Resident Tax sample with category details and refresh"
+                ></iframe>
               </div>
               <p class="context-note">
-                Illustrative global baseline from an empty folder, excluding
-                project configuration. The window also has a 33k autocompact
-                reserve and 935k free. Another 24.3k of deferred tools stays out
-                of context until loaded.
+                The actual Megatron view with sample data. Explore a category
+                for its details. The bar shows the full context window,
+                including the autocompact reserve and free space; deferred tools
+                stay outside the loaded total. Pan sideways on smaller screens.
               </p>
             </div>
           </div>

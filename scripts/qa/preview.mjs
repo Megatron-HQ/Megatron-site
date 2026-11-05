@@ -16,6 +16,9 @@ export async function preparePreview(page) {
     .getByRole('button', { name: 'Search skills', exact: false })
     .waitFor()
   await app.locator('body').evaluate(() => document.fonts.ready)
+  const residentSample = page.frameLocator('[data-resident-tax-frame]')
+  await residentSample.getByText('Global baseline', { exact: true }).waitFor()
+  await residentSample.locator('body').evaluate(() => document.fonts.ready)
   return app
 }
 

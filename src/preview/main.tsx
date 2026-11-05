@@ -10,11 +10,16 @@ import {
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '../../vendor/megatron/src/renderer/src/App'
+import {
+  ResidentTaxRefresh,
+  ResidentTaxSection
+} from '../../vendor/megatron/src/renderer/src/components/usage/ResidentTaxSection'
 import { createDemoApi } from './api.ts'
 import { parsePreviewCommand, type InventoryChange } from './protocol.ts'
 import { sendPreviewMessage } from './navigation.ts'
 
 const parameters = new URLSearchParams(window.location.search)
+const residentTaxSample = parameters.get('sample') === 'resident-tax'
 const initial = parsePreviewCommand({
   type: 'megatron-preview:navigate',
   section: parameters.get('section') ?? 'skills',
@@ -117,7 +122,17 @@ function Preview() {
   return (
     <QueryClientProvider client={queryClient}>
       <PreviewErrorBoundary key={revision}>
-        <App />
+        {residentTaxSample ? (
+          <main className="resident-tax-sample">
+            <header className="flex items-center justify-between gap-3 border-b border-border py-4">
+              <h1 className="text-[14px] font-medium">Resident tax</h1>
+              <ResidentTaxRefresh />
+            </header>
+            <ResidentTaxSection />
+          </main>
+        ) : (
+          <App />
+        )}
       </PreviewErrorBoundary>
     </QueryClientProvider>
   )

@@ -11,6 +11,7 @@ import { join, resolve } from 'node:path'
 import { verifyPreviewStates } from './states.mjs'
 import { verifyInventoryChanges } from './inventory.mjs'
 import { verifyUsageProjects } from './usage-projects.mjs'
+import { verifyResidentTaxSample } from './resident-tax.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -69,6 +70,7 @@ try {
     fullPage: true
   })
   await verifyPreview(page)
+  await verifyResidentTaxSample(page)
   await checkOverflow(page, 1440)
   results.push(
     'Actual renderer geometry, sorting and keyboard rows, files and tree resizing, activity dialogs, settings, install-specific plugin actions, all Usage panels, independent windows, reset, expansion and Escape passed.'
@@ -152,6 +154,7 @@ try {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto(baseUrl)
     const frame = await preparePreview(page)
+    await verifyResidentTaxSample(page)
     await checkOverflow(page, width)
     for (const panel of [
       'Activity',
