@@ -9,6 +9,11 @@ export const SNAPSHOT_ROOT = resolve(
 )
 const PATCHES = [
   {
+    path: 'src/shared/usage-projects.ts',
+    description:
+      'Use an explicit TypeScript import extension so the browser adapter and Node regression tests share the upstream project grouping helpers.'
+  },
+  {
     path: 'src/renderer/src/assets/main.css',
     description:
       'Limit Tailwind class discovery to the app renderer and browser adapter; keep all app tokens and rules.'
@@ -82,7 +87,9 @@ function applyBrowserPatch(path, contents) {
       throw new Error(`Upstream integration seam changed: ${path}`)
     text = text.replace(needle, replacement)
   }
-  if (path.endsWith('/main.css')) {
+  if (path === 'src/shared/usage-projects.ts') {
+    replace("from './project-path'", "from './project-path.ts'")
+  } else if (path.endsWith('/main.css')) {
     replace(
       "@import 'tailwindcss';",
       "@import 'tailwindcss' source(none);\n@source '../';\n@source '../../../../../../src/preview';"

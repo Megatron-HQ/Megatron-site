@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createDemoApi } from './api.ts'
 import { SAMPLE_PARENT, SAMPLE_PROJECT, windowsPath } from './fixtures.ts'
+import { ADDITIONAL_PROJECT } from './fixtures.ts'
 
 const NOW = new Date('2026-11-05T18:00:00.000Z')
 
@@ -224,4 +225,45 @@ test('a background summary is newer than the requested rescan it follows', async
   const latest = (await sample.api.listSkills()).scanSummary!
   assert.ok(Date.parse(latest.completedAt) > Date.parse(manual.completedAt))
   assert.equal(latest.outcome, 'partial')
+})
+
+test('a newly granted sample folder stays uncatalogued until discovery, retains retry warnings, and recovers', async () => {
+  const sample = demo()
+  await sample.simulateInventoryChange('pending-project')
+  assert.ok(
+    (await sample.api.listAllowedPaths()).some(
+      (folder) => folder.path === ADDITIONAL_PROJECT
+    )
+  )
+  assert.ok(
+    !(await sample.api.listProjects()).some(
+      (project) => project.path === ADDITIONAL_PROJECT
+    )
+  )
+  assert.ok((await sample.api.listSkills()).scanActivity)
+  const pendingPlugin = (await sample.api.getPluginDetail('docs', 'community'))!
+    .plugin
+  assert.equal(pendingPlugin.skill_count, 1)
+  assert.equal(
+    pendingPlugin.installs.find(
+      (install) => install.project_path === ADDITIONAL_PROJECT
+    )!.enablement_known,
+    false
+  )
+  await sample.simulateInventoryChange('retry-project')
+  assert.equal(
+    (await sample.api.listProjects()).find(
+      (project) => project.path === ADDITIONAL_PROJECT
+    )!.status,
+    'unavailable'
+  )
+  assert.ok((await sample.api.listSkills()).scanActivity)
+  await sample.simulateInventoryChange('recover-project')
+  assert.equal(
+    (await sample.api.listProjects()).find(
+      (project) => project.path === ADDITIONAL_PROJECT
+    )!.status,
+    'available'
+  )
+  assert.equal((await sample.api.listSkills()).scanActivity, null)
 })

@@ -9,6 +9,7 @@ import type {
   SkillRow,
   TokenCounts,
   UsageDayDetails,
+  HistoryCoverage,
   TriggerType
 } from '../../vendor/megatron/src/shared/ipc'
 
@@ -21,6 +22,12 @@ export function windowsPath(...segments: string[]): string {
 // their repositories relative to the folder (`web-app` under `Dev`).
 export const SAMPLE_PARENT = windowsPath('C:', 'Dev')
 export const SAMPLE_PROJECT = windowsPath(SAMPLE_PARENT, 'web-app')
+export const ARCHIVED_PROJECT = windowsPath('C:', 'Archive', 'web-app')
+export const PREVIOUS_NAME_PROJECT = windowsPath(
+  'C:',
+  'Archive',
+  'previous-web'
+)
 export const API_PROJECT = windowsPath(SAMPLE_PARENT, 'api')
 export const MONOREPO_PROJECT = windowsPath(SAMPLE_PARENT, 'monorepo')
 export const NESTED_PROJECT = windowsPath(MONOREPO_PROJECT, 'tools', 'cli')
@@ -35,7 +42,10 @@ const SAMPLE_ACTIVITY_PROJECTS = [
     (name) => windowsPath(SAMPLE_PARENT, name)
   ),
   ADDITIONAL_PROJECT,
-  windowsPath(SAMPLE_PARENT, 'library')
+  windowsPath(SAMPLE_PARENT, 'library'),
+  ARCHIVED_PROJECT,
+  PREVIOUS_NAME_PROJECT,
+  SAMPLE_PARENT
 ]
 const USER_CLAUDE_ROOT = windowsPath('C:', 'Users', 'demo', '.claude')
 const PLUGIN_CACHE_ROOT = windowsPath(USER_CLAUDE_ROOT, 'plugins', 'cache')
@@ -75,6 +85,16 @@ export interface SampleState {
   projects: ProjectFolder[]
   events: SampleEvent[]
   history: UsageDayDetails[]
+  prompts?: SamplePrompt[]
+  promptCoverage?: HistoryCoverage
+}
+
+export interface SamplePrompt {
+  at: string
+  sessionId: string
+  project: string
+  bareSlash: boolean
+  copies: number
 }
 
 function sampleTokens(output: number, seed: number): TokenCounts {

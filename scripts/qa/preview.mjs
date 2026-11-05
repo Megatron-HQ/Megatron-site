@@ -469,7 +469,7 @@ async function verifyHistoryYearReview(page, app, year) {
   assert.equal(await timeline.locator('tbody tr').count(), 8)
   const expand = timeline.getByRole('button', { name: /more projects/ })
   await expand.click()
-  assert.equal(await timeline.locator('tbody tr').count(), 10)
+  assert.equal(await timeline.locator('tbody tr').count(), 13)
   const cell = timeline.getByRole('img').first()
   assert.equal(
     await cell.evaluate((element) => getComputedStyle(element).borderTopStyle),

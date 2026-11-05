@@ -70,3 +70,66 @@ test('no events produces empty cost and model activity', () => {
   assert.equal(result.cost, null)
   assert.equal(result.models.last30d.turnCount, 0)
 })
+
+test('Activity reads retained prompt copies after current source events have gone', () => {
+  const state = createSampleState(new Date('2026-10-09T18:00:00Z'))
+  state.events = []
+  state.history = [
+    {
+      date: '2026-10-09',
+      weekday: 5,
+      startAt: '2026-10-09T00:00:00Z',
+      endAt: '2026-10-09T18:00:00Z',
+      partial: true,
+      count: 5,
+      sessions: 2,
+      slashCommands: 4,
+      byProject: [{ project: 'C:\\Dev\\web-app', count: 5 }],
+      coverage: 'partial',
+      tokens: null
+    }
+  ]
+  state.prompts = [
+    {
+      at: '2026-10-09T16:00:00.000Z',
+      sessionId: 'retained-first',
+      project: 'C:\\Dev\\web-app',
+      bareSlash: false,
+      copies: 3
+    },
+    {
+      at: '2026-10-09T17:00:00.000Z',
+      sessionId: 'retained-second',
+      project: 'C:\\Dev\\web-app',
+      bareSlash: false,
+      copies: 2
+    },
+    {
+      at: '2026-10-09T17:30:00.000Z',
+      sessionId: 'bare-slash',
+      project: 'C:\\Dev\\web-app',
+      bareSlash: true,
+      copies: 4
+    },
+    {
+      at: '2026-10-10T00:00:00.000Z',
+      sessionId: 'future',
+      project: 'C:\\Dev\\web-app',
+      bareSlash: false,
+      copies: 100
+    }
+  ]
+  const overview = buildUsageOverview(state)
+  assert.equal(overview.activity.last24h.prompts, 5)
+  assert.equal(overview.activity.last24h.sessions, 2)
+  assert.equal(overview.activity.last24h.slashCommands, 4)
+  assert.equal(
+    overview.activity.last24h.hourlyTrend.reduce(
+      (sum, hour) => sum + hour.count,
+      0
+    ),
+    5
+  )
+  assert.equal(overview.activity.last24h.coverage, 'partial')
+  assert.equal(overview.tokens.last24h.tokens, null)
+})

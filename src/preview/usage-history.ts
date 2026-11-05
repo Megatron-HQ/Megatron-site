@@ -160,10 +160,18 @@ export function buildUsageDay(
   const events = state.events.filter(
     (event) => event.at >= startAt && event.at < endAt && event.at <= state.now
   )
-  const prompts = events.filter((event) => !event.bareSlash)
+  const promptEvents = (
+    state.prompts ?? state.events.map((event) => ({ ...event, copies: 1 }))
+  ).filter(
+    (event) => event.at >= startAt && event.at < endAt && event.at <= state.now
+  )
+  const prompts = promptEvents.filter((event) => !event.bareSlash)
   const byProject = new Map<string, number>()
   for (const event of prompts)
-    byProject.set(event.project, (byProject.get(event.project) ?? 0) + 1)
+    byProject.set(
+      event.project,
+      (byProject.get(event.project) ?? 0) + event.copies
+    )
   const cutoff = new Date(now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS)
   return {
     date,
@@ -171,21 +179,44 @@ export function buildUsageDay(
     startAt,
     endAt,
     partial: next > now,
-    count: prompts.length,
+    count: prompts.reduce((total, prompt) => total + prompt.copies, 0),
     sessions: new Set(prompts.map((event) => event.sessionId)).size,
-    slashCommands: events.length - prompts.length,
+    slashCommands: promptEvents
+      .filter((event) => event.bareSlash)
+      .reduce((total, prompt) => total + prompt.copies, 0),
     byProject: [...byProject]
       .map(([project, count]) => ({ project, count }))
       .sort((a, b) => b.count - a.count || a.project.localeCompare(b.project)),
     coverage: future
       ? 'future'
-      : next <= cutoff
-        ? 'unavailable'
-        : start < cutoff
-          ? 'partial'
-          : 'available',
+      : (state.promptCoverage ??
+        (next <= cutoff
+          ? 'unavailable'
+          : start < cutoff
+            ? 'partial'
+            : 'available')),
     tokens: eventTokens(events)
   }
+}
+
+export function sampleHistoryCoverage(
+  state: SampleState,
+  startAt: string,
+  endAt: string
+): 'available' | 'partial' | 'unavailable' {
+  if (state.promptCoverage && state.promptCoverage !== 'future')
+    return state.promptCoverage
+  const cursor = new Date(startAt)
+  cursor.setHours(0, 0, 0, 0)
+  const coverage: string[] = []
+  while (cursor < new Date(endAt) && cursor <= new Date(state.now)) {
+    coverage.push(buildUsageDay(state, dateKey(cursor)).coverage)
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  if (coverage.every((value) => value === 'available')) return 'available'
+  return coverage.every((value) => value === 'unavailable')
+    ? 'unavailable'
+    : 'partial'
 }
 
 function summarizeHistory(days: ContributionDay[]): HistoryYearSummary {

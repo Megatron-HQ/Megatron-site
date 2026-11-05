@@ -10,6 +10,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { verifyPreviewStates } from './states.mjs'
 import { verifyInventoryChanges } from './inventory.mjs'
+import { verifyUsageProjects } from './usage-projects.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -139,6 +140,10 @@ try {
     'Source/chevron behavior, conditional columns, budget audit filters, palette cross-section navigation, remaining file statuses, folder grants, scoped updates, invocation return filters, every time window, and loading/error/empty/action-failure states passed.'
   )
   await verifyInventoryChanges(page, baseUrl, join(directory, 'inventory'))
+  await verifyUsageProjects(page, baseUrl, join(directory, 'usage-projects'))
+  results.push(
+    'Usage location linking/unlinking, linked-path search, retained coverage, and pending/retry/recovered folders passed in Skills and Plugins at all four widths.'
+  )
   results.push(
     'Live sample additions/edits/deletions, moves, project/detail recovery, child-only warnings, preserved Usage periods, and retained manual-rescan feedback passed at all four widths.'
   )

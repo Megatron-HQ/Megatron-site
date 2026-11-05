@@ -348,8 +348,8 @@ test('archived sample years can expand the project timeline without losing daily
   const { buildUsageCalendar } = await history()
   const state = createSampleState(new Date(2026, 9, 9, 12))
   const calendar = buildUsageCalendar(state, 2025)
-  assert.equal(calendar.byProject.length, 10)
-  assert.equal(buildUsageCalendar(state, 2024).byProject.length, 10)
+  assert.equal(calendar.byProject.length, 13)
+  assert.equal(buildUsageCalendar(state, 2024).byProject.length, 13)
   for (const day of state.history)
     assert.equal(
       day.byProject.reduce((sum, row) => sum + row.count, 0),

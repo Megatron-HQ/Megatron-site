@@ -17,7 +17,10 @@ export const INVENTORY_CHANGES = [
   'delete-skill',
   'move-project',
   'delete-project',
-  'unavailable-project'
+  'unavailable-project',
+  'pending-project',
+  'retry-project',
+  'recover-project'
 ] as const
 export type InventoryChange = (typeof INVENTORY_CHANGES)[number]
 export type PreviewCommand =

@@ -1,7 +1,7 @@
 # Megatron product fidelity audit
 
 Reviewed on October 18, 2026 and updated on November 5, 2026 against the
-desktop app at `da368fef9e681840fa40f3e85df6638ba9345205`
+desktop app at `ffd88643e368e66c7d2782d22ad661040ef66f93`
 (Megatron 0.1.0). The renderer provenance records the exact source-file hashes.
 
 ## Product and website architecture
@@ -20,12 +20,26 @@ The website has two separate entries:
   visitor filesystem, database, terminal, or account integration.
 
 The app's components and styles are imported through `preview:sync`; the snapshot
-contains 104 source/license files and a provenance manifest. Four integration
+contains 109 source/license files and a provenance manifest. Five integration
 patches scope Tailwind discovery, support trusted host navigation, and prevent
-the two inventories from taking focus from an inactive iframe. Renderer files
+the two inventories from taking focus from an inactive iframe, and make the
+shared Usage helper import explicit for Node adapter tests. Renderer files
 are never manually edited.
 
 ## Tokens and History
+
+Usage project identity is independent of the current inventory and folder grants.
+Manage projects searches recorded locations and explicitly links moved or renamed
+roots, with reversible links and same-name suggestions. Names alone never merge
+projects. Links regroup Activity, cost, tokens, and History without changing source
+paths, total usage, or access permissions. Project rankings and monthly timelines
+search all projects and linked paths while retaining eight-row expansion.
+
+Activity and History read retained prompt multiplicities for matching intervals;
+their independently selected windows may differ. Bare slash commands are excluded
+from prompt counts. Partial and unavailable prompt history are disclosed rather
+than presented as complete zero activity. Website records are synthetic and reset
+with the session. The native private preferences and archive are not accessed.
 
 Tokens shows input, output (including thinking), cache reads, and cache writes; independent 24-hour, 7-day, and 30-day windows; hourly/daily trends; and model/project breakdowns. Time-based figures are estimated shares of recorded session totals. Missing and undated usage are disclosed separately.
 
@@ -72,10 +86,13 @@ removed details close. Moves rediscover paths without rewriting Claude's registr
 or reassigning historical Usage. Settings retains the user's manual-rescan result
 while current source details show newer background results.
 
-The host's six sample-change examples exercise live reconciliation without native
+The host's nine sample-change examples exercise live reconciliation without native
 watchers, commands, or file access. The missing-project scenarios now explicitly
 grant the retained missing repository and keep its readable parent available.
 See [the November 5 review](upstream-sync-2026-11-05.md) for the full source audit.
+The [follow-up review](upstream-sync-2026-11-05-usage-projects.md) covers the two
+subsequent commits. Newly granted folders awaiting discovery remain quiet;
+confirmed unavailable states persist during retry and clear after recovery.
 Core inventory and analysis run locally without Megatron telemetry or external
 LLM calls; Claude CLI plugin actions can use the network. Resident tax's /context
 can start configured SessionStart hooks and MCP servers. Its recorded drilldowns

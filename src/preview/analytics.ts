@@ -21,15 +21,28 @@ import type {
   UsageOverview
 } from '../../vendor/megatron/src/shared/ipc'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
-import { buildTokenStats } from './usage-history.ts'
+import { buildTokenStats, sampleHistoryCoverage } from './usage-history.ts'
 import {
   DAY_MS,
   HOUR_MS,
   type SampleEvent,
+  type SamplePrompt,
   type SampleState
 } from './fixtures.ts'
 
 const WINDOW_DAYS = [1, 7, 30] as const
+export function retainedPrompts(state: SampleState): SamplePrompt[] {
+  return (
+    state.prompts ??
+    state.events.map((event) => ({
+      at: event.at,
+      project: event.project,
+      sessionId: event.sessionId,
+      bareSlash: event.bareSlash,
+      copies: 1
+    }))
+  )
+}
 const WINDOW_KEYS = ['24h', '7d', '30d'] as const
 const EFFORTS: EffortBucket[] = [
   'xhigh',
@@ -63,11 +76,11 @@ function sessionCount(events: SampleEvent[]): number {
   return new Set(events.map((event) => event.sessionId)).size
 }
 
-function eventsWithin(
-  events: SampleEvent[],
+function eventsWithin<T extends { at: string }>(
+  events: T[],
   start: string,
   end: string
-): SampleEvent[] {
+): T[] {
   return events.filter((event) => event.at >= start && event.at < end)
 }
 
@@ -115,9 +128,9 @@ function calendarDays(
   return result
 }
 
-function timeMargins(
-  events: SampleEvent[],
-  value: (row: SampleEvent) => number
+function timeMargins<T extends { at: string }>(
+  events: T[],
+  value: (row: T) => number
 ) {
   const byHourWeekday = Array.from({ length: 7 }, () =>
     Array<number>(24).fill(0)
@@ -196,18 +209,21 @@ export function triggerCounts(events: SampleEvent[]): TriggerTypeCount[] {
 // Shared by a whole window and each of its bars, as in the app, so a bar's
 // details always reconcile with the totals around it.
 function summarizeActivity(
-  events: SampleEvent[]
+  events: SamplePrompt[]
 ): Omit<ActivityBucketDetails, 'startAt' | 'endAt'> {
   const prompts = events.filter((row) => !row.bareSlash)
   return {
-    count: prompts.length,
-    sessions: sessionCount(prompts),
-    slashCommands: events.length - prompts.length,
+    count: sum(prompts, (prompt) => prompt.copies),
+    sessions: new Set(prompts.map((prompt) => prompt.sessionId)).size,
+    slashCommands: sum(
+      events.filter((prompt) => prompt.bareSlash),
+      (prompt) => prompt.copies
+    ),
     byProject: [
       ...grouped(
         prompts,
         (row) => row.project,
-        () => 1
+        (prompt) => prompt.copies
       )
     ].map(([project, count]) => ({ project, count }))
   }
@@ -215,19 +231,21 @@ function summarizeActivity(
 
 function activityWindow(state: SampleState, days: 1 | 7 | 30): ActivityWindow {
   const range = windowRange(state.now, days)
-  const all = eventsWithin(state.events, range.startAt, range.endAt)
+  const all = eventsWithin(retainedPrompts(state), range.startAt, range.endAt)
   const prompts = all.filter((row) => !row.bareSlash)
   const summary = summarizeActivity(all)
   return {
     days,
+    coverage: sampleHistoryCoverage(state, range.startAt, range.endAt),
     activeDays: new Set(prompts.map((row) => localDate(row.at))).size,
     sessions: summary.sessions,
     prompts: summary.count,
     slashCommands: summary.slashCommands,
-    ...timeMargins(prompts, () => 1),
+    ...timeMargins(prompts, (prompt) => prompt.copies),
     byProject: summary.byProject,
     byDay: calendarDays(range.startAt, range.endAt).map((day): ActivityDay => ({
       ...day,
+      coverage: sampleHistoryCoverage(state, day.startAt, day.endAt),
       ...summarizeActivity(eventsWithin(all, day.startAt, day.endAt))
     }))
   }
@@ -472,8 +490,13 @@ export function buildUsageOverview(state: SampleState): UsageOverview {
       hourlyTrend: hourlyBuckets(start24h).map((hour): ActivityHour => ({
         key: hour.startAt,
         ...hour,
+        coverage: sampleHistoryCoverage(state, hour.startAt, hour.endAt),
         ...summarizeActivity(
-          eventsWithin(state.events, hour.startAt, hour.endAt)
+          eventsWithin(
+            retainedPrompts(state),
+            hour.startAt,
+            hour.endAt < state.now ? hour.endAt : state.now
+          )
         )
       }))
     },

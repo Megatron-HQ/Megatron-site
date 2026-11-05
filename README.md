@@ -67,7 +67,7 @@ The production site is emitted to `dist/`. The local production preview serves a
 - `src/product-preview-host.js`: iframe lifecycle, section navigation, reset, expansion, and focus reveal.
 - `src/icons.js`: bundled marketing icons.
 - `preview/index.html`, `src/preview/`: React entry, typed sample API, fixtures, analytics, archived daily summaries, and trusted host messaging.
-- `vendor/megatron/`: 104 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
+- `vendor/megatron/`: 109 pinned app renderer and shared files, API types, license, and SHA-256 provenance.
 - `scripts/preview/`: reproducible renderer import and integrity checks.
 - `scripts/qa/`: headless Playwright verification suites and Electron reference comparison.
 - `scripts/ci/`: CI preview lifecycle orchestration and regression test harness.
@@ -79,6 +79,8 @@ The production site is emitted to `dist/`. The local production preview serves a
 
 Geist fonts and Lucide icons are bundled with the site. The static website makes no analytics requests and has no account, form submission, backend server, or visitor local-file integration.
 
+Usage's Manage projects dialog searches retained locations and explicitly links or unlinks old and current roots. Similar names only suggest matches; links change Usage grouping without changing recorded paths, inventory, folder grants, or total usage. Project rankings and History's timeline search all rows, including linked locations beyond the collapsed eight. Activity and History share retained prompt records for matching intervals, with partial/unavailable coverage kept distinct from zero. The nine Try live refresh examples include a newly granted folder awaiting discovery, a confirmed failure during retry, and recovery.
+
 ## Product evidence
 
 Copy was grounded in the app's README, PRODUCT.md, DESIGN.md, main/preload IPC contracts, permission-aware scanners, deterministic linter, scoped plugin CLI actions, database cost/context queries, parent-folder discovery, and renderer views. The desktop app is not modified by this website.
@@ -89,9 +91,9 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` at `da368fe` (104 pinned files). It includes live inventory reconciliation, removed-selection recovery, folder-specific warnings, and manual-rescan result retention, alongside History's annual summary, the `/context` Resident tax panel, exact-token tooltips, and scan progress. Its source revision, exact source hashes, and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0` at `ffd8864` (109 pinned files). It includes independent Usage project identities, reversible location linking, project search, retained Activity prompt counts, and quiet pending folder discovery, alongside live inventory reconciliation, History's annual summary, the `/context` Resident tax panel, exact-token tooltips, and scan progress. Its source revision, exact source hashes, and five integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). The fifth patch makes a shared TypeScript import explicit for browser-adapter tests. App styling, components, and motion rules remain owned by the imported renderer.
 
-The [November 5 upstream review](docs/upstream-sync-2026-11-05.md) details all 31 newly changed app files and their website impact. The [November 4 review](docs/upstream-sync-2026-11-04.md) records the earlier `/context` integration. Rerun the checks below when changing the implementation.
+The [latest November 5 review](docs/upstream-sync-2026-11-05-usage-projects.md) details the next two commits and all 45 changed app files. The [earlier November 5 review](docs/upstream-sync-2026-11-05.md) details the previous 31 changed app files. The [November 4 review](docs/upstream-sync-2026-11-04.md) records the earlier `/context` integration. Rerun the checks below when changing the implementation.
 
 See the [product fidelity audit](docs/product-fidelity-audit.md) for the current capability review and corrections, [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original approach.
 
@@ -127,7 +129,7 @@ The visual sweep builds the site and starts a temporary production preview when 
 
 ## Updating the app renderer
 
-The authoritative revision and four integration patches are recorded in `vendor/megatron/provenance.json`. Never edit the snapshot manually. To import a reviewed app checkout:
+The authoritative revision and five integration patches are recorded in `vendor/megatron/provenance.json`. Never edit the snapshot manually. To import a reviewed app checkout:
 
 ```powershell
 npm run preview:sync -- C:\Megatron

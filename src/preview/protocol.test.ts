@@ -9,7 +9,10 @@ test('inventory messages accept only the supported sample changes', async () => 
     'delete-skill',
     'move-project',
     'delete-project',
-    'unavailable-project'
+    'unavailable-project',
+    'pending-project',
+    'retry-project',
+    'recover-project'
   ]) {
     const command = { type: 'megatron-preview:inventory-change', action }
     assert.deepEqual(parsePreviewCommand(command), command)

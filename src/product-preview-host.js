@@ -38,6 +38,9 @@ export function mountProductDemo(root) {
         <option value="move-project">Move the web-app project</option>
         <option value="delete-project">Delete the web-app project</option>
         <option value="unavailable-project">Make web-app unreadable</option>
+        <option value="pending-project">Grant a folder awaiting discovery</option>
+        <option value="retry-project">Retry an unreadable folder</option>
+        <option value="recover-project">Complete folder discovery</option>
       </select>
       <button type="button" class="preview-host-button" data-preview-change disabled>Simulate change</button>
       <span class="preview-live-hint">Sample files only. Reset to start again.</span>

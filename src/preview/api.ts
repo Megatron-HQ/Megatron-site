@@ -41,6 +41,15 @@ import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
 import { sampleContextBaseline, sampleRecordedRequest } from './context.ts'
 import { applyInventoryChange } from './inventory.ts'
 import { INVENTORY_CHANGES, type InventoryChange } from './protocol.ts'
+import {
+  groupSampleCalendar,
+  groupSampleDay,
+  groupSampleUsageOverview,
+  linkSampleUsageProjects,
+  reconcileSampleUsageProjects,
+  sampleUsageProjectCatalog,
+  unlinkSampleUsageProject
+} from './usage-projects.ts'
 
 const STARTUP_SCAN_SCENARIOS = [
   'scan-failed',
@@ -63,6 +72,19 @@ export interface DemoOptions {
 export function createDemoApi(options: DemoOptions = {}) {
   const now = options.now ?? new Date()
   const initial = createSampleState(now)
+  initial.prompts = initial.events.map((event) => ({
+    at: event.at,
+    project: event.project,
+    sessionId: event.sessionId,
+    bareSlash: event.bareSlash,
+    copies: 1
+  }))
+  if (options.scenario === 'activity-partial')
+    initial.promptCoverage = 'partial'
+  if (options.scenario === 'activity-unavailable') {
+    initial.prompts = []
+    initial.promptCoverage = 'unavailable'
+  }
   if (
     ['projects-missing', 'projects-missing-warning'].includes(
       options.scenario ?? ''
@@ -76,6 +98,7 @@ export function createDemoApi(options: DemoOptions = {}) {
   let state: SampleState = structuredClone(initial)
   let inventorySource = structuredClone(initial)
   let inventoryOnly = false
+  let usageLocations = reconcileSampleUsageProjects([], initial)
   let section = options.initialSection ?? 'skills'
   let theme = options.initialTheme ?? 'light'
   let pendingAction = false
@@ -84,6 +107,8 @@ export function createDemoApi(options: DemoOptions = {}) {
   let nextScanId = 0
   let completedScanCount = 0
   let completedAt = initial.now
+  let pendingProjectPath: string | null = null
+  let discoveryPending = false
   let lastScanWasStartup = STARTUP_SCAN_SCENARIOS.includes(
     options.scenario ?? ''
   )
@@ -94,7 +119,45 @@ export function createDemoApi(options: DemoOptions = {}) {
     (progress: PluginUpdateProgress) => void
   >()
   const delay = options.actionDelayMs ?? 450
+  function currentUsageLocations() {
+    usageLocations = reconcileSampleUsageProjects(usageLocations, state)
+    return usageLocations
+  }
+  async function changeUsageProjects(change: () => typeof usageLocations) {
+    const revision = sessionRevision
+    if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+    if (revision !== sessionRevision)
+      throw new Error('Sample project linking was cancelled by Reset sample.')
+    if (options.scenario === 'usage-project-link-error')
+      throw new Error('Could not update sample project locations.')
+    usageLocations = change()
+    options.onNotice?.(
+      'Updated sample Usage project locations. Inventory ownership and folder access are unchanged.'
+    )
+    return sampleUsageProjectCatalog(currentUsageLocations())
+  }
   const copy = <T>(value: T): T => structuredClone(value)
+  function startSampleDiscovery(): void {
+    scanActivity = {
+      id: ++nextScanId,
+      startedAt: Date.now(),
+      isStartup: false,
+      revealMs: SCAN_BANNER_REVEAL_MS
+    }
+    for (const subscriber of scanStartedSubscriptions)
+      subscriber(copy(scanActivity))
+  }
+  function setSampleProjectAvailability(
+    path: string,
+    status: 'available' | 'unavailable'
+  ): void {
+    const project = state.projects.find((entry) => entry.path === path)
+    if (project) project.status = status
+    else state.projects.push({ path, kind: 'repository', status })
+    inventorySource.projects = copy(state.projects)
+    discoveryPending = false
+    refreshPlugins()
+  }
   const notify = (activity: ScanActivity | null = null) => {
     completedAt = new Date(now.getTime() + ++completedScanCount).toISOString()
     if (activity?.id === scanActivity?.id) scanActivity = null
@@ -323,6 +386,9 @@ export function createDemoApi(options: DemoOptions = {}) {
           install.scope === 'user' ||
           (install.project_path !== null &&
             hasFolderAccess(install.project_path) &&
+            !(
+              discoveryPending && install.project_path === pendingProjectPath
+            ) &&
             !state.projects.some(
               (project) =>
                 project.path === install.project_path &&
@@ -649,9 +715,28 @@ export function createDemoApi(options: DemoOptions = {}) {
       const result = buildUsageOverview(state)
       if (options.scenario === 'cost-empty') result.cost = null
       if (options.scenario === 'usage-empty')
-        return buildUsageOverview({ ...state, events: [] })
-      return copy(result)
+        return buildUsageOverview({
+          ...state,
+          events: [],
+          prompts: [],
+          history: []
+        })
+      return copy(groupSampleUsageOverview(result, currentUsageLocations()))
     },
+    async getUsageProjects() {
+      checkScenario('usage-projects')
+      if (options.scenario === 'usage-projects-loading')
+        await new Promise(() => {})
+      return sampleUsageProjectCatalog(currentUsageLocations())
+    },
+    linkUsageProjects: (input) =>
+      changeUsageProjects(() =>
+        linkSampleUsageProjects(currentUsageLocations(), input)
+      ),
+    unlinkUsageProject: (id) =>
+      changeUsageProjects(() =>
+        unlinkSampleUsageProject(currentUsageLocations(), id)
+      ),
     async getContextBaseline() {
       checkScenario('context')
       const revision = sessionRevision
@@ -683,17 +768,24 @@ export function createDemoApi(options: DemoOptions = {}) {
       checkScenario('calendar')
       const usageState =
         options.scenario === 'usage-empty'
-          ? { ...state, events: [], history: [] }
+          ? { ...state, events: [], prompts: [], history: [] }
           : state
-      return copy(buildUsageCalendar(usageState, year))
+      return copy(
+        groupSampleCalendar(
+          buildUsageCalendar(usageState, year),
+          currentUsageLocations()
+        )
+      )
     },
     async getUsageDay(date: string) {
       checkScenario('calendar')
       const usageState =
         options.scenario === 'usage-empty'
-          ? { ...state, events: [], history: [] }
+          ? { ...state, events: [], prompts: [], history: [] }
           : state
-      return copy(buildUsageDay(usageState, date))
+      return copy(
+        groupSampleDay(buildUsageDay(usageState, date), currentUsageLocations())
+      )
     },
     async getUsageSkillInvocations(input: SkillInvocationSliceInput) {
       const start = new Date(input.startAt)
@@ -745,6 +837,11 @@ export function createDemoApi(options: DemoOptions = {}) {
       if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
       if (revision === sessionRevision) {
         inventoryOnly = false
+        if (discoveryPending) {
+          discoveryPending = false
+          discoverProjects()
+          refreshPlugins()
+        }
         for (const source of scanSummary().sources) {
           for (const subscriber of scanProgressSubscriptions)
             subscriber(copy({ id: activity.id, source }))
@@ -793,6 +890,51 @@ export function createDemoApi(options: DemoOptions = {}) {
       const revision = sessionRevision
       if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
       if (revision !== sessionRevision) return
+      if (action === 'pending-project') {
+        pendingProjectPath = ADDITIONAL_PROJECT
+        discoveryPending = true
+        if (!state.folders.some((folder) => folder.path === ADDITIONAL_PROJECT))
+          state.folders.push({
+            path: ADDITIONAL_PROJECT,
+            granted_at: state.now
+          })
+        state.projects = state.projects.filter(
+          (project) => project.path !== ADDITIONAL_PROJECT
+        )
+        refreshPlugins()
+        inventoryOnly = true
+        lastScanWasStartup = false
+        notify()
+        startSampleDiscovery()
+        options.onNotice?.(
+          'Granted the sample docs-site folder. Discovery is pending; cached counts stay visible without a refresh warning. Choose Complete folder discovery to continue.'
+        )
+        return
+      }
+      if (action === 'retry-project') {
+        const path = pendingProjectPath ?? SAMPLE_PROJECT
+        pendingProjectPath = path
+        setSampleProjectAvailability(path, 'unavailable')
+        inventoryOnly = true
+        lastScanWasStartup = false
+        notify(scanActivity)
+        startSampleDiscovery()
+        options.onNotice?.(
+          'The sample folder has a confirmed read failure. Its warning and cached entries stay visible while a retry runs. Complete folder discovery to simulate recovery.'
+        )
+        return
+      }
+      if (action === 'recover-project') {
+        const path = pendingProjectPath ?? SAMPLE_PROJECT
+        setSampleProjectAvailability(path, 'available')
+        inventoryOnly = true
+        lastScanWasStartup = false
+        notify(scanActivity)
+        options.onNotice?.(
+          'Sample folder discovery succeeded. Confirmed availability clears the warning and enables the readable sample install.'
+        )
+        return
+      }
       const result = applyInventoryChange(
         {
           ...state,
@@ -818,8 +960,11 @@ export function createDemoApi(options: DemoOptions = {}) {
         options.scenario ?? ''
       )
       state = structuredClone(initial)
+      usageLocations = reconcileSampleUsageProjects([], initial)
       inventorySource = structuredClone(initial)
       inventoryOnly = false
+      pendingProjectPath = null
+      discoveryPending = false
       refreshPlugins()
       section = options.initialSection ?? 'skills'
       theme = options.initialTheme ?? 'light'

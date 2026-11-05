@@ -4,9 +4,9 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `da368fef9e681840fa40f3e85df6638ba9345205`, version `0.1.0`; exact source hashes pin the imported files.
-- Snapshot: 102 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
-- Four recorded integration patches: scoped Tailwind discovery, trusted host navigation, and inactive-frame autofocus guards in the two inventories. App tokens, layouts, labels, icons, and motion rules are preserved.
+- App revision: `ffd88643e368e66c7d2782d22ad661040ef66f93`, version `0.1.0`; exact source hashes pin the imported files.
+- Snapshot: 109 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
+- Five recorded integration patches: scoped Tailwind discovery, trusted host navigation, inactive-frame autofocus guards in the two inventories, and an explicit `.ts` import in the shared Usage grouping helper for Node's adapter tests. App tokens, layouts, labels, icons, and motion rules are preserved.
 - `npm run build` checks TypeScript and snapshot hashes before building the marketing and preview entries. Normal builds and CI require no sibling app checkout.
 - The original app repository remains unchanged.
 
@@ -18,7 +18,7 @@ The preview retains an 860px minimum client width. At narrower website widths, v
 
 `src/preview/api.ts` provides the complete typed browser API over session-only sample state. Folder grants, native plugin commands, rescans, external app links, and data-folder reveal are simulated. No visitor filesystem, CLI, database, backend, or telemetry access is introduced. Reset cancels stale pending actions and restores the original state.
 
-The November 5 snapshot imports `da368fe` through the existing sync tool. The
+The first November 5 snapshot imported `da368fe` through the existing sync tool. The
 actual renderer handles inventory-only query invalidation, deleted-selection
 recovery, child-scoped availability notices, and retained manual-rescan feedback.
 `src/preview/inventory.ts` applies six sample changes to an independent inventory
@@ -33,11 +33,33 @@ completion sources without re-ingesting Usage. A completion acknowledgment relea
 the host button even when a sequence requires Reset. Reset suppresses pending
 mutations and notices. Unreadable sample children retain cached entries; directly
 granted missing sample repositories are retained independently of healthy parents.
-No timer, native watcher, new IPC method, or renderer integration patch is added.
+That inventory refresh adds no timer, native watcher, or native IPC method.
 
 `scripts/qa/inventory.mjs` verifies these flows at 375, 768, 1024, and 1440px and
 captures unreadable, moved, removed-plugin, preserved-Usage, and retained-rescan
 states under `.qa/inventory/`. It is included in production QA.
+
+The next November 5 refresh imports `83c73dc` and `ffd8864`. The actual renderer
+owns Manage projects, explicit link/unlink controls, global label disambiguation,
+searchable project rankings, and timeline search. `src/preview/usage-projects.ts`
+keeps a session-only catalog independent of live inventory and uses the upstream
+grouping helpers for Activity, cost, tokens, monthly timelines, and day details.
+Stable sample IDs survive inventory removal and grant changes. Links retain raw
+source paths, never grant folder access, and reset on reload or Reset sample.
+
+`SamplePrompt` records preserve prompt multiplicity and session identity separately
+from token/turn events. Activity and History derive prompt totals from these same
+records; bare slash commands remain separate. Partial and unavailable examples
+exercise the imported coverage states. Tokens continue to come from token records.
+
+The host now has nine examples. The added pending-folder sequence retains cached
+skills/plugins while availability is unknown, keeps a confirmed warning during
+retry, and clears it after successful discovery. `scripts/qa/usage-projects.mjs`
+checks this sequence in both inventories at all four widths, plus linking,
+unlinking, alias searches, unchanged totals, Escape, and coverage/load states.
+The upstream Manage projects dialog does not restore its launch button on Escape;
+the website preserves that behavior rather than adding an unrecorded renderer fix.
+See the [complete follow-up audit](upstream-sync-2026-11-05-usage-projects.md).
 
 The October 18 product review corrected version-specific plugin paths/counts, shared-install updates and uninstalls, aggregate enablement, missing-folder state, overlapping parent grants, scan lifecycle events, and lint line destinations. Add Folder first grants the sample `C:\Clients\docs-site` repository; a second click grants its `Clients` parent. See the [product fidelity audit](product-fidelity-audit.md) for the complete capability and content review.
 
@@ -74,7 +96,7 @@ See the [detailed upstream review](upstream-sync-2026-11-04.md) for this run's e
 
 Local evidence lives in `.qa/app-reference/`, `.qa/results.json`, and `.visual-verify/`. Screenshot baselines are local and ignored. Reference comparison excludes operating-system window chrome and verifies the listed Windows renderer states; it is not a native macOS test. Native actions remain deliberately simulated in the browser.
 
-Current verification is recorded in the [November 5 upstream review](upstream-sync-2026-11-05.md#verification): 102 passing tests, 241 responsive captures, full production interaction QA including all six live-refresh examples, and 82 exact renderer comparisons. The earlier table remains historical evidence for the initial integration.
+Current verification is recorded in the [Usage projects follow-up review](upstream-sync-2026-11-05-usage-projects.md#verification). The [earlier November 5 review](upstream-sync-2026-11-05.md#verification) records the previous snapshot's 102 passing tests, 241 responsive captures, full production QA with six live-refresh examples, and 82 exact renderer comparisons. The earlier table remains historical evidence for the initial integration.
 
 ## Maintenance
 

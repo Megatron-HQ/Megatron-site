@@ -335,8 +335,9 @@
                   <h3>Your recent activity, in view.</h3>
                   <p>
                     Prompts, sessions, and active days across 24 hours, 7 days,
-                    or 30 days. Follow daily and hourly patterns, compare
-                    projects, and open a day or hour for its details.
+                    or 30 days, from retained prompt history. Search projects,
+                    follow daily and hourly patterns, and open a day or hour for
+                    its details. Coverage notes identify incomplete history.
                   </p>
                   <button
                     type="button"
@@ -357,8 +358,9 @@
                   <p>
                     Active days, longest streak, busiest day, and prompts per
                     active day. Explore the yearly calendar and monthly project
-                    timeline, then open a day for prompts, sessions, projects,
-                    and available token data.
+                    timeline, search recorded project locations, then open a day
+                    for prompts, sessions, projects, and available token data.
+                    Manage projects links old and new locations, with undo.
                   </p>
                   <button
                     type="button"
@@ -733,12 +735,16 @@ npm run dev</code></pre>
               rebuilds, without storing prompt text in that archive. It retains
               activity already observed when Claude Code removes older source
               files. History deleted before Megatron saw it cannot be recovered.
-              The History panel shows annual summaries, a yearly calendar, and a
-              monthly project timeline. Coverage notes separate missing history
-              from days with no activity; streaks count consecutive observed
-              days with prompts. A day can still show token details when its
-              prompt history is unavailable. Incomplete source scans preserve
-              the previously archived history.
+              Activity and History use the same retained prompt records for
+              matching time intervals. The History panel shows annual summaries,
+              a yearly calendar, and a monthly project timeline. Coverage notes
+              separate missing history from days with no activity; streaks count
+              consecutive observed days with prompts. A day can still show token
+              details when its prompt history is unavailable. Incomplete source
+              scans preserve the previously archived history. Manage projects
+              can link renamed or moved locations and undo those links. Recorded
+              paths stay intact; similar names are suggestions, not automatic
+              merges.
             </p>
           </details>
           <details>
@@ -844,10 +850,13 @@ npm run dev</code></pre>
             <p>
               Project folders require an explicit grant. Open Settings → Project
               folders → Manage…, add your repository or parent folder containing
-              multiple projects, and rescan if needed. Analytics also depend on
-              the local history and transcripts retained by Claude Code.
-              Automatic discovery skips temporary and build directories;
-              explicitly granting a repository inside one still includes it.
+              multiple projects, and rescan if needed. A newly granted folder
+              stays quiet until discovery confirms its availability; a known
+              failure remains visible during retry. Usage keeps historical
+              project identities independently of current folder access. Linking
+              Usage locations does not grant access to folders. Automatic
+              discovery skips temporary and build directories; explicitly
+              granting a repository inside one still includes it.
             </p>
           </details>
         </div>
