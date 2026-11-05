@@ -219,3 +219,149 @@ test('history rejects invalid calendar years and normalized nonexistent dates', 
     assert.throws(() => buildUsageDay(state, date), RangeError)
   }
 })
+
+test('annual summaries verify streaks across coverage gaps and keep the earliest tied record', async () => {
+  const { buildUsageCalendar } = await history()
+  const state = createSampleState(new Date(2026, 0, 6, 12))
+  const template = state.history[1]
+  state.events = []
+  state.history = [
+    { date: '2026-01-01', count: 2, coverage: 'available' as const },
+    { date: '2026-01-02', count: 4, coverage: 'available' as const },
+    { date: '2026-01-03', count: 0, coverage: 'unavailable' as const },
+    { date: '2026-01-04', count: 4, coverage: 'available' as const },
+    { date: '2026-01-05', count: 2, coverage: 'partial' as const }
+  ].map((day) => ({ ...template, ...day }))
+  const calendar = buildUsageCalendar(state, 2026)
+  assert.equal(calendar.prompts, 12)
+  assert.equal(calendar.activeDays, 4)
+  assert.deepEqual(calendar.summary, {
+    observedDays: 5,
+    partialDays: 1,
+    elapsedDays: 6,
+    longestStreak: {
+      days: 2,
+      startDate: '2026-01-01',
+      endDate: '2026-01-02'
+    },
+    busiestDay: { date: '2026-01-02', count: 4 },
+    promptsPerActiveDay: 3
+  })
+})
+
+test('project months reconcile archived and recent prompts without counting slash commands', async () => {
+  const { buildUsageCalendar } = await history()
+  const state = exampleState()
+  const template = createSampleState(new Date(state.now)).history[1]
+  state.history = [
+    {
+      ...template,
+      date: '2026-01-02',
+      count: 5,
+      coverage: 'available',
+      byProject: [
+        { project: API_PROJECT, count: 2 },
+        { project: SAMPLE_PROJECT, count: 3 }
+      ]
+    }
+  ]
+  const calendar = buildUsageCalendar(state, 2026)
+  assert.deepEqual(calendar.byProject, [
+    {
+      project: SAMPLE_PROJECT,
+      total: 5,
+      byMonth: [3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0]
+    },
+    {
+      project: API_PROJECT,
+      total: 3,
+      byMonth: [2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
+    }
+  ])
+  assert.equal(calendar.months.length, 12)
+  assert.deepEqual(calendar.months[0], {
+    month: 1,
+    count: 5,
+    coverage: 'partial'
+  })
+  assert.deepEqual(calendar.months[1], {
+    month: 2,
+    count: 0,
+    coverage: 'unavailable'
+  })
+  assert.deepEqual(calendar.months[9], {
+    month: 10,
+    count: 3,
+    coverage: 'available'
+  })
+  assert.deepEqual(calendar.months[10], {
+    month: 11,
+    count: 0,
+    coverage: 'future'
+  })
+})
+
+test('unobserved years and observed empty days retain distinct annual coverage', async () => {
+  const { buildUsageCalendar } = await history()
+  const state = exampleState()
+  state.events = []
+  const unavailable = buildUsageCalendar(state, 2024)
+  assert.deepEqual(unavailable.summary, {
+    observedDays: 0,
+    partialDays: 0,
+    elapsedDays: 366,
+    longestStreak: null,
+    busiestDay: null,
+    promptsPerActiveDay: null
+  })
+  assert.deepEqual(unavailable.byProject, [])
+  const empty = buildUsageCalendar(state, 2026)
+  assert.equal(empty.summary.observedDays, 31)
+  assert.equal(empty.summary.partialDays, 1)
+  assert.equal(empty.summary.busiestDay, null)
+  assert.equal(empty.summary.promptsPerActiveDay, null)
+  assert.deepEqual(empty.byProject, [])
+})
+
+test('future records cannot inflate annual totals, project months, years, or intensity', async () => {
+  const { buildUsageCalendar, buildUsageDay } = await history()
+  const state = exampleState()
+  const current = buildUsageCalendar(state, 2026)
+  const template = createSampleState(new Date(state.now)).history[1]
+  state.history = [
+    { ...template, date: '2026-10-10', count: 500 },
+    { ...template, date: '2028-01-01', count: 1000 }
+  ]
+  state.events.push({ ...state.events[0], at: '2029-01-01T12:00:00.000Z' })
+  const calendar = buildUsageCalendar(state, 2026)
+  assert.equal(calendar.prompts, 3)
+  assert.deepEqual(calendar.years, [2026])
+  assert.deepEqual(calendar.thresholds, current.thresholds)
+  assert.deepEqual(calendar.byProject, current.byProject)
+  const future = buildUsageDay(state, '2026-10-10')
+  assert.equal(future.coverage, 'future')
+  assert.equal(future.count, 0)
+  assert.equal(future.tokens, null)
+})
+
+test('archived sample years can expand the project timeline without losing daily totals', async () => {
+  const { buildUsageCalendar } = await history()
+  const state = createSampleState(new Date(2026, 9, 9, 12))
+  const calendar = buildUsageCalendar(state, 2025)
+  assert.equal(calendar.byProject.length, 10)
+  assert.equal(buildUsageCalendar(state, 2024).byProject.length, 10)
+  for (const day of state.history)
+    assert.equal(
+      day.byProject.reduce((sum, row) => sum + row.count, 0),
+      day.count
+    )
+  assert.equal(
+    calendar.byProject.reduce((sum, row) => sum + row.total, 0),
+    calendar.prompts
+  )
+  for (const project of calendar.byProject)
+    assert.equal(
+      project.byMonth.reduce((sum, count) => sum + count, 0),
+      project.total
+    )
+})

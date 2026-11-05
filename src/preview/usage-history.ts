@@ -4,6 +4,10 @@ import type {
   TokenWindow,
   TokenBreakdown,
   TokenBucket,
+  ContributionDay,
+  HistoryMonth,
+  HistoryProject,
+  HistoryYearSummary,
   UsageCalendar,
   UsageDayDetails
 } from '../../vendor/megatron/src/shared/ipc'
@@ -18,6 +22,7 @@ const MINIMUM_YEAR = 1970
 const MAXIMUM_YEAR = 9999
 const HISTORY_WINDOW_DAYS = 30
 const THRESHOLD_QUANTILES = [0.25, 0.5, 0.75]
+const MONTHS_PER_YEAR = 12
 
 function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -142,18 +147,18 @@ export function buildUsageDay(
   ) {
     throw new RangeError('Invalid history date.')
   }
-  const archived = state.history.find((day) => day.date === date)
-  if (archived) return structuredClone(archived)
   const now = new Date(state.now)
   const next = nextLocalMidnight(start)
   const future = start > now
+  const archived = state.history.find((day) => day.date === date)
+  if (archived && !future) return structuredClone(archived)
   const end = future
     ? next
     : new Date(Math.min(next.getTime(), now.getTime() + 1))
   const startAt = start.toISOString()
   const endAt = end.toISOString()
   const events = state.events.filter(
-    (event) => event.at >= startAt && event.at < endAt
+    (event) => event.at >= startAt && event.at < endAt && event.at <= state.now
   )
   const prompts = events.filter((event) => !event.bareSlash)
   const byProject = new Map<string, number>()
@@ -183,6 +188,90 @@ export function buildUsageDay(
   }
 }
 
+function summarizeHistory(days: ContributionDay[]): HistoryYearSummary {
+  let longestStreak: HistoryYearSummary['longestStreak'] = null
+  let busiestDay: HistoryYearSummary['busiestDay'] = null
+  let streakDays = 0
+  let streakStart = ''
+  for (const day of days) {
+    if (day.count > (busiestDay?.count ?? 0))
+      busiestDay = { date: day.date, count: day.count }
+    if (
+      day.count === 0 ||
+      day.coverage === 'unavailable' ||
+      day.coverage === 'future'
+    ) {
+      streakDays = 0
+      continue
+    }
+    if (streakDays === 0) streakStart = day.date
+    streakDays++
+    if (streakDays > (longestStreak?.days ?? 0))
+      longestStreak = {
+        days: streakDays,
+        startDate: streakStart,
+        endDate: day.date
+      }
+  }
+  const activeDays = days.filter((day) => day.count > 0)
+  return {
+    observedDays: days.filter(
+      (day) => day.coverage === 'available' || day.coverage === 'partial'
+    ).length,
+    partialDays: days.filter((day) => day.coverage === 'partial').length,
+    elapsedDays: days.filter((day) => day.coverage !== 'future').length,
+    longestStreak,
+    busiestDay,
+    promptsPerActiveDay:
+      activeDays.length === 0
+        ? null
+        : activeDays.reduce((sum, day) => sum + day.count, 0) /
+          activeDays.length
+  }
+}
+
+function historyMonths(days: ContributionDay[]): HistoryMonth[] {
+  return Array.from({ length: MONTHS_PER_YEAR }, (_, index) => {
+    const monthDays = days.filter(
+      (day) => Number(day.date.slice(5, 7)) === index + 1
+    )
+    const elapsed = monthDays.filter((day) => day.coverage !== 'future')
+    const coverage =
+      elapsed.length === 0
+        ? 'future'
+        : elapsed.every((day) => day.coverage === 'unavailable')
+          ? 'unavailable'
+          : elapsed.every((day) => day.coverage === 'available')
+            ? 'available'
+            : 'partial'
+    return {
+      month: index + 1,
+      count: monthDays.reduce((sum, day) => sum + day.count, 0),
+      coverage
+    }
+  })
+}
+
+function historyProjects(days: UsageDayDetails[]): HistoryProject[] {
+  const projects = new Map<string, HistoryProject>()
+  for (const day of days) {
+    const monthIndex = Number(day.date.slice(5, 7)) - 1
+    for (const row of day.byProject) {
+      const project = projects.get(row.project) ?? {
+        project: row.project,
+        total: 0,
+        byMonth: Array<number>(MONTHS_PER_YEAR).fill(0)
+      }
+      project.byMonth[monthIndex] += row.count
+      project.total += row.count
+      projects.set(row.project, project)
+    }
+  }
+  return [...projects.values()].sort(
+    (a, b) => b.total - a.total || a.project.localeCompare(b.project)
+  )
+}
+
 export function buildUsageCalendar(
   state: SampleState,
   year: number
@@ -197,13 +286,19 @@ export function buildUsageCalendar(
       ...state.history.map((day) => Number(day.date.slice(0, 4))),
       ...state.events.map((event) => new Date(event.at).getFullYear())
     ])
-  ].sort((a, b) => b - a)
+  ]
+    .filter((value) => value >= MINIMUM_YEAR && value <= now.getFullYear())
+    .sort((a, b) => b - a)
   const countsByDate = new Map(
-    state.history.map((day) => [day.date, day.count])
+    state.history
+      .filter((day) => day.date <= dateKey(now))
+      .map((day) => [day.date, day.count])
   )
+  const archivedDates = new Set(countsByDate.keys())
   for (const event of state.events) {
     if (event.bareSlash || event.at > state.now) continue
     const key = dateKey(new Date(event.at))
+    if (archivedDates.has(key)) continue
     countsByDate.set(key, (countsByDate.get(key) ?? 0) + 1)
   }
   const counts = [...countsByDate.values()]
@@ -213,22 +308,28 @@ export function buildUsageCalendar(
     (fraction) =>
       counts[Math.max(0, Math.ceil(counts.length * fraction) - 1)] ?? 1
   )
-  const days = []
+  const details: UsageDayDetails[] = []
   const cursor = new Date(year, 0, 1)
   while (cursor.getFullYear() === year) {
-    const { date, weekday, count, coverage, tokens } = buildUsageDay(
-      state,
-      dateKey(cursor)
-    )
-    days.push({ date, weekday, count, coverage, tokens })
+    details.push(buildUsageDay(state, dateKey(cursor)))
     cursor.setDate(cursor.getDate() + 1)
   }
+  const days = details.map(({ date, weekday, count, coverage, tokens }) => ({
+    date,
+    weekday,
+    count,
+    coverage,
+    tokens
+  }))
   return {
     year,
     years,
     days,
     thresholds,
     prompts: days.reduce((sum, day) => sum + day.count, 0),
-    activeDays: days.filter((day) => day.count > 0).length
+    activeDays: days.filter((day) => day.count > 0).length,
+    summary: summarizeHistory(days),
+    months: historyMonths(days),
+    byProject: historyProjects(details)
   }
 }

@@ -277,6 +277,45 @@ export const scenarios = [
       .getByText(/estimated tokens processed/)
       .waitFor()
   }),
+  sample(
+    'product-demo-history-projects-expanded',
+    'demo-usage',
+    async (app) => {
+      await selectPanel(app, 'History')
+      const timeline = app.getByRole('region', {
+        name: 'Project timeline',
+        exact: true
+      })
+      await timeline.getByRole('button', { name: /more projects/ }).click()
+      await timeline
+        .getByRole('button', { name: 'Show fewer', exact: true })
+        .waitFor()
+    }
+  ),
+  sample('product-demo-history-month-tooltip', 'demo-usage', async (app) => {
+    await selectPanel(app, 'History')
+    await app
+      .getByRole('navigation', { name: 'Contribution year', exact: true })
+      .getByRole('button', { name: '2024', exact: true })
+      .click()
+    await app
+      .getByRole('region', { name: 'Project timeline', exact: true })
+      .getByRole('img', { name: /Jul 2024.*recorded prompts/ })
+      .first()
+      .press('ArrowRight')
+    await app
+      .getByRole('tooltip')
+      .getByText(/of this month’s prompts/)
+      .waitFor()
+  }),
+  sample('product-demo-history-busiest-day', 'demo-usage', async (app) => {
+    await selectPanel(app, 'History')
+    await app.getByRole('button', { name: /^Busiest day:/ }).click()
+    await app
+      .getByRole('dialog')
+      .getByText(/Activity details/)
+      .waitFor()
+  }),
   ...['Tokens', 'Activity', 'History', 'Resident tax'].map((panel) =>
     sample(
       `product-demo-usage-${panel.toLowerCase().replaceAll(' ', '-')}-dark`,

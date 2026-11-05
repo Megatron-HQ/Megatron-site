@@ -260,6 +260,46 @@ const scenes = [
     }
   ],
   [
+    'history-projects-expanded',
+    async (page) => {
+      await selectPanel(page, 'History')
+      await page
+        .getByRole('region', { name: 'Project timeline', exact: true })
+        .getByRole('button', { name: /more projects/ })
+        .click()
+    }
+  ],
+  [
+    'history-month-tooltip',
+    async (page) => {
+      await selectPanel(page, 'History')
+      await page
+        .getByRole('navigation', { name: 'Contribution year', exact: true })
+        .getByRole('button', { name: '2024', exact: true })
+        .click()
+      await page
+        .getByRole('region', { name: 'Project timeline', exact: true })
+        .getByRole('img', { name: /Jul 2024.*recorded prompts/ })
+        .first()
+        .press('ArrowRight')
+      await page
+        .getByRole('tooltip')
+        .getByText(/of this month’s prompts/)
+        .waitFor()
+    }
+  ],
+  [
+    'history-busiest-day',
+    async (page) => {
+      await selectPanel(page, 'History')
+      await page.getByRole('button', { name: /^Busiest day:/ }).click()
+      await page
+        .getByRole('dialog')
+        .getByText(/Activity details/)
+        .waitFor()
+    }
+  ],
+  [
     'history-token-only',
     async (page) => {
       await selectPanel(page, 'History')

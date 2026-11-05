@@ -2,7 +2,7 @@
 
 The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static web application.
 
-The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all seven Usage panels, settings, the command palette, file views, and dialogs. Tokens includes four token categories, independent 24-hour/7-day/30-day periods, trends, and model/project breakdowns. History has the yearly contribution calendar, year selection, and full-day details with available token data; Activity has recent prompts and sessions. Compact token values expose exact counts on hover and keyboard focus. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
+The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all seven Usage panels, settings, the command palette, file views, and dialogs. Tokens includes four token categories, independent 24-hour/7-day/30-day periods, trends, and model/project breakdowns. History has annual activity metrics, a yearly contribution calendar, an expandable monthly project timeline, shared year selection, and full-day details with available token data; Activity has recent prompts and sessions. Compact token values expose exact counts on hover and keyboard focus. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
@@ -89,7 +89,7 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is Megatron `0.1.0` at revision `e1def740b3d5c86dbdddf1f51862eab497a883b6` (102 pinned files). It includes the rebuilt `/context` Resident tax panel, independent Refresh, category and recorded-request drilldowns, missing-project scan fixes, separate History, exact-token tooltips, and scan progress. Its exact source hashes and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `0.1.0` (104 pinned files). It includes History's annual summary and monthly project timeline, the rebuilt `/context` Resident tax panel, independent Refresh, category and recorded-request drilldowns, missing-project scan fixes, exact-token tooltips, and scan progress. Its source revision, exact source hashes, and four integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules remain owned by the imported renderer.
 
 The [November 4 upstream review](docs/upstream-sync-2026-11-04.md) details all 66 changed app files, their website impact, and current verification evidence. Rerun the checks below when changing the implementation.
 

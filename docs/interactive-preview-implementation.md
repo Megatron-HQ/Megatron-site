@@ -1,6 +1,6 @@
 # Interactive preview implementation
 
-The website embeds Megatron's actual React renderer. Skills, Plugins, all seven Usage panels, command palette, settings, folder management, budget audit, detail/file views, charts, and dialogs use the app's existing components and stylesheet. History owns the yearly contribution calendar; Activity retains its independent recent-activity window.
+The website embeds Megatron's actual React renderer. Skills, Plugins, all seven Usage panels, command palette, settings, folder management, budget audit, detail/file views, charts, and dialogs use the app's existing components and stylesheet. History owns the annual summary, yearly contribution calendar, and monthly project timeline; Activity retains its independent recent-activity window.
 
 ## Renderer authority
 
@@ -21,6 +21,8 @@ The preview retains an 860px minimum client width. At narrower website widths, v
 The October 18 product review corrected version-specific plugin paths/counts, shared-install updates and uninstalls, aggregate enablement, missing-folder state, overlapping parent grants, scan lifecycle events, and lint line destinations. Add Folder first grants the sample `C:\Clients\docs-site` repository; a second click grants its `Clients` parent. See the [product fidelity audit](product-fidelity-audit.md) for the complete capability and content review.
 
 The October 19 update imports the Activity details dialog. The sample overview gives every Activity day and hour its clipped interval, sessions, prompts, bare slash commands, and project ranking, derived by the same summary as the window totals. Nested sidebar projects show parent-relative names (`tools/cli` under `monorepo`). The app now hides empty Git repositories nested inside another repository; the sample nested repository stays listed because it represents one with its own `.claude` settings and no skills.
+
+The History year-in-review refresh follows the app's November 4 approved plan and UI amendment. The pinned header's year selector controls active days, the longest verified streak and dates, the busiest day, prompts per active day, the calendar, and project-month totals. Busiest day opens the existing day dialog and restores focus on close. The timeline retains the app's neutral scale, eight-project expansion, project-label disambiguation, coverage tooltips, and arrow-key inspection. Annual responses derive from the same daily sample records as day details; future records and bare slash commands cannot inflate prompt totals. All archived sample years include enough projects to exercise expansion.
 
 The November 3 refresh imports the separate History panel, compact token values with exact-count tooltips, aligned calendar weekdays, and dashed unavailable-prompt days that still open token details. The sample includes token-only archived days. Daily token trends and history details recompute the next local midnight after daylight-saving jumps. Rescans emit matching run IDs with transcript/token-archive/prompt/archive progress before completion, and reset suppresses stale progress. The actual Settings dialog waits for displayed data to refresh before reporting success; startup diagnostics remain distinct from manual rescans.
 

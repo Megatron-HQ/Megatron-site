@@ -298,6 +298,11 @@ export async function verifyPreviewStates(page, baseUrl) {
       /Could not load contribution history/
     ],
     [
+      'usage-empty',
+      (frame) => selectPanel(frame, 'History'),
+      'No project prompts recorded in this year.'
+    ],
+    [
       'context-unavailable',
       (frame) => selectPanel(frame, 'Resident tax'),
       "Couldn't measure resident context"

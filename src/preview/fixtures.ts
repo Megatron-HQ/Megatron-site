@@ -27,6 +27,16 @@ export const NESTED_PROJECT = windowsPath(MONOREPO_PROJECT, 'tools', 'cli')
 export const EMPTY_PROJECT = windowsPath(SAMPLE_PARENT, 'empty-lab')
 export const ADDITIONAL_PARENT = windowsPath('C:', 'Clients')
 export const ADDITIONAL_PROJECT = windowsPath(ADDITIONAL_PARENT, 'docs-site')
+const SAMPLE_ACTIVITY_PROJECTS = [
+  SAMPLE_PROJECT,
+  API_PROJECT,
+  MONOREPO_PROJECT,
+  ...['design-system', 'mobile-app', 'cli', 'dashboard', 'research'].map(
+    (name) => windowsPath(SAMPLE_PARENT, name)
+  ),
+  ADDITIONAL_PROJECT,
+  windowsPath(SAMPLE_PARENT, 'library')
+]
 const USER_CLAUDE_ROOT = windowsPath('C:', 'Users', 'demo', '.claude')
 const PLUGIN_CACHE_ROOT = windowsPath(USER_CLAUDE_ROOT, 'plugins', 'cache')
 const TOKEN_ONLY_SAMPLE_OUTPUT = 9000
@@ -94,6 +104,14 @@ function sampleHistory(now: Date): UsageDayDetails[] {
     const count =
       unavailable || weekday === 0 || weekday === 6 ? 0 : 5 + ((index * 7) % 28)
     const primaryCount = Math.ceil(count * 0.7)
+    const secondaryProject =
+      SAMPLE_ACTIVITY_PROJECTS[
+        1 +
+          ((cursor.getFullYear() +
+            cursor.getMonth() * 3 +
+            Math.floor(cursor.getDate() / 7)) %
+            (SAMPLE_ACTIVITY_PROJECTS.length - 1))
+      ]
     history.push({
       date: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`,
       weekday,
@@ -108,7 +126,7 @@ function sampleHistory(now: Date): UsageDayDetails[] {
           ? []
           : [
               { project: SAMPLE_PROJECT, count: primaryCount },
-              { project: API_PROJECT, count: count - primaryCount }
+              { project: secondaryProject, count: count - primaryCount }
             ].filter((row) => row.count > 0),
       coverage: unavailable
         ? 'unavailable'
@@ -432,16 +450,7 @@ export function createSampleState(now: Date): SampleState {
       install('user', '0.9.0', null, { available_version: null })
     ])
   ]
-  const projects = [
-    SAMPLE_PROJECT,
-    API_PROJECT,
-    MONOREPO_PROJECT,
-    ...['design-system', 'mobile-app', 'cli', 'dashboard', 'research'].map(
-      (name) => windowsPath(SAMPLE_PARENT, name)
-    ),
-    ADDITIONAL_PROJECT,
-    windowsPath(SAMPLE_PARENT, 'library')
-  ]
+  const projects = SAMPLE_ACTIVITY_PROJECTS
   const names = [
     'code-review',
     'commit:commit',

@@ -340,6 +340,14 @@ export async function verifyUsageHistory(page, app) {
     exact: true
   })
   await calendar.waitFor()
+  assert.equal(
+    await app
+      .locator('header')
+      .locator('nav[aria-label="Contribution year"]')
+      .count(),
+    1
+  )
+  await verifyHistoryYearReview(page, app, 2024)
   const tokenOnlyDay = calendar.getByRole('button', {
     name: /^(?:July 1, 2024|1 July 2024) · Prompt history unavailable$/
   })
@@ -416,4 +424,88 @@ export async function verifyUsageHistory(page, app) {
     'true'
   )
   assert.equal(await total.textContent(), weeklyTotal)
+}
+
+async function verifyHistoryYearReview(page, app, year) {
+  const expected = await app
+    .locator('body')
+    .evaluate(async (_, selectedYear) => {
+      const calendar = await window.api.getUsageCalendar(selectedYear)
+      return [
+        calendar.activeDays.toLocaleString(),
+        calendar.summary.longestStreak.days.toLocaleString(),
+        calendar.summary.busiestDay.count.toLocaleString(),
+        calendar.summary.promptsPerActiveDay.toLocaleString(undefined, {
+          maximumFractionDigits: 1
+        })
+      ]
+    }, year)
+  const summary = app.getByRole('group', {
+    name: 'Annual summary',
+    exact: true
+  })
+  assert.deepEqual(
+    await summary.locator('.text-usage-stat').allTextContents(),
+    expected
+  )
+  const busiest = summary.getByRole('button', { name: /^Busiest day:/ })
+  await busiest.focus()
+  await busiest.press('Enter')
+  await app
+    .getByRole('dialog')
+    .getByText(/Activity details/)
+    .waitFor()
+  await page.keyboard.press('Escape')
+  await app.getByRole('dialog').waitFor({ state: 'hidden' })
+  assert.equal(
+    await busiest.evaluate((button) => button === document.activeElement),
+    true
+  )
+
+  const timeline = app.getByRole('region', {
+    name: 'Project timeline',
+    exact: true
+  })
+  assert.equal(await timeline.locator('tbody tr').count(), 8)
+  const expand = timeline.getByRole('button', { name: /more projects/ })
+  await expand.click()
+  assert.equal(await timeline.locator('tbody tr').count(), 10)
+  const cell = timeline.getByRole('img').first()
+  assert.equal(
+    await cell.evaluate((element) => getComputedStyle(element).borderTopStyle),
+    'dashed'
+  )
+  await cell.focus()
+  await app
+    .getByRole('tooltip')
+    .getByText('Unavailable', { exact: true })
+    .waitFor()
+  await cell.press('ArrowRight')
+  assert.equal(
+    await cell.evaluate((element) => element === document.activeElement),
+    false
+  )
+  await page.keyboard.press('ArrowDown')
+  assert.equal(
+    await timeline
+      .locator('tbody tr')
+      .nth(1)
+      .locator('[role="img"]')
+      .nth(1)
+      .evaluate((element) => element === document.activeElement),
+    true
+  )
+  const activeMonth = timeline
+    .getByRole('img', { name: /Jul 2024.*recorded prompts/ })
+    .first()
+  await activeMonth.focus()
+  await app
+    .getByRole('tooltip')
+    .getByText(/of this month’s prompts/)
+    .waitFor()
+  assert.match(await activeMonth.getAttribute('aria-label'), /Partial history/)
+  await timeline
+    .getByRole('button', { name: 'Show fewer', exact: true })
+    .click()
+  assert.equal(await timeline.locator('tbody tr').count(), 8)
 }
