@@ -275,7 +275,7 @@ try {
     document.querySelector('[data-header]').classList.contains('is-scrolled')
   )
   await normalPage.waitForFunction(() =>
-    document.querySelector('.analytics-layout').classList.contains('is-in-view')
+    document.querySelector('.analytics-list').classList.contains('is-in-view')
   )
   await normalPage.emulateMedia({ reducedMotion: 'reduce' })
   assert.equal(

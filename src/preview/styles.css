@@ -16,3 +16,37 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+.preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 100%;
+  padding: 24px;
+  overflow: auto;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.preview-error button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.preview-error button:hover {
+  background: var(--muted);
+}
+
+.preview-error button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}

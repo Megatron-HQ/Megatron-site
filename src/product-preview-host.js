@@ -111,11 +111,11 @@ export function mountProductDemo(root) {
       event.data === null
     )
       return
-    if (
-      event.source === residentFrame?.contentWindow &&
-      event.data.type === 'megatron-preview:sample-ready'
-    ) {
-      synchronizeSampleTheme()
+    if (event.source === residentFrame?.contentWindow) {
+      if (event.data.type === 'megatron-preview:sample-ready')
+        synchronizeSampleTheme()
+      else if (event.data.type === 'megatron-preview:error')
+        residentFrame.closest('.context-preview-viewport').scrollLeft = 0
       return
     }
     if (event.source !== frame.contentWindow) return

@@ -10,6 +10,8 @@ import {
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '../../vendor/megatron/src/renderer/src/App'
+import { createProjectLabelResolver } from '../../vendor/megatron/src/renderer/src/lib/project-tree'
+import { ProjectLabelContext } from '../../vendor/megatron/src/renderer/src/lib/use-project-label'
 import {
   ResidentTaxRefresh,
   ResidentTaxSection
@@ -46,6 +48,7 @@ const demo = createDemoApi({
 })
 window.api = demo.api
 const queryClient = new QueryClient()
+const resolveSampleProjectLabel = createProjectLabelResolver(new Map())
 
 class PreviewErrorBoundary extends Component<
   { children: ReactNode },
@@ -63,9 +66,12 @@ class PreviewErrorBoundary extends Component<
   }
   render() {
     return this.state.failed ? (
-      <p role="alert" className="p-6 text-sm">
-        The sample preview could not load. Use Reset sample to try again.
-      </p>
+      <div role="alert" className="preview-error">
+        <p>The sample preview could not load.</p>
+        <button type="button" onClick={() => window.location.reload()}>
+          Reload sample
+        </button>
+      </div>
     ) : (
       this.props.children
     )
@@ -153,13 +159,15 @@ function Preview() {
     <QueryClientProvider client={queryClient}>
       <PreviewErrorBoundary key={revision}>
         {residentTaxSample ? (
-          <main className="resident-tax-sample">
-            <header className="flex items-center justify-between gap-3 border-b border-border py-4">
-              <h1 className="text-[14px] font-medium">Resident tax</h1>
-              <ResidentTaxRefresh />
-            </header>
-            <ResidentTaxSection />
-          </main>
+          <ProjectLabelContext.Provider value={resolveSampleProjectLabel}>
+            <main className="resident-tax-sample">
+              <header className="flex items-center justify-between gap-3 border-b border-border py-4">
+                <h1 className="text-[14px] font-medium">Resident tax</h1>
+                <ResidentTaxRefresh />
+              </header>
+              <ResidentTaxSection />
+            </main>
+          </ProjectLabelContext.Provider>
         ) : (
           <App />
         )}

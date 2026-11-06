@@ -128,7 +128,7 @@ function initializeSectionReveals() {
   )
   document
     .querySelectorAll(
-      '.section-heading, .feature-panel, .plugin-feature, .analytics-layout, .local-layout, .installation-intro, .installation-guide'
+      '.section-heading, .feature-panel, .plugin-feature, .analytics-list, .context-visual, .local-layout, .installation-intro, .installation-guide'
     )
     .forEach((element) => {
       element.classList.add('reveal-ready')
