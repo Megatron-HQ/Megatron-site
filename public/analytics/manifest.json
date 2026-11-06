@@ -1,0 +1,57 @@
+{
+  "clock": "2026-10-09T12:00:00.000Z",
+  "theme": "light",
+  "locale": "en-US",
+  "timezone": "America/Chicago",
+  "captures": [
+    {
+      "panel": "tokens",
+      "title": "Tokens",
+      "width": 956,
+      "height": 1012,
+      "period": "7 days"
+    },
+    {
+      "panel": "cost",
+      "title": "Cost",
+      "width": 956,
+      "height": 1338,
+      "period": "7 days"
+    },
+    {
+      "panel": "activity",
+      "title": "Activity",
+      "width": 956,
+      "height": 1045,
+      "period": "7 days"
+    },
+    {
+      "panel": "history",
+      "title": "History",
+      "width": 956,
+      "height": 998,
+      "period": "2026"
+    },
+    {
+      "panel": "models",
+      "title": "Models",
+      "width": 956,
+      "height": 652,
+      "period": "7 days"
+    },
+    {
+      "panel": "skills",
+      "title": "Skills",
+      "width": 956,
+      "height": 1236,
+      "period": "7 days"
+    },
+    {
+      "panel": "resident-tax",
+      "title": "Resident tax",
+      "width": 956,
+      "height": 909,
+      "period": null
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { refreshIcons } from './icons.js'
-import { USAGE_PANELS, parsePreviewThemeMessage } from './preview/protocol.ts'
+import { USAGE_PANELS } from './preview/protocol.ts'
 export { refreshIcons } from './icons.js'
 
 const SECTIONS = [
@@ -37,17 +37,6 @@ export function mountProductDemo(root) {
   const viewport = root.querySelector('.preview-viewport')
   const notice = root.querySelector('[data-preview-notice]')
   const expandButton = root.querySelector('[data-preview-expand]')
-  const residentFrame = document.querySelector('[data-resident-tax-frame]')
-  let sampleDark = false
-  function synchronizeSampleTheme() {
-    residentFrame?.contentWindow?.postMessage(
-      { type: 'megatron-preview:theme', dark: sampleDark },
-      previewUrl.origin
-    )
-    residentFrame
-      ?.closest('.context-visual')
-      ?.classList.toggle('is-dark', sampleDark)
-  }
   let ready = false
   let pendingCommand = null
   let previousOverflow = ''
@@ -111,20 +100,7 @@ export function mountProductDemo(root) {
       event.data === null
     )
       return
-    if (
-      event.source === residentFrame?.contentWindow &&
-      event.data.type === 'megatron-preview:sample-ready'
-    ) {
-      synchronizeSampleTheme()
-      return
-    }
     if (event.source !== frame.contentWindow) return
-    const theme = parsePreviewThemeMessage(event.data)
-    if (theme) {
-      sampleDark = theme.dark
-      synchronizeSampleTheme()
-      return
-    }
     const message = event.data
     if (message.type === 'megatron-preview:ready') {
       ready = true

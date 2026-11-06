@@ -383,7 +383,7 @@ export const scenarios = [
   },
   ...[
     ['features-section', 'features', '.features-section'],
-    ['analytics-section', 'analytics', '#analytics'],
+    ['analytics-section', 'analytics', '#analytics .section-heading'],
     ['why-local-section', 'local', '#local'],
     ['installation-section', 'install', '#get-started']
   ].map(([name, screen, selector]) => ({
@@ -391,9 +391,45 @@ export const scenarios = [
     screen,
     async run(page) {
       await preparePreview(page)
+      if (screen === 'analytics') {
+        const snapshot = page.locator('[data-analytics-snapshot="tokens"]')
+        await snapshot.scrollIntoViewIfNeeded()
+        await snapshot.locator('img').evaluate((image) => image.decode())
+      }
       await page.locator(selector).scrollIntoViewIfNeeded()
     }
   })),
+  ...[
+    'tokens',
+    'cost',
+    'activity',
+    'history',
+    'models',
+    'skills',
+    'resident-tax'
+  ].map((panel) => ({
+    name: `analytics-${panel}`,
+    screen: 'analytics',
+    async run(page) {
+      await preparePreview(page)
+      const snapshot = page.locator(`[data-analytics-snapshot="${panel}"]`)
+      await snapshot
+        .locator('xpath=ancestor::article')
+        .evaluate((element) => element.scrollIntoView({ block: 'start' }))
+      await snapshot.locator('img').evaluate((image) => image.decode())
+    }
+  })),
+  {
+    name: 'analytics-snapshot-expanded',
+    screen: 'analytics',
+    async run(page) {
+      await preparePreview(page)
+      await page.locator('[data-analytics-snapshot="tokens"]').click()
+      await page
+        .locator('[data-snapshot-image]')
+        .evaluate((image) => image.decode())
+    }
+  },
   {
     name: 'faq-section',
     screen: 'faq',

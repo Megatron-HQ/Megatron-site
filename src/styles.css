@@ -807,19 +807,26 @@ h2 {
   max-width: 56ch;
 }
 .analytics-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 86px;
   margin-top: 58px;
 }
-.analytics-list {
+.analytics-item {
   display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'copy snapshot' 'action snapshot';
+  gap: 22px 64px;
+  align-items: start;
+  border-top: 1px solid #d9dccb;
+  padding-block: 56px;
 }
-.analytics-list article {
+.analytics-item:last-child {
+  padding-bottom: 0;
+}
+.analytics-copy {
+  grid-area: copy;
   display: flex;
   gap: 20px;
-  border-top: 1px solid #d9dccb;
-  padding-block: 22px;
+  padding-top: 18px;
 }
 .analytics-number {
   font-family: var(--font-mono);
@@ -827,71 +834,138 @@ h2 {
   color: var(--caption-ink);
   padding-top: 4px;
 }
-.analytics-list h3 {
-  font-size: 19px;
+.analytics-copy h3 {
+  font-size: 22px;
   font-weight: 500;
+  line-height: 1.25;
   letter-spacing: -0.03em;
 }
-.analytics-list p {
-  margin-top: 9px;
+.analytics-copy p {
+  margin-top: 12px;
   max-width: 380px;
   font-size: 13px;
   line-height: 1.8;
   color: var(--muted);
 }
-.analytics-list .analytics-note {
+.analytics-copy .analytics-note {
   font-size: 11px;
   line-height: 1.75;
 }
-.context-visual {
-  align-self: start;
+.analytics-action {
+  grid-area: action;
+  padding-left: 33px;
+}
+.analytics-snapshot {
+  grid-area: snapshot;
   min-width: 0;
-  background: #fff;
-  border: 1px solid var(--rule);
-  border-radius: 7px;
-  padding: 24px;
+  margin: 0;
 }
-.context-visual.is-dark {
-  background: #1b1b1b;
-  --muted: #a3a3a3;
-  --rule: #393939;
-  border-color: var(--rule);
-}
-.context-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--muted);
-}
-.context-header .eyebrow {
-  font-size: 9px;
-}
-.context-preview-viewport {
-  overflow-x: auto;
-  margin-top: 18px;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-}
-.context-preview-viewport:focus-visible {
-  outline: 2px solid var(--color-ink);
-  outline-offset: 3px;
-}
-.context-preview {
+.analytics-snapshot-button {
   display: block;
   width: 100%;
-  min-width: 440px;
-  height: 960px;
-  border: 0;
-  background: #fff;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: #fafbfc;
+  text-align: left;
+  cursor: zoom-in;
 }
-.context-note {
-  font-size: 11px;
-  line-height: 1.75;
+.analytics-snapshot-button:hover {
+  border-color: var(--caption-ink);
+}
+.analytics-snapshot-button img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.snapshot-enlarge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--rule);
   color: var(--muted);
-  margin-top: 18px;
-  max-width: 450px;
+  font-size: 11px;
+}
+.snapshot-enlarge svg {
+  width: 14px;
+  height: 14px;
+}
+.analytics-snapshot figcaption {
+  margin-top: 10px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.snapshot-viewer {
+  width: min(1080px, calc(100% - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  margin: auto;
+  overflow: hidden;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.snapshot-viewer[open] {
+  display: flex;
+  flex-direction: column;
+}
+.snapshot-viewer::backdrop {
+  background: rgb(25 26 23 / 72%);
+}
+.snapshot-viewer-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.snapshot-viewer-toolbar h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+.snapshot-viewer-toolbar p {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.snapshot-viewer-close {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: transparent;
+  font-size: 11px;
+}
+.snapshot-viewer-close:hover {
+  background: var(--color-lime);
+}
+.snapshot-viewer-viewport {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: #fafbfc;
+}
+.snapshot-viewer-viewport:focus-visible {
+  outline: 2px solid #657100;
+  outline-offset: -3px;
+}
+.snapshot-viewer-viewport img {
+  display: block;
+  max-width: none;
+  height: auto;
+  margin-inline: auto;
 }
 
 .local-section {
@@ -1282,7 +1356,6 @@ h2 {
     grid-template-columns: 1fr 320px;
     gap: 45px;
   }
-  .analytics-layout,
   .local-layout,
   .installation-section,
   .faq-section {
@@ -1416,24 +1489,10 @@ h2 {
   .plugin-scope-visual {
     gap: 7px;
   }
-  .analytics-layout,
   .local-layout,
   .installation-section,
   .faq-section {
     gap: 38px;
-  }
-  .analytics-list h3 {
-    font-size: 16px;
-  }
-  .analytics-list p {
-    font-size: 11px;
-  }
-  .analytics-list article {
-    gap: 15px;
-    padding-block: 18px;
-  }
-  .context-visual {
-    padding: 22px;
   }
   .local-principles h3 {
     font-size: 16px;
@@ -1683,7 +1742,6 @@ h2 {
     justify-content: flex-start;
     margin-top: 3px;
   }
-  .analytics-layout,
   .local-layout,
   .installation-section,
   .faq-section {
@@ -1693,19 +1751,30 @@ h2 {
   .analytics-layout {
     margin-top: 30px;
   }
-  .analytics-list h3 {
-    font-size: 19px;
+  .analytics-item {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: 'copy' 'snapshot' 'action';
+    gap: 20px;
+    padding-block: 32px;
   }
-  .analytics-list p {
-    font-size: 13px;
+  .analytics-copy {
+    padding-top: 0;
+  }
+  .analytics-copy h3 {
+    font-size: 21px;
+  }
+  .analytics-copy p {
     max-width: 470px;
   }
-  .analytics-list article {
-    padding-block: 20px;
-    gap: 20px;
+  .snapshot-viewer-toolbar {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
   }
-  .context-visual {
-    padding: 27px;
+  .snapshot-viewer-close {
+    gap: 4px;
+    padding-inline: 6px;
   }
   .local-section h2 {
     font-size: 46px;
@@ -1838,9 +1907,6 @@ h2 {
   }
   .plugin-scope-visual {
     gap: 10px;
-  }
-  .context-visual {
-    padding: 23px;
   }
   .local-section h2 {
     font-size: 42px;
