@@ -839,6 +839,10 @@ h2 {
   line-height: 1.8;
   color: var(--muted);
 }
+.analytics-list .analytics-note {
+  font-size: 11px;
+  line-height: 1.75;
+}
 .context-visual {
   align-self: start;
   min-width: 0;
@@ -888,30 +892,6 @@ h2 {
   color: var(--muted);
   margin-top: 18px;
   max-width: 450px;
-}
-.cost-footnote {
-  margin-top: 45px;
-  padding-top: 22px;
-  border-top: 1px solid #d9dccb;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-.cost-footnote > svg {
-  width: 16px;
-  height: 16px;
-  color: #858b70;
-}
-.cost-footnote p {
-  font-size: 11px;
-  color: var(--muted);
-  max-width: 640px;
-  line-height: 1.75;
-}
-.cost-footnote .text-link {
-  margin-left: auto;
-  white-space: nowrap;
-  font-size: 11px;
 }
 
 .local-section {
@@ -1455,15 +1435,6 @@ h2 {
   .context-visual {
     padding: 22px;
   }
-  .cost-footnote {
-    align-items: flex-start;
-  }
-  .cost-footnote > svg {
-    margin-top: 3px;
-  }
-  .cost-footnote p {
-    font-size: 10px;
-  }
   .local-principles h3 {
     font-size: 16px;
   }
@@ -1735,19 +1706,6 @@ h2 {
   }
   .context-visual {
     padding: 27px;
-  }
-  .cost-footnote {
-    flex-wrap: wrap;
-    margin-top: 30px;
-    padding-top: 19px;
-  }
-  .cost-footnote p {
-    flex: 1;
-    min-width: 230px;
-    font-size: 11px;
-  }
-  .cost-footnote .text-link {
-    margin: 5px 0 0 27px;
   }
   .local-section h2 {
     font-size: 46px;
