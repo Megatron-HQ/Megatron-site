@@ -35,9 +35,9 @@ export async function verifyPreviewSettings(page) {
       0
     )
   }
-  const snapshotSources = await page
-    .locator('[data-analytics-snapshot] img')
-    .evaluateAll((images) => images.map((image) => image.getAttribute('src')))
+  const sample = page.frameLocator('[data-resident-tax-frame]')
+  await sample.getByRole('button', { name: /^Skills / }).click()
+  await sample.getByRole('dialog').waitFor()
   await app.getByRole('button', { name: 'Settings', exact: true }).click()
   const settings = app.getByRole('dialog', { name: 'Settings', exact: true })
   async function checkTheme(dark) {
@@ -45,16 +45,18 @@ export async function verifyPreviewSettings(page) {
       const main = document.querySelector(
         '[data-preview-frame]'
       ).contentDocument
-      return main.documentElement.classList.contains('dark') === expected
+      const resident = document.querySelector(
+        '[data-resident-tax-frame]'
+      ).contentDocument
+      return (
+        main.documentElement.classList.contains('dark') === expected &&
+        resident.documentElement.classList.contains('dark') === expected
+      )
     }, dark)
-    assert.deepEqual(
-      await page
-        .locator('[data-analytics-snapshot] img')
-        .evaluateAll((images) =>
-          images.map((image) => image.getAttribute('src'))
-        ),
-      snapshotSources,
-      'App theme changes preserve the light snapshots.'
+    assert.equal(
+      await sample.getByRole('dialog').isVisible(),
+      true,
+      'Theme changes preserve the sample dialog.'
     )
   }
   for (const [label, dark] of [
@@ -73,5 +75,10 @@ export async function verifyPreviewSettings(page) {
   await checkTheme(true)
   await page.getByRole('button', { name: 'Reset sample', exact: true }).click()
   await checkTheme(false)
+  await activate(
+    sample
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Close', exact: true })
+  )
   await page.emulateMedia({ colorScheme: 'light' })
 }

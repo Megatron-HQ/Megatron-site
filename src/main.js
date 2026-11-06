@@ -4,7 +4,6 @@ import '@fontsource/geist-sans/latin-600.css'
 import '@fontsource/geist-sans/latin-700.css'
 import '@fontsource/geist-mono/latin-400.css'
 import { mountProductDemo, refreshIcons } from './product-preview-host.js'
-import { initializeAnalyticsSnapshots } from './analytics-snapshots.js'
 
 const COPY_FEEDBACK_DURATION_MS = 2500
 const HEADER_SCROLLED_THRESHOLD = 20
@@ -129,7 +128,7 @@ function initializeSectionReveals() {
   )
   document
     .querySelectorAll(
-      '.section-heading, .feature-panel, .plugin-feature, .analytics-item, .local-layout, .installation-intro, .installation-guide'
+      '.section-heading, .feature-panel, .plugin-feature, .analytics-layout, .local-layout, .installation-intro, .installation-guide'
     )
     .forEach((element) => {
       element.classList.add('reveal-ready')
@@ -150,7 +149,6 @@ initializeNavigation()
 initializeInstallationCopy()
 initializeHeaderElevation()
 initializeSectionReveals()
-initializeAnalyticsSnapshots()
 requireElement('[data-show-cost]').addEventListener('click', () => {
   preview.showCost()
   requireElement('#product').scrollIntoView({

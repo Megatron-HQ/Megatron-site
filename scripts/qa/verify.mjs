@@ -11,7 +11,7 @@ import { join, resolve } from 'node:path'
 import { verifyPreviewStates } from './states.mjs'
 import { verifyInventoryChanges } from './inventory.mjs'
 import { verifyUsageProjects } from './usage-projects.mjs'
-import { verifyAnalyticsSnapshots } from './analytics-snapshots.mjs'
+import { verifyResidentTaxSample } from './resident-tax.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
@@ -71,7 +71,7 @@ try {
     fullPage: true
   })
   await verifyPreview(page)
-  await verifyAnalyticsSnapshots(page)
+  await verifyResidentTaxSample(page)
   await verifyPreviewSettings(page)
   await checkOverflow(page, 1440)
   results.push(
@@ -156,7 +156,7 @@ try {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto(baseUrl)
     const frame = await preparePreview(page)
-    await verifyAnalyticsSnapshots(page)
+    await verifyResidentTaxSample(page)
     await checkOverflow(page, width)
     for (const panel of [
       'Activity',
@@ -275,9 +275,7 @@ try {
     document.querySelector('[data-header]').classList.contains('is-scrolled')
   )
   await normalPage.waitForFunction(() =>
-    [...document.querySelectorAll('.analytics-item')].some((element) =>
-      element.classList.contains('is-in-view')
-    )
+    document.querySelector('.analytics-layout').classList.contains('is-in-view')
   )
   await normalPage.emulateMedia({ reducedMotion: 'reduce' })
   assert.equal(

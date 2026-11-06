@@ -807,25 +807,19 @@ h2 {
   max-width: 56ch;
 }
 .analytics-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 86px;
   margin-top: 58px;
 }
-.analytics-item {
+.analytics-list {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  grid-template-rows: 1fr auto auto 1fr;
-  grid-template-areas: '. snapshot' 'copy snapshot' 'action snapshot' '. snapshot';
-  column-gap: 48px;
-  align-items: start;
-  border-top: 1px solid #d9dccb;
-  padding-block: 32px;
 }
-.analytics-item:last-child {
-  padding-bottom: 0;
-}
-.analytics-copy {
-  grid-area: copy;
+.analytics-list article {
   display: flex;
   gap: 20px;
+  border-top: 1px solid #d9dccb;
+  padding-block: 22px;
 }
 .analytics-number {
   font-family: var(--font-mono);
@@ -833,154 +827,71 @@ h2 {
   color: var(--caption-ink);
   padding-top: 4px;
 }
-.analytics-copy h3 {
-  font-size: 22px;
+.analytics-list h3 {
+  font-size: 19px;
   font-weight: 500;
-  line-height: 1.25;
   letter-spacing: -0.03em;
 }
-.analytics-copy p {
-  margin-top: 12px;
+.analytics-list p {
+  margin-top: 9px;
   max-width: 380px;
   font-size: 13px;
   line-height: 1.8;
   color: var(--muted);
 }
-.analytics-copy .analytics-note {
+.analytics-list .analytics-note {
   font-size: 11px;
   line-height: 1.75;
 }
-.analytics-action {
-  grid-area: action;
-  margin-top: 20px;
-  padding-left: 33px;
-}
-.analytics-snapshot {
-  grid-area: snapshot;
-  align-self: center;
+.context-visual {
+  align-self: start;
   min-width: 0;
-  margin: 0;
-}
-.analytics-snapshot-button {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  padding: 0;
+  background: #fff;
   border: 1px solid var(--rule);
   border-radius: 7px;
-  background: #fafbfc;
-  text-align: left;
-  cursor: zoom-in;
+  padding: 24px;
 }
-.analytics-snapshot-button:hover {
-  border-color: var(--caption-ink);
+.context-visual.is-dark {
+  background: #1b1b1b;
+  --muted: #a3a3a3;
+  --rule: #393939;
+  border-color: var(--rule);
 }
-.analytics-snapshot-button img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.snapshot-window {
-  position: relative;
-  display: block;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-}
-.snapshot-window::after {
-  position: absolute;
-  inset: auto 0 0;
-  height: 28px;
-  background: linear-gradient(transparent, #fafbfc);
-  content: '';
-  pointer-events: none;
-}
-.snapshot-enlarge {
+.context-header {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--rule);
-  color: var(--muted);
-  font-size: 11px;
-}
-.snapshot-enlarge svg {
-  width: 14px;
-  height: 14px;
-}
-.analytics-snapshot figcaption {
-  margin-top: 10px;
-  font-size: 10px;
-  line-height: 1.7;
-  color: var(--muted);
-}
-.snapshot-viewer {
-  width: min(1080px, calc(100% - 32px));
-  max-width: none;
-  max-height: calc(100dvh - 32px);
-  padding: 0;
-  border: 1px solid var(--rule);
-  border-radius: 7px;
-  margin: auto;
-  overflow: hidden;
-  background: var(--color-paper);
-  color: var(--color-ink);
-}
-.snapshot-viewer[open] {
-  display: flex;
-  flex-direction: column;
-}
-.snapshot-viewer::backdrop {
-  background: rgb(25 26 23 / 72%);
-}
-.snapshot-viewer-toolbar {
-  display: flex;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--rule);
-}
-.snapshot-viewer-toolbar h3 {
-  font-size: 14px;
-  font-weight: 500;
-}
-.snapshot-viewer-toolbar p {
-  margin-top: 4px;
-  font-size: 11px;
   color: var(--muted);
 }
-.snapshot-viewer-close {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px;
+.context-header .eyebrow {
+  font-size: 9px;
+}
+.context-preview-viewport {
+  overflow-x: auto;
+  margin-top: 18px;
   border: 1px solid var(--rule);
   border-radius: 4px;
-  background: transparent;
-  font-size: 11px;
 }
-.snapshot-viewer-close:hover {
-  background: var(--color-lime);
+.context-preview-viewport:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
 }
-.snapshot-viewer-viewport {
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  background: #fafbfc;
-}
-.snapshot-viewer-viewport:focus-visible {
-  outline: 2px solid #657100;
-  outline-offset: -3px;
-}
-.snapshot-viewer-viewport img {
+.context-preview {
   display: block;
-  max-width: none;
-  height: auto;
-  margin-inline: auto;
+  width: 100%;
+  min-width: 440px;
+  height: 960px;
+  border: 0;
+  background: #fff;
+}
+.context-note {
+  font-size: 11px;
+  line-height: 1.75;
+  color: var(--muted);
+  margin-top: 18px;
+  max-width: 450px;
 }
 
 .local-section {
@@ -1371,6 +1282,7 @@ h2 {
     grid-template-columns: 1fr 320px;
     gap: 45px;
   }
+  .analytics-layout,
   .local-layout,
   .installation-section,
   .faq-section {
@@ -1504,10 +1416,24 @@ h2 {
   .plugin-scope-visual {
     gap: 7px;
   }
+  .analytics-layout,
   .local-layout,
   .installation-section,
   .faq-section {
     gap: 38px;
+  }
+  .analytics-list h3 {
+    font-size: 16px;
+  }
+  .analytics-list p {
+    font-size: 11px;
+  }
+  .analytics-list article {
+    gap: 15px;
+    padding-block: 18px;
+  }
+  .context-visual {
+    padding: 22px;
   }
   .local-principles h3 {
     font-size: 16px;
@@ -1757,6 +1683,7 @@ h2 {
     justify-content: flex-start;
     margin-top: 3px;
   }
+  .analytics-layout,
   .local-layout,
   .installation-section,
   .faq-section {
@@ -1766,33 +1693,19 @@ h2 {
   .analytics-layout {
     margin-top: 30px;
   }
-  .analytics-item {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    grid-template-areas: 'copy' 'snapshot' 'action';
-    gap: 20px;
-    padding-block: 32px;
+  .analytics-list h3 {
+    font-size: 19px;
   }
-  .analytics-copy {
-    padding-top: 0;
-  }
-  .analytics-action {
-    margin-top: 0;
-  }
-  .analytics-copy h3 {
-    font-size: 21px;
-  }
-  .analytics-copy p {
+  .analytics-list p {
+    font-size: 13px;
     max-width: 470px;
   }
-  .snapshot-viewer-toolbar {
-    align-items: flex-start;
-    gap: 8px;
-    padding: 12px;
+  .analytics-list article {
+    padding-block: 20px;
+    gap: 20px;
   }
-  .snapshot-viewer-close {
-    gap: 4px;
-    padding-inline: 6px;
+  .context-visual {
+    padding: 27px;
   }
   .local-section h2 {
     font-size: 46px;
@@ -1925,6 +1838,9 @@ h2 {
   }
   .plugin-scope-visual {
     gap: 10px;
+  }
+  .context-visual {
+    padding: 23px;
   }
   .local-section h2 {
     font-size: 42px;

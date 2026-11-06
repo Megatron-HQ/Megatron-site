@@ -305,8 +305,8 @@
             </div>
           </div>
           <div class="analytics-layout">
-            <article class="analytics-item">
-              <div class="analytics-copy">
+            <div class="analytics-list">
+              <article>
                 <span class="analytics-number">01</span>
                 <div>
                   <h3>Every kind of token, accounted for.</h3>
@@ -317,51 +317,19 @@
                     estimated from recorded session totals. Hover or focus a
                     compact token value to see its exact count.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="tokens"
+                  >
+                    Explore tokens<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
-              </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="tokens"
-                  data-snapshot-title="Tokens"
-                  aria-label="View full Tokens panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/tokens.png"
-                      alt="Tokens panel with its overview and breakdowns"
-                      width="956"
-                      height="1012"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · 7-day view
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button
-                  type="button"
-                  class="text-link"
-                  data-show-usage="tokens"
-                >
-                  Explore tokens<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-            <article class="analytics-item">
-              <div class="analytics-copy">
+              </article>
+              <article>
                 <span class="analytics-number">02</span>
                 <div>
                   <h3>See your estimated API cost.</h3>
@@ -374,47 +342,15 @@
                     subscription bill. Available detail depends on the data
                     recorded by Claude Code.
                   </p>
+                  <button type="button" class="text-link" data-show-cost>
+                    Explore cost<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
-              </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="cost"
-                  data-snapshot-title="Cost"
-                  aria-label="View full Cost panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/cost.png"
-                      alt="Cost panel with its overview and breakdowns"
-                      width="956"
-                      height="1338"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · 7-day view
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button type="button" class="text-link" data-show-cost>
-                  Explore cost<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-            <article class="analytics-item">
-              <div class="analytics-copy">
+              </article>
+              <article>
                 <span class="analytics-number">03</span>
                 <div>
                   <h3>Your recent activity, in view.</h3>
@@ -424,51 +360,19 @@
                     follow daily and hourly patterns, and open a day or hour for
                     its details. Coverage notes identify incomplete history.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="activity"
+                  >
+                    Explore activity<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
-              </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="activity"
-                  data-snapshot-title="Activity"
-                  aria-label="View full Activity panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/activity.png"
-                      alt="Activity panel with its overview and breakdowns"
-                      width="956"
-                      height="1045"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · 7-day view
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button
-                  type="button"
-                  class="text-link"
-                  data-show-usage="activity"
-                >
-                  Explore activity<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-            <article class="analytics-item">
-              <div class="analytics-copy">
+              </article>
+              <article>
                 <span class="analytics-number">04</span>
                 <div>
                   <h3>Your year in review.</h3>
@@ -478,51 +382,19 @@
                     timeline, search recorded project locations, then open a day
                     for prompts, sessions, projects, and available token data.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="history"
+                  >
+                    Explore history<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
-              </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="history"
-                  data-snapshot-title="History"
-                  aria-label="View full History panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/history.png"
-                      alt="History panel with its overview and breakdowns"
-                      width="956"
-                      height="998"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · 2026 year view
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button
-                  type="button"
-                  class="text-link"
-                  data-show-usage="history"
-                >
-                  Explore history<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-            <article class="analytics-item">
-              <div class="analytics-copy">
+              </article>
+              <article>
                 <span class="analytics-number">05</span>
                 <div>
                   <h3>The models behind the work.</h3>
@@ -530,51 +402,19 @@
                     Model usage, output tokens, and recorded reasoning effort,
                     with a model-by-effort breakdown.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="models"
+                  >
+                    Explore models<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
-              </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="models"
-                  data-snapshot-title="Models"
-                  aria-label="View full Models panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/models.png"
-                      alt="Models panel with its overview and breakdowns"
-                      width="956"
-                      height="652"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · 7-day view
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button
-                  type="button"
-                  class="text-link"
-                  data-show-usage="models"
-                >
-                  Explore models<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-            <article class="analytics-item">
-              <div class="analytics-copy">
+              </article>
+              <article>
                 <span class="analytics-number">06</span>
                 <div>
                   <h3>The skills that earn their place.</h3>
@@ -583,51 +423,19 @@
                     estimates. Follow trends back to recorded invocations;
                     unassigned usage appears as General work.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="skills"
+                  >
+                    Explore skills<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
-              </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="skills"
-                  data-snapshot-title="Skills"
-                  aria-label="View full Skills panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/skills.png"
-                      alt="Skills panel with its overview and breakdowns"
-                      width="956"
-                      height="1236"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · 7-day view
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button
-                  type="button"
-                  class="text-link"
-                  data-show-usage="skills"
-                >
-                  Explore skills<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-            <article class="analytics-item">
-              <div class="analytics-copy">
+              </article>
+              <article>
                 <span class="analytics-number">07</span>
                 <div>
                   <h3>Context has a footprint, too.</h3>
@@ -637,81 +445,45 @@
                     skills, MCP, memory, and agents. Inspect the details and
                     refresh on demand.
                   </p>
+                  <button
+                    type="button"
+                    class="text-link"
+                    data-show-usage="resident-tax"
+                  >
+                    Explore context<i
+                      data-lucide="arrow-up-right"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                 </div>
+              </article>
+            </div>
+            <div class="context-visual">
+              <div class="context-header">
+                <span class="eyebrow">RESIDENT TAX / GLOBAL BASELINE</span>
+                <span class="sample-tag">LIVE SAMPLE</span>
               </div>
-              <figure class="analytics-snapshot">
-                <button
-                  type="button"
-                  class="analytics-snapshot-button"
-                  data-analytics-snapshot="resident-tax"
-                  data-snapshot-title="Resident tax"
-                  aria-label="View full Resident tax panel"
-                  aria-haspopup="dialog"
-                  aria-controls="analytics-snapshot-viewer"
-                >
-                  <span class="snapshot-window">
-                    <img
-                      src="./analytics/resident-tax.png"
-                      alt="Resident tax global baseline, category breakdown, and deferred tools"
-                      width="956"
-                      height="909"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-                  <span class="snapshot-enlarge"
-                    >View full panel<i data-lucide="plus" aria-hidden="true"></i
-                  ></span>
-                </button>
-                <figcaption>
-                  Panel preview · Sample data · Global baseline
-                </figcaption>
-              </figure>
-              <div class="analytics-action">
-                <button
-                  type="button"
-                  class="text-link"
-                  data-show-usage="resident-tax"
-                >
-                  Explore context<i
-                    data-lucide="arrow-up-right"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-              </div>
-            </article>
-          </div>
-          <dialog
-            id="analytics-snapshot-viewer"
-            class="snapshot-viewer"
-            aria-labelledby="snapshot-viewer-title"
-            aria-describedby="snapshot-viewer-help"
-          >
-            <div class="snapshot-viewer-toolbar">
-              <div>
-                <h3 id="snapshot-viewer-title">Feature snapshot</h3>
-                <p id="snapshot-viewer-help">
-                  Sample data. Scroll to read the complete panel.
-                </p>
-              </div>
-              <button
-                type="button"
-                class="snapshot-viewer-close"
-                data-snapshot-close
-                autofocus
+              <div
+                class="context-preview-viewport"
+                tabindex="0"
+                role="region"
+                aria-label="Resident Tax sample; scroll horizontally on narrow screens"
               >
-                Close snapshot<i data-lucide="x" aria-hidden="true"></i>
-              </button>
+                <iframe
+                  class="context-preview"
+                  data-resident-tax-frame
+                  src="./preview/index.html?sample=resident-tax"
+                  title="Resident Tax sample with category details and refresh"
+                ></iframe>
+              </div>
+              <p class="context-note">
+                The actual Megatron view with sample data. Explore a category
+                for its details. The bar shows the full context window,
+                including the autocompact reserve and free space; deferred tools
+                stay outside the loaded total. Pan sideways on smaller screens.
+              </p>
             </div>
-            <div
-              class="snapshot-viewer-viewport"
-              tabindex="0"
-              role="region"
-              aria-label="Enlarged panel; scroll to read"
-            >
-              <img data-snapshot-image alt="" />
-            </div>
-          </dialog>
+          </div>
         </div>
       </section>
       <section
