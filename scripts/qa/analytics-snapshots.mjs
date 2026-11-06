@@ -20,6 +20,17 @@ export async function verifyAnalyticsSnapshots(page) {
     7,
     'Every analytics point needs its own snapshot.'
   )
+  const previewDimensions = await snapshots.evaluateAll((elements) =>
+    elements.map((element) => {
+      const { width, height } = element.getBoundingClientRect()
+      return { width, height }
+    })
+  )
+  const previewHeights = previewDimensions.map(({ height }) => height)
+  assert.ok(
+    Math.max(...previewHeights) - Math.min(...previewHeights) <= 1,
+    'All seven preview windows must have the same height, regardless of the panel length.'
+  )
   for (const panel of PANELS) {
     const trigger = page.locator(`[data-analytics-snapshot="${panel}"]`)
     const image = trigger.locator('img')
