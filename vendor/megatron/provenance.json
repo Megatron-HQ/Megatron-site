@@ -1,6 +1,6 @@
 {
   "upstream": "Megatron-HQ/Megatron",
-  "revision": "0f72565415f27ae290216497e15b0ed3c04a9f7a",
+  "revision": "61084a2d88d85b4fdf1fdeb1ae5878cb9a353d9e",
   "version": "0.1.0",
   "upstreamHashes": {
     "src/renderer/src/App.tsx": "0cb5c2d14abf66a1071bdda8541102435f1f86c70b7e9a65e03c6155b2e01dfe",
@@ -101,7 +101,7 @@
     "src/renderer/src/views/SkillDetail.tsx": "91aa29a65cc60edbc4d3327370c199d47ab5f55de10996345954cd07304a073e",
     "src/renderer/src/views/SkillFileViewer.tsx": "3092831c96f829c376854e06d99b9df85d9832bce2da323e0714ec166b389eac",
     "src/renderer/src/views/SkillInventory.tsx": "6162d1735862b0514ad4021a7cc7e7e23e6c5a8bc5e2906b195e1c83d483f5fd",
-    "src/renderer/src/views/UsageView.tsx": "e22dec9e0fcc1063db5ef99ff0263f4ffe1c49d8354c648eb8e2383604c40272",
+    "src/renderer/src/views/UsageView.tsx": "3ced3377b6a88cd02b787cc1d92aa1202385f368edd3401eb1fe40ab4eafb566",
     "src/shared/frontmatter.ts": "bf439e16ebd92cf350c9ac464f086d1874509d11aa5740c293a043dbf8dd5d10",
     "src/shared/ipc.ts": "91be8bfb43ec56f0d5ce1d37d36114ce55d441e84c879bf5c0bbb815c7d1dcd7",
     "src/shared/missing-project.ts": "450be791c8b16ce92783a3fa96b1b90fa7e02f00d1ee80d775cda6797e81989d",
@@ -236,7 +236,7 @@
     "src/renderer/src/views/SkillDetail.tsx": "91aa29a65cc60edbc4d3327370c199d47ab5f55de10996345954cd07304a073e",
     "src/renderer/src/views/SkillFileViewer.tsx": "3092831c96f829c376854e06d99b9df85d9832bce2da323e0714ec166b389eac",
     "src/renderer/src/views/SkillInventory.tsx": "5a64057c451808ca7befb305de6a0d349985c358800956d64374a7adc639be0f",
-    "src/renderer/src/views/UsageView.tsx": "e22dec9e0fcc1063db5ef99ff0263f4ffe1c49d8354c648eb8e2383604c40272",
+    "src/renderer/src/views/UsageView.tsx": "3ced3377b6a88cd02b787cc1d92aa1202385f368edd3401eb1fe40ab4eafb566",
     "src/shared/frontmatter.ts": "bf439e16ebd92cf350c9ac464f086d1874509d11aa5740c293a043dbf8dd5d10",
     "src/shared/ipc.ts": "91be8bfb43ec56f0d5ce1d37d36114ce55d441e84c879bf5c0bbb815c7d1dcd7",
     "src/shared/missing-project.ts": "450be791c8b16ce92783a3fa96b1b90fa7e02f00d1ee80d775cda6797e81989d",

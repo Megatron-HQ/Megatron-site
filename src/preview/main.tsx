@@ -15,7 +15,11 @@ import {
   ResidentTaxSection
 } from '../../vendor/megatron/src/renderer/src/components/usage/ResidentTaxSection'
 import { createDemoApi } from './api.ts'
-import { parsePreviewCommand, type InventoryChange } from './protocol.ts'
+import {
+  parsePreviewCommand,
+  parsePreviewThemeMessage,
+  type InventoryChange
+} from './protocol.ts'
 import { sendPreviewMessage } from './navigation.ts'
 
 const parameters = new URLSearchParams(window.location.search)
@@ -70,6 +74,32 @@ class PreviewErrorBoundary extends Component<
 
 function Preview() {
   const [revision, setRevision] = useState(0)
+  useEffect(() => {
+    const root = document.documentElement
+    if (residentTaxSample) {
+      const receive = (event: MessageEvent) => {
+        if (
+          event.source !== window.parent ||
+          event.origin !== window.location.origin
+        )
+          return
+        const theme = parsePreviewThemeMessage(event.data)
+        if (theme) root.classList.toggle('dark', theme.dark)
+      }
+      window.addEventListener('message', receive)
+      sendPreviewMessage({ type: 'megatron-preview:sample-ready' })
+      return () => window.removeEventListener('message', receive)
+    }
+    const publish = () =>
+      sendPreviewMessage({
+        type: 'megatron-preview:theme',
+        dark: root.classList.contains('dark')
+      })
+    const observer = new MutationObserver(publish)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    publish()
+    return () => observer.disconnect()
+  }, [])
   useEffect(() => {
     async function changeInventory(event: Event) {
       try {

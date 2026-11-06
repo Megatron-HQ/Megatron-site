@@ -29,11 +29,10 @@ are never manually edited.
 ## Tokens and History
 
 Usage project identity is independent of the current inventory and folder grants.
-Manage projects searches recorded locations and explicitly links moved or renamed
-roots, with reversible links and same-name suggestions. Names alone never merge
-projects. Links regroup Activity, cost, tokens, and History without changing source
-paths, total usage, or access permissions. Project rankings and monthly timelines
-search all projects and linked paths while retaining eight-row expansion.
+Existing confirmed location links retain recorded paths, total usage, and access
+permissions. Manual project linking and unlinking are deferred; the Usage header
+has no Manage projects entry point. Project rankings and monthly timelines search
+all projects and recorded paths while retaining eight-row expansion.
 
 Activity and History read retained prompt multiplicities for matching intervals;
 their independently selected windows may differ. Bare slash commands are excluded

@@ -3,19 +3,12 @@ import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
-import { openSkill, preparePreview, selectPanel } from './preview.mjs'
-
-async function change(page, action) {
-  await page
-    .getByLabel('Sample file change', { exact: true })
-    .selectOption(action)
-  await page
-    .getByRole('button', { name: 'Simulate change', exact: true })
-    .click()
-  await page.waitForFunction(
-    () => !document.querySelector('[data-preview-change]').disabled
-  )
-}
+import {
+  openSkill,
+  preparePreview,
+  selectPanel,
+  simulateInventoryChange
+} from './preview.mjs'
 
 async function selectWebProject(app) {
   const expand = app.getByRole('button', {
@@ -41,14 +34,14 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
     const app = await preparePreview(page)
     await page.locator('#product').scrollIntoViewIfNeeded()
     assert.equal(await app.locator('tbody tr').count(), 20)
-    await change(page, 'add-skill')
+    await simulateInventoryChange(page, 'add-skill')
     await app
       .locator('tbody tr')
       .filter({ hasText: 'release-readiness' })
       .waitFor()
     assert.equal(await app.locator('tbody tr').count(), 21)
     await openSkill(app, 'deploy')
-    await change(page, 'edit-skill')
+    await simulateInventoryChange(page, 'edit-skill')
     await app
       .getByText(
         'Deploy the web application and verify its rollback procedure.',
@@ -56,7 +49,7 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
       )
       .first()
       .waitFor()
-    await change(page, 'delete-skill')
+    await simulateInventoryChange(page, 'delete-skill')
     await app.locator('tbody tr').first().waitFor()
     assert.equal(
       await app
@@ -65,7 +58,7 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
       0
     )
     await selectWebProject(app)
-    await change(page, 'unavailable-project')
+    await simulateInventoryChange(page, 'unavailable-project')
     await app.getByText(/Megatron will retry automatically/).waitFor()
     await page
       .locator('[data-preview-host]')
@@ -86,7 +79,7 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
       return (await api.listSkills()).skills.length === 20
     })
     await selectWebProject(app)
-    await change(page, 'move-project')
+    await simulateInventoryChange(page, 'move-project')
     await app.getByText('Project / Dev Skills', { exact: false }).waitFor()
     await app.getByRole('button', { name: /^web-app-renamed\s/ }).waitFor()
     await page
@@ -102,7 +95,7 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
     await app
       .getByRole('button', { name: 'Back to plugins', exact: true })
       .waitFor()
-    await change(page, 'delete-project')
+    await simulateInventoryChange(page, 'delete-project')
     await app.getByText('Projects / Dev Plugins', { exact: false }).waitFor()
     assert.equal(
       await app
@@ -133,7 +126,7 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
     const usageReads = await app
       .locator('body')
       .evaluate(() => window.sampleUsageReads)
-    await change(page, 'delete-project')
+    await simulateInventoryChange(page, 'delete-project')
     assert.equal(
       await app.locator('body').evaluate(() => window.sampleUsageReads),
       usageReads,
@@ -161,7 +154,7 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
     await rescan.focus()
     await rescan.press('Enter')
     await app.getByText('Scan complete.', { exact: true }).waitFor()
-    await change(page, 'unavailable-project')
+    await simulateInventoryChange(page, 'unavailable-project')
     await app.getByText('Scan complete.', { exact: true }).waitFor()
     await app.getByText('Scan needs attention', { exact: true }).waitFor()
     await page

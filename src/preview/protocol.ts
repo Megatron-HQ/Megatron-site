@@ -11,6 +11,24 @@ export const USAGE_PANELS = [
 
 export type PreviewSection = (typeof PREVIEW_SECTIONS)[number]
 export type PreviewPanel = (typeof USAGE_PANELS)[number]
+export type PreviewThemeMessage = {
+  type: 'megatron-preview:theme'
+  dark: boolean
+}
+
+export function parsePreviewThemeMessage(
+  value: unknown
+): PreviewThemeMessage | null {
+  if (typeof value !== 'object' || value === null) return null
+  const message = value as Record<string, unknown>
+  if (
+    message.type !== 'megatron-preview:theme' ||
+    typeof message.dark !== 'boolean'
+  )
+    return null
+  return { type: message.type, dark: message.dark }
+}
+
 export const INVENTORY_CHANGES = [
   'add-skill',
   'edit-skill',

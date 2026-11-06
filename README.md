@@ -79,7 +79,7 @@ The production site is emitted to `dist/`. The local production preview serves a
 
 Geist fonts and Lucide icons are bundled with the site. The static website makes no analytics requests and has no account, form submission, backend server, or visitor local-file integration.
 
-Usage's Manage projects dialog searches retained locations and explicitly links or unlinks old and current roots. Similar names only suggest matches; links change Usage grouping without changing recorded paths, inventory, folder grants, or total usage. Project rankings and History's timeline search all rows, including linked locations beyond the collapsed eight. Activity and History share retained prompt records for matching intervals, with partial/unavailable coverage kept distinct from zero. The nine Try live refresh examples include a newly granted folder awaiting discovery, a confirmed failure during retry, and recovery.
+Usage retains recorded project locations and existing confirmed links. Project rankings and History's timeline search all rows and recorded paths beyond the collapsed eight. Activity and History share retained prompt records for matching intervals, with partial/unavailable coverage kept distinct from zero. Manual project linking is deferred; the Usage header has no Manage projects entry point.
 
 ## Product evidence
 
@@ -103,7 +103,7 @@ Resident tax's `/context` baseline and recorded requests are independent synthet
 
 At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
 
-The preview's **Try live refresh** controls simulate adding, editing, or deleting a skill, moving or deleting a discovered project, and a temporarily unreadable child. Inventory-only completion events update the actual renderer without refetching open Usage/history queries. Deleted selections recover to their surviving parent; shared user plugin installs survive cleanup. Sample moves leave historical project paths unchanged. Reset cancels pending examples and restores the original session. These controls never watch or change visitor files.
+The preview toolbar contains section tabs, Reset sample, and expansion controls. Inventory change simulations remain in the local QA harness to verify recovery and refresh behavior. They never watch or change visitor files. The Resident Tax sample under Follow the work immediately follows the main preview's Light, Dark, or System appearance, including system preference changes and Reset, without reloading its data or closing its category dialog.
 
 The desktop watches approved inventory locations after changes settle and reconciles missed events periodically. Full startup, focus, folder-grant, plugin-action, and manual scans retain their existing behavior. Confirmed missing discovered children beneath readable grants are pruned; missing directly granted roots and unreadable sources retain cached inventory. Warnings remain scoped to the affected folder. Settings retains the manual-rescan result while its source details reflect the latest background scan.
 

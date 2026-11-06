@@ -12,6 +12,7 @@ import { verifyPreviewStates } from './states.mjs'
 import { verifyInventoryChanges } from './inventory.mjs'
 import { verifyUsageProjects } from './usage-projects.mjs'
 import { verifyResidentTaxSample } from './resident-tax.mjs'
+import { verifyPreviewSettings } from './preview-settings.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -71,6 +72,7 @@ try {
   })
   await verifyPreview(page)
   await verifyResidentTaxSample(page)
+  await verifyPreviewSettings(page)
   await checkOverflow(page, 1440)
   results.push(
     'Actual renderer geometry, sorting and keyboard rows, files and tree resizing, activity dialogs, settings, install-specific plugin actions, all Usage panels, independent windows, reset, expansion and Escape passed.'
@@ -144,7 +146,7 @@ try {
   await verifyInventoryChanges(page, baseUrl, join(directory, 'inventory'))
   await verifyUsageProjects(page, baseUrl, join(directory, 'usage-projects'))
   results.push(
-    'Usage location linking/unlinking, linked-path search, retained coverage, and pending/retry/recovered folders passed in Skills and Plugins at all four widths.'
+    'Retained project search, coverage, and pending/retry/recovered folders passed in Skills and Plugins at all four widths.'
   )
   results.push(
     'Live sample additions/edits/deletions, moves, project/detail recovery, child-only warnings, preserved Usage periods, and retained manual-rescan feedback passed at all four widths.'

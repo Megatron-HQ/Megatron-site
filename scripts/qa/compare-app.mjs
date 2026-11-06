@@ -108,57 +108,11 @@ let browser
 const results = []
 const errors = []
 
-async function linkArchivedProject(page) {
-  await selectPanel(page, 'Tokens')
-  const pair = await page.evaluate(async () => {
-    const { projects } = await window.api.getUsageProjects()
-    return {
-      source: projects.find(
-        (project) => project.path === 'C:\\Archive\\web-app'
-      ),
-      target: projects.find((project) => project.path === 'C:\\Dev\\web-app')
-    }
-  })
-  await page
-    .getByRole('button', { name: 'Manage projects', exact: true })
-    .click()
-  const manager = page.getByRole('dialog', {
-    name: 'Manage projects',
-    exact: true
-  })
-  await manager.getByRole('searchbox').fill('web-app')
-  const source = manager.getByRole('article', {
-    name: pair.source.label,
-    exact: true
-  })
-  await source.getByRole('combobox').selectOption(pair.target.id)
-  await source
-    .getByRole('button', { name: 'Link locations', exact: true })
-    .click()
-  await manager
-    .getByRole('button', { name: 'Unlink C:\\Archive\\web-app', exact: true })
-    .waitFor()
-  return manager
-}
-
 const scenes = [
   [
-    'manage-projects',
+    'project-search',
     async (page) => {
       await selectPanel(page, 'Tokens')
-      await page
-        .getByRole('button', { name: 'Manage projects', exact: true })
-        .click()
-      await page.getByRole('dialog').getByRole('article').first().waitFor()
-    }
-  ],
-  ['linked-projects', (page) => linkArchivedProject(page)],
-  [
-    'linked-project-search',
-    async (page) => {
-      const manager = await linkArchivedProject(page)
-      await manager.getByRole('searchbox').press('Escape')
-      await manager.waitFor({ state: 'hidden' })
       await page
         .getByRole('searchbox', { name: 'Search projects', exact: true })
         .fill('C:/Archive/web-app')
@@ -166,11 +120,8 @@ const scenes = [
     }
   ],
   [
-    'linked-timeline-search',
+    'project-timeline-search',
     async (page) => {
-      const manager = await linkArchivedProject(page)
-      await manager.getByRole('searchbox').press('Escape')
-      await manager.waitFor({ state: 'hidden' })
       await selectPanel(page, 'History')
       await page
         .getByRole('searchbox', {

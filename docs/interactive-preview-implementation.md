@@ -4,7 +4,7 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `ffd88643e368e66c7d2782d22ad661040ef66f93`, version `0.1.0`; exact source hashes pin the imported files.
+- App revision: `61084a2d88d85b4fdf1fdeb1ae5878cb9a353d9e` plus the reviewed Usage header removal recorded by source hashes, version `0.1.0`; exact source hashes pin the imported files.
 - Snapshot: 109 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
 - Five recorded integration patches: scoped Tailwind discovery, trusted host navigation, inactive-frame autofocus guards in the two inventories, and an explicit `.ts` import in the shared Usage grouping helper for Node's adapter tests. App tokens, layouts, labels, icons, and motion rules are preserved.
 - `npm run build` checks TypeScript and snapshot hashes before building the marketing and preview entries. Normal builds and CI require no sibling app checkout.
@@ -26,21 +26,24 @@ source, so subsequent folder grants cannot resurrect deleted files or projects.
 Moves produce new skill identities while preserving historical project paths;
 cleanup removes only scoped installs and their unshared skill definitions.
 
-The host's labeled native select and Simulate change button send a validated
-`megatron-preview:inventory-change` command through the existing origin/source
-checks. The adapter emits `scanSkills`, `scanPluginRegistry`, and `runLinter`
-completion sources without re-ingesting Usage. A completion acknowledgment releases
-the host button even when a sequence requires Reset. Reset suppresses pending
-mutations and notices. Unreadable sample children retain cached entries; directly
-granted missing sample repositories are retained independently of healthy parents.
-That inventory refresh adds no timer, native watcher, or native IPC method.
+Inventory simulations run through the QA harness using the validated
+`megatron-preview:inventory-change` command and its completion acknowledgment.
+The public toolbar contains section tabs, reset, and expansion controls. The
+adapter retains inventory-only refresh and recovery behavior for verification;
+no visitor-facing live-refresh strip, native watcher, or timer is introduced.
+
+The main preview publishes its resolved appearance through validated same-origin
+messages. The host relays the latest appearance to the Resident Tax sample and
+its enclosing card, including readiness handshakes for either frame load order.
+Dark, Light, System changes, and Reset update the sample without remounting or
+losing an open category dialog.
 
 `scripts/qa/inventory.mjs` verifies these flows at 375, 768, 1024, and 1440px and
 captures unreadable, moved, removed-plugin, preserved-Usage, and retained-rescan
 states under `.qa/inventory/`. It is included in production QA.
 
 The next November 5 refresh imports `83c73dc` and `ffd8864`. The actual renderer
-owns Manage projects, explicit link/unlink controls, global label disambiguation,
+owns global label disambiguation,
 searchable project rankings, and timeline search. `src/preview/usage-projects.ts`
 keeps a session-only catalog independent of live inventory and uses the upstream
 grouping helpers for Activity, cost, tokens, monthly timelines, and day details.
@@ -52,14 +55,14 @@ from token/turn events. Activity and History derive prompt totals from these sam
 records; bare slash commands remain separate. Partial and unavailable examples
 exercise the imported coverage states. Tokens continue to come from token records.
 
-The host now has nine examples. The added pending-folder sequence retains cached
-skills/plugins while availability is unknown, keeps a confirmed warning during
-retry, and clears it after successful discovery. `scripts/qa/usage-projects.mjs`
-checks this sequence in both inventories at all four widths, plus linking,
-unlinking, alias searches, unchanged totals, Escape, and coverage/load states.
-The upstream Manage projects dialog does not restore its launch button on Escape;
-the website preserves that behavior rather than adding an unrecorded renderer fix.
-See the [complete follow-up audit](upstream-sync-2026-11-05-usage-projects.md).
+The QA harness retains nine inventory examples. Pending-folder coverage keeps
+cached skills/plugins while availability is unknown, preserves a confirmed
+warning during retry, and clears it after discovery. The project checks cover
+retained-location search, unchanged totals, and prompt coverage at all widths.
+Manual project linking and unlinking are deferred: the imported Usage view no
+longer renders the Manage projects button or dialog. Existing identities and
+confirmed links remain in the catalog. Historical integration details remain in
+the [November 5 audit](upstream-sync-2026-11-05-usage-projects.md).
 
 The October 18 product review corrected version-specific plugin paths/counts, shared-install updates and uninstalls, aggregate enablement, missing-folder state, overlapping parent grants, scan lifecycle events, and lint line destinations. Add Folder first grants the sample `C:\Clients\docs-site` repository; a second click grants its `Clients` parent. See the [product fidelity audit](product-fidelity-audit.md) for the complete capability and content review.
 

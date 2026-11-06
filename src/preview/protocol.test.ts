@@ -1,6 +1,25 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+test('theme messages accept resolved boolean themes and reject malformed payloads', async () => {
+  const module = await protocol()
+  assert.equal(typeof module.parsePreviewThemeMessage, 'function')
+  for (const dark of [true, false]) {
+    const message = { type: 'megatron-preview:theme', dark }
+    assert.deepEqual(module.parsePreviewThemeMessage(message), message)
+  }
+  for (const value of [
+    null,
+    [],
+    {},
+    { type: 'other', dark: true },
+    { type: 'megatron-preview:theme', dark: 'dark' },
+    { type: 'megatron-preview:theme', dark: 1 },
+    { type: 'megatron-preview:theme' }
+  ])
+    assert.equal(module.parsePreviewThemeMessage(value), null)
+})
+
 test('inventory messages accept only the supported sample changes', async () => {
   const { parsePreviewCommand } = await protocol()
   for (const action of [

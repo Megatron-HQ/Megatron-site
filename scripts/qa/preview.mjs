@@ -1,5 +1,35 @@
 import assert from 'node:assert/strict'
 
+export async function simulateInventoryChange(page, action) {
+  await page.evaluate(
+    (change) =>
+      new Promise((resolve, reject) => {
+        const frame = document.querySelector('[data-preview-frame]')
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', receive)
+          reject(new Error('Sample inventory change did not finish.'))
+        }, 10000)
+        function receive(event) {
+          if (
+            event.source !== frame.contentWindow ||
+            event.origin !== location.origin ||
+            event.data?.type !== 'megatron-preview:inventory-finished'
+          )
+            return
+          clearTimeout(timeout)
+          window.removeEventListener('message', receive)
+          resolve()
+        }
+        window.addEventListener('message', receive)
+        frame.contentWindow.postMessage(
+          { type: 'megatron-preview:inventory-change', action: change },
+          location.origin
+        )
+      }),
+    action
+  )
+}
+
 export function previewFrame(page) {
   return page.frameLocator('[data-preview-frame]')
 }
