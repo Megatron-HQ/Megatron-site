@@ -798,6 +798,14 @@ h2 {
   background: #efefe7;
   border-top: 1px solid var(--rule);
 }
+.analytics-section .heading-grid {
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 23px;
+}
+.analytics-section .heading-grid > p {
+  max-width: 56ch;
+}
 .analytics-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
