@@ -859,15 +859,37 @@ h2 {
     var(--context-card-max-height),
     calc(100svh - var(--context-sticky-top) - 24px)
   );
-  background: #fff;
+  background: var(--panel-surface);
   border: 1px solid var(--rule);
   border-radius: 7px;
   padding: 24px;
+  --panel-surface: #fff;
+  --deck-strip: 46px;
+  --deck-ink: var(--color-ink);
+  --deck-surface: #fbfbf7;
+  --deck-card-border: #dcddd2;
+  --deck-bar-fill: #2b2c27;
+  --deck-system: #c4c5ba;
+  --deck-shadow: 0 -12px 20px -16px rgb(25 26 23 / 32%);
+  --deck-skills: #8064b5;
+  --deck-mcp: #427db3;
+  --deck-memory: #328779;
+  --deck-agents: #b56887;
 }
 .context-visual.is-dark {
-  background: #1b1b1b;
   --muted: #a3a3a3;
   --rule: #393939;
+  --panel-surface: #1b1b1b;
+  --deck-ink: #f1f1ec;
+  --deck-surface: #232323;
+  --deck-card-border: #3a3a3a;
+  --deck-bar-fill: #e9e9e2;
+  --deck-system: #5c5c58;
+  --deck-shadow: 0 -12px 20px -16px rgb(0 0 0 / 75%);
+  --deck-skills: #ad94d8;
+  --deck-mcp: #7eafe0;
+  --deck-memory: #6bb8a8;
+  --deck-agents: #d798b1;
   border-color: var(--rule);
 }
 .context-header {
@@ -882,17 +904,365 @@ h2 {
 .context-header .eyebrow {
   font-size: 9px;
 }
+.deck-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-top: 18px;
+}
+.deck-stack {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Covered keeps the pile's layout so closing views can shrink back onto their card. */
+.deck-stack[data-covered] {
+  visibility: hidden;
+}
+/* Later cards sit in front; overlap and shadow give the pile its depth. */
+.deck-card {
+  position: absolute;
+  top: calc(var(--deck-index) * var(--deck-strip));
+  inset-inline: 0;
+  height: calc(100% - var(--deck-back-cards) * var(--deck-strip));
+  container-type: size;
+  transition: transform 160ms ease-out;
+}
+.deck-card:hover,
+.deck-card:has(.deck-card-button:focus-visible) {
+  transform: translateY(-6px);
+}
+.deck-card:last-child:hover,
+.deck-card:last-child:has(.deck-card-button:focus-visible) {
+  transform: translateY(-3px);
+}
+.deck-card-button {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  text-align: left;
+  color: var(--deck-ink);
+  background: var(--deck-surface);
+  border: 1px solid var(--deck-card-border);
+  border-radius: 6px;
+  box-shadow: var(--deck-shadow);
+  cursor: pointer;
+}
+.deck-card-button:focus-visible {
+  outline: 2px solid var(--deck-ink);
+  outline-offset: -2px;
+}
+.deck-card-band {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  height: var(--deck-strip);
+  padding-inline: 16px;
+  border-bottom: 1px solid var(--deck-card-border);
+}
+.deck-card-number {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+.deck-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.deck-card-peek {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.deck-card-band svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+.deck-card:hover .deck-card-band svg,
+.deck-card:has(.deck-card-button:focus-visible) .deck-card-band svg,
+.deck-card:last-child .deck-card-band svg {
+  opacity: 1;
+}
+.deck-card:last-child .deck-card-peek {
+  visibility: hidden;
+}
+.deck-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 16px 16px;
+}
+.deck-card-figure {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.deck-card-caption {
+  margin-top: 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.deck-card-chart {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  gap: 2px;
+  min-height: 28px;
+  max-height: 120px;
+  margin-top: 18px;
+}
+.deck-card-chart[data-kind='segments'] {
+  flex: 0 0 12px;
+  align-items: stretch;
+  min-height: 12px;
+  margin-top: 24px;
+}
+.deck-card-legend {
+  display: grid;
+  margin-top: 14px;
+}
+.deck-card-legend:empty {
+  display: none;
+}
+.deck-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-block: 7px;
+  border-top: 1px solid var(--deck-card-border);
+  font-size: 12px;
+}
+.deck-legend-row::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--deck-system);
+}
+.deck-legend-row[data-tone='skills']::before {
+  background: var(--deck-skills);
+}
+.deck-legend-row[data-tone='mcp']::before {
+  background: var(--deck-mcp);
+}
+.deck-legend-row[data-tone='memory']::before {
+  background: var(--deck-memory);
+}
+.deck-legend-row[data-tone='agents']::before {
+  background: var(--deck-agents);
+}
+.deck-legend-value {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.deck-bar {
+  flex: 1;
+  height: calc(var(--deck-bar) * 100%);
+  min-height: 2px;
+  border-radius: 1px;
+  background: var(--deck-bar-fill);
+}
+.deck-segment {
+  min-width: 2px;
+  border-radius: 1px;
+  background: var(--deck-system);
+}
+.deck-segment[data-tone='skills'] {
+  background: var(--deck-skills);
+}
+.deck-segment[data-tone='mcp'] {
+  background: var(--deck-mcp);
+}
+.deck-segment[data-tone='memory'] {
+  background: var(--deck-memory);
+}
+.deck-segment[data-tone='agents'] {
+  background: var(--deck-agents);
+}
+.deck-segment[data-tone='ink-1'] {
+  background: var(--deck-bar-fill);
+}
+.deck-segment[data-tone='ink-2'] {
+  background: color-mix(in oklab, var(--deck-bar-fill) 76%, transparent);
+}
+.deck-segment[data-tone='ink-3'] {
+  background: color-mix(in oklab, var(--deck-bar-fill) 56%, transparent);
+}
+.deck-segment[data-tone='ink-4'] {
+  background: color-mix(in oklab, var(--deck-bar-fill) 38%, transparent);
+}
+.deck-segment[data-tone='ink-5'] {
+  background: color-mix(in oklab, var(--deck-bar-fill) 22%, transparent);
+}
+@container (min-height: 440px) {
+  .deck-card-body {
+    padding-top: 26px;
+  }
+  .deck-card-figure {
+    font-size: 52px;
+  }
+  .deck-card-chart[data-kind='segments'] {
+    margin-top: 32px;
+  }
+  .deck-legend-row {
+    padding-block: 11px;
+  }
+}
+@container (max-height: 330px) {
+  .deck-card-legend {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 18px;
+  }
+  .deck-legend-row {
+    padding-block: 3px;
+    border-top: 0;
+    font-size: 11px;
+  }
+  .deck-legend-row[data-tone='system'] {
+    grid-column: 1 / -1;
+  }
+}
+@container (max-height: 240px) {
+  .deck-card-legend {
+    display: none;
+  }
+}
+@container (max-height: 190px) {
+  .deck-card-chart[data-kind='bars'] {
+    display: none;
+  }
+}
+@container (max-height: 130px) {
+  .deck-card-figure {
+    font-size: 28px;
+  }
+  .deck-card-body {
+    padding-top: 12px;
+  }
+}
+.deck-viewer {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--deck-ink);
+  background: var(--panel-surface);
+}
+.deck-viewer[open] {
+  display: flex;
+  flex-direction: column;
+}
+.deck-viewer-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+.deck-viewer-title {
+  font-size: 10px;
+  outline: none;
+}
+.deck-viewer-actions {
+  display: flex;
+  gap: 6px;
+}
+.deck-viewer-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--deck-ink);
+}
+.deck-viewer-button:hover {
+  background: color-mix(in oklab, var(--deck-ink) 7%, transparent);
+}
+.deck-viewer-button:focus-visible {
+  outline: 2px solid var(--deck-ink);
+  outline-offset: 2px;
+}
+.deck-viewer-button[hidden] {
+  display: none;
+}
+.deck-viewer-close {
+  padding-inline: 7px;
+}
+.deck-viewer-close svg {
+  width: 14px;
+  height: 14px;
+}
+.deck-viewer-note {
+  display: none;
+}
+.deck-viewer-notice {
+  flex-shrink: 0;
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.deck-viewer-notice:empty {
+  display: none;
+}
+.deck-viewer:modal {
+  position: fixed;
+  inset: 12px;
+  height: calc(100dvh - 24px);
+  padding: 18px;
+  border-radius: 8px;
+}
+.deck-viewer::backdrop {
+  background: rgb(20 22 18 / 55%);
+}
+.deck-viewer:modal .deck-viewer-note {
+  display: block;
+  flex-shrink: 0;
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
 .context-preview-viewport {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  margin-top: 18px;
   border: 1px solid var(--rule);
   border-radius: 4px;
 }
 .context-preview-viewport:focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--deck-ink);
   outline-offset: 3px;
 }
 .context-preview {
@@ -901,7 +1271,24 @@ h2 {
   min-width: 440px;
   height: 100%;
   border: 0;
-  background: #fff;
+  background: var(--panel-surface);
+  transition: opacity 200ms ease-out;
+}
+.deck-viewer[data-frame-ready='false'] .context-preview {
+  opacity: 0;
+}
+.deck-viewer-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.deck-viewer[data-frame-ready='true'] .deck-viewer-loading {
+  display: none;
 }
 .context-note {
   flex-shrink: 0;
@@ -1728,8 +2115,9 @@ h2 {
     height: auto;
     padding: 27px;
   }
-  .context-preview {
-    height: 960px;
+  /* In normal flow the stage has no height to fill, so it sizes for the strips plus a front card. */
+  .deck-stage {
+    height: calc(var(--deck-strip) * var(--deck-back-cards) + 340px);
   }
   .local-section h2 {
     font-size: 46px;
@@ -1878,6 +2266,12 @@ h2 {
   }
   .footer-bottom > div {
     gap: 13px;
+  }
+}
+
+@media (max-width: 1200px), (max-height: 820px) {
+  .context-visual {
+    --deck-strip: 38px;
   }
 }
 

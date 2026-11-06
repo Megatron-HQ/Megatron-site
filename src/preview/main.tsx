@@ -12,10 +12,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '../../vendor/megatron/src/renderer/src/App'
 import { createProjectLabelResolver } from '../../vendor/megatron/src/renderer/src/lib/project-tree'
 import { ProjectLabelContext } from '../../vendor/megatron/src/renderer/src/lib/use-project-label'
-import {
-  ResidentTaxRefresh,
-  ResidentTaxSection
-} from '../../vendor/megatron/src/renderer/src/components/usage/ResidentTaxSection'
 import { createDemoApi } from './api.ts'
 import {
   parsePreviewCommand,
@@ -23,9 +19,12 @@ import {
   type InventoryChange
 } from './protocol.ts'
 import { sendPreviewMessage } from './navigation.ts'
+import { parseSamplePanel, UsageSample } from './usage-sample.tsx'
 
 const parameters = new URLSearchParams(window.location.search)
-const residentTaxSample = parameters.get('sample') === 'resident-tax'
+const requestedSample = parameters.get('sample')
+const samplePanel =
+  requestedSample === null ? null : parseSamplePanel(requestedSample)
 const initial = parsePreviewCommand({
   type: 'megatron-preview:navigate',
   section: parameters.get('section') ?? 'skills',
@@ -82,7 +81,7 @@ function Preview() {
   const [revision, setRevision] = useState(0)
   useEffect(() => {
     const root = document.documentElement
-    if (residentTaxSample) {
+    if (samplePanel) {
       const receive = (event: MessageEvent) => {
         if (
           event.source !== window.parent ||
@@ -158,15 +157,12 @@ function Preview() {
   return (
     <QueryClientProvider client={queryClient}>
       <PreviewErrorBoundary key={revision}>
-        {residentTaxSample ? (
+        {samplePanel ? (
           <ProjectLabelContext.Provider value={resolveSampleProjectLabel}>
-            <main className="resident-tax-sample">
-              <header className="flex items-center justify-between gap-3 border-b border-border py-4">
-                <h1 className="text-[14px] font-medium">Resident tax</h1>
-                <ResidentTaxRefresh />
-              </header>
-              <ResidentTaxSection />
-            </main>
+            <UsageSample
+              initialPanel={samplePanel}
+              calendarYear={clock.getFullYear()}
+            />
           </ProjectLabelContext.Provider>
         ) : (
           <App />

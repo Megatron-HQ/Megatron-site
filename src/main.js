@@ -4,6 +4,7 @@ import '@fontsource/geist-sans/latin-600.css'
 import '@fontsource/geist-sans/latin-700.css'
 import '@fontsource/geist-mono/latin-400.css'
 import { mountProductDemo, refreshIcons } from './product-preview-host.js'
+import { mountAnalyticsDeck } from './analytics-deck.js'
 
 const COPY_FEEDBACK_DURATION_MS = 2500
 const HEADER_SCROLLED_THRESHOLD = 20
@@ -143,25 +144,34 @@ function initializeSectionReveals() {
   })
 }
 
+// A `?clock=` override pins every sample to one moment, as QA and the full preview do.
+function resolveSampleClock() {
+  const requested = new URLSearchParams(window.location.search).get('clock')
+  if (requested === null) return new Date()
+  const clock = new Date(requested)
+  if (!Number.isFinite(clock.getTime()))
+    throw new RangeError('Invalid sample clock.')
+  return clock
+}
+
+function initializeAnalyticsDeck() {
+  const deck = mountAnalyticsDeck(requireElement('[data-analytics-deck]'), {
+    sampleClock: resolveSampleClock(),
+    reducedMotion
+  })
+  for (const button of document.querySelectorAll('[data-analytics-open]'))
+    button.addEventListener('click', () =>
+      deck.open(button.dataset.analyticsOpen, button)
+    )
+  return deck
+}
+
 refreshIcons()
-const preview = mountProductDemo(requireElement('#product-demo'))
+const analyticsDeck = initializeAnalyticsDeck()
+mountProductDemo(requireElement('#product-demo'), {
+  onSampleTheme: analyticsDeck.setTheme
+})
 initializeNavigation()
 initializeInstallationCopy()
 initializeHeaderElevation()
 initializeSectionReveals()
-requireElement('[data-show-cost]').addEventListener('click', () => {
-  preview.showCost()
-  requireElement('#product').scrollIntoView({
-    behavior: reducedMotion.matches ? 'instant' : 'smooth',
-    block: 'start'
-  })
-})
-for (const button of document.querySelectorAll('[data-show-usage]')) {
-  button.addEventListener('click', () => {
-    preview.showUsage(button.dataset.showUsage)
-    requireElement('#product').scrollIntoView({
-      behavior: reducedMotion.matches ? 'instant' : 'smooth',
-      block: 'start'
-    })
-  })
-}

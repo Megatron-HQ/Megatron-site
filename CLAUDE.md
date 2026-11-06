@@ -35,6 +35,7 @@ Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v
 - `src/styles.css`: Tailwind theme, tokens, responsive rules, and reduced motion.
 - `src/main.js`: Navigation, installation command copying, and scroll effects.
 - `src/product-preview-host.js`: Same-origin iframe navigation, reset, native modal expansion, and keyboard focus reveal.
+- `src/analytics-deck.js`: Follow-the-work card stack; opens each Usage view in place or full screen, with card figures from `src/preview/card-stats.ts` and transitions from `src/analytics-deck-motion.js`.
 - `src/icons.js`: Marketing icon registry.
 - `preview/index.html`, `src/preview/`: App entry, typed sample API, fixture analytics, and trusted host protocol.
 - `vendor/megatron/`: Pinned actual renderer, shared API types, license, and reproducible provenance; never hand-edit.

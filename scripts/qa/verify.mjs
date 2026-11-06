@@ -11,7 +11,7 @@ import { join, resolve } from 'node:path'
 import { verifyPreviewStates } from './states.mjs'
 import { verifyInventoryChanges } from './inventory.mjs'
 import { verifyUsageProjects } from './usage-projects.mjs'
-import { verifyResidentTaxSample } from './resident-tax.mjs'
+import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
@@ -71,11 +71,15 @@ try {
     fullPage: true
   })
   await verifyPreview(page)
-  await verifyResidentTaxSample(page)
+  const desktopDeck = await verifyAnalyticsDeck(page)
+  assert.ok(desktopDeck.checkedInline, 'Desktop opens analytics in place.')
   await verifyPreviewSettings(page)
   await checkOverflow(page, 1440)
   results.push(
     'Actual renderer geometry, sorting and keyboard rows, files and tree resizing, activity dialogs, settings, install-specific plugin actions, all Usage panels, independent windows, reset, expansion and Escape passed.'
+  )
+  results.push(
+    'Analytics card stack: list order, reachable strips, card figures matching every opened view, in-place switching, expand/collapse, Escape and focus return, skill invocations, theme sync and sample recovery passed.'
   )
 
   await page.locator('#preview-skills').focus()
@@ -86,8 +90,8 @@ try {
   )
   const app = previewFrame(page)
   await app.getByRole('button', { name: 'Plugins', exact: true }).waitFor()
-  await page.locator('[data-show-cost]').click()
-  await app.locator('header').getByText('Cost', { exact: true }).waitFor()
+  await page.locator('#preview-usage').click()
+  await selectPanel(app, 'Cost')
   assert.equal(
     await page.locator('#preview-usage').getAttribute('aria-selected'),
     'true'
@@ -95,24 +99,6 @@ try {
   await page
     .locator('#product')
     .screenshot({ path: join(directory, 'cost-preview.png') })
-  for (const [panel, name] of [
-    ['tokens', 'Tokens'],
-    ['activity', 'Activity'],
-    ['history', 'History'],
-    ['models', 'Models'],
-    ['skills', 'Skills'],
-    ['resident-tax', 'Resident tax']
-  ]) {
-    const link = page.locator(`[data-show-usage="${panel}"]`)
-    assert.equal(await link.count(), 1, `Missing analytics link for ${name}.`)
-    await link.focus()
-    await link.press('Enter')
-    await app.locator('header').getByText(name, { exact: true }).waitFor()
-    assert.equal(
-      await page.locator('#preview-usage').getAttribute('aria-selected'),
-      'true'
-    )
-  }
   await page.locator('[data-copy-install]').click()
   await page.waitForFunction(
     () =>
@@ -136,7 +122,7 @@ try {
       .count()
   )
   results.push(
-    'Host arrow-key tabs, keyboard navigation from all six analytics entries, Cost navigation, installation copy and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, Cost navigation, installation copy and keyboard FAQ disclosure passed.'
   )
   await page.goto(baseUrl)
   await verifyPreviewStates(page, baseUrl)
@@ -156,7 +142,7 @@ try {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto(baseUrl)
     const frame = await preparePreview(page)
-    await verifyResidentTaxSample(page)
+    await verifyAnalyticsDeck(page)
     await checkOverflow(page, width)
     for (const panel of [
       'Activity',
@@ -226,7 +212,7 @@ try {
     }
   }
   results.push(
-    'All seven Usage views at 375/768/1024/1440px: no page overflow; contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
+    'All seven Usage views and the analytics card stack at 375/768/1024/1440px: no page overflow; in-place or full-screen analytics as the column allows, contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
   )
 
   const motionPage = await context.newPage()
@@ -277,6 +263,7 @@ try {
   await normalPage.waitForFunction(() =>
     document.querySelector('.analytics-list').classList.contains('is-in-view')
   )
+  await verifyAnimatedDeck(normalPage)
   await normalPage.emulateMedia({ reducedMotion: 'reduce' })
   assert.equal(
     await normalPage.evaluate(
@@ -285,7 +272,7 @@ try {
     'auto'
   )
   results.push(
-    'Wheel scrolling at the preview edge, default scroll effects and changing reduced motion passed.'
+    'Wheel scrolling at the preview edge, default scroll effects, the animated card open/close and changing reduced motion passed.'
   )
 
   assert.deepEqual(errors, [], `Browser errors: ${errors.join('\n')}`)

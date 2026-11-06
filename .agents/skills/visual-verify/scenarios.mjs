@@ -1,4 +1,5 @@
 import { focusForTooltip } from '../../../scripts/qa/interactions.mjs'
+import { openAnalyticsView } from '../../../scripts/qa/analytics-deck.mjs'
 import {
   openSkill,
   openResidentCategory,
@@ -394,6 +395,16 @@ export const scenarios = [
       await page.locator(selector).scrollIntoViewIfNeeded()
     }
   })),
+  {
+    name: 'analytics-deck-open',
+    screen: 'analytics',
+    async run(page) {
+      await preparePreview(page)
+      await page.locator('#analytics').scrollIntoViewIfNeeded()
+      const view = await openAnalyticsView(page, 'tokens')
+      await view.locator('body').evaluate(() => document.fonts.ready)
+    }
+  },
   {
     name: 'faq-section',
     screen: 'faq',

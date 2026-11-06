@@ -10,6 +10,23 @@ export function sendPreviewMessage(message: Record<string, unknown>): void {
     window.parent.postMessage(message, window.location.origin)
 }
 
+/** Tells the host about an Escape the app did not use, so it can collapse its own chrome. */
+export function forwardUnhandledEscape(): () => void {
+  function forwardEscape(event: KeyboardEvent): void {
+    if (event.key !== 'Escape') return
+    const appHandlesEscape =
+      document.querySelector(
+        '[role="dialog"], [role="alertdialog"], [role="listbox"], tbody button[aria-pressed="true"], button[aria-label="Back to skills"], button[aria-label="Back to skill details"]'
+      ) !== null
+    queueMicrotask(() => {
+      if (!event.defaultPrevented && !appHandlesEscape)
+        sendPreviewMessage({ type: 'megatron-preview:escape' })
+    })
+  }
+  document.addEventListener('keydown', forwardEscape)
+  return () => document.removeEventListener('keydown', forwardEscape)
+}
+
 export function usePreviewNavigation(
   setSection: (section: PreviewSection) => void,
   setPanel: (panel: PreviewPanel) => void
@@ -40,18 +57,7 @@ export function usePreviewNavigation(
       void window.api.setLastSection(command.section)
     }
     window.addEventListener('message', receive)
-    function forwardEscape(event: KeyboardEvent): void {
-      if (event.key !== 'Escape') return
-      const appHandlesEscape =
-        document.querySelector(
-          '[role="dialog"], [role="alertdialog"], [role="listbox"], tbody button[aria-pressed="true"], button[aria-label="Back to skills"], button[aria-label="Back to skill details"]'
-        ) !== null
-      queueMicrotask(() => {
-        if (!event.defaultPrevented && !appHandlesEscape)
-          sendPreviewMessage({ type: 'megatron-preview:escape' })
-      })
-    }
-    document.addEventListener('keydown', forwardEscape)
+    const stopForwardingEscape = forwardUnhandledEscape()
     const parameters = new URLSearchParams(window.location.search)
     const initial = parsePreviewCommand({
       type: 'megatron-preview:navigate',
@@ -68,7 +74,7 @@ export function usePreviewNavigation(
     })
     return () => {
       window.removeEventListener('message', receive)
-      document.removeEventListener('keydown', forwardEscape)
+      stopForwardingEscape()
     }
   }, [setSection, setPanel])
 }

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { preparePreview, selectPanel } from './preview.mjs'
+import { openAnalyticsView } from './analytics-deck.mjs'
 
 async function activate(control) {
   await control.focus()
@@ -35,7 +36,7 @@ export async function verifyPreviewSettings(page) {
       0
     )
   }
-  const sample = page.frameLocator('[data-resident-tax-frame]')
+  const sample = await openAnalyticsView(page, 'resident-tax')
   await sample.getByRole('button', { name: /^Skills / }).click()
   await sample.getByRole('dialog').waitFor()
   await app.getByRole('button', { name: 'Settings', exact: true }).click()
@@ -46,11 +47,14 @@ export async function verifyPreviewSettings(page) {
         '[data-preview-frame]'
       ).contentDocument
       const resident = document.querySelector(
-        '[data-resident-tax-frame]'
+        '[data-analytics-frame]'
       ).contentDocument
       return (
         main.documentElement.classList.contains('dark') === expected &&
-        resident.documentElement.classList.contains('dark') === expected
+        resident.documentElement.classList.contains('dark') === expected &&
+        document
+          .querySelector('[data-analytics-deck]')
+          .classList.contains('is-dark') === expected
       )
     }, dark)
     assert.equal(
@@ -80,5 +84,7 @@ export async function verifyPreviewSettings(page) {
       .getByRole('dialog')
       .getByRole('button', { name: 'Close', exact: true })
   )
+  await page.locator('[data-deck-close]').click()
+  await page.locator('[data-analytics-deck][data-state="stack"]').waitFor()
   await page.emulateMedia({ colorScheme: 'light' })
 }

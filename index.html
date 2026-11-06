@@ -321,7 +321,7 @@
                     <button
                       type="button"
                       class="text-link"
-                      data-show-usage="tokens"
+                      data-analytics-open="tokens"
                     >
                       Explore tokens<i
                         data-lucide="arrow-up-right"
@@ -343,7 +343,11 @@
                       subscription bill. Available detail depends on the data
                       recorded by Claude Code.
                     </p>
-                    <button type="button" class="text-link" data-show-cost>
+                    <button
+                      type="button"
+                      class="text-link"
+                      data-analytics-open="cost"
+                    >
                       Explore cost<i
                         data-lucide="arrow-up-right"
                         aria-hidden="true"
@@ -365,7 +369,7 @@
                     <button
                       type="button"
                       class="text-link"
-                      data-show-usage="activity"
+                      data-analytics-open="activity"
                     >
                       Explore activity<i
                         data-lucide="arrow-up-right"
@@ -388,7 +392,7 @@
                     <button
                       type="button"
                       class="text-link"
-                      data-show-usage="history"
+                      data-analytics-open="history"
                     >
                       Explore history<i
                         data-lucide="arrow-up-right"
@@ -408,7 +412,7 @@
                     <button
                       type="button"
                       class="text-link"
-                      data-show-usage="models"
+                      data-analytics-open="models"
                     >
                       Explore models<i
                         data-lucide="arrow-up-right"
@@ -429,7 +433,7 @@
                     <button
                       type="button"
                       class="text-link"
-                      data-show-usage="skills"
+                      data-analytics-open="skills"
                     >
                       Explore skills<i
                         data-lucide="arrow-up-right"
@@ -451,7 +455,7 @@
                     <button
                       type="button"
                       class="text-link"
-                      data-show-usage="resident-tax"
+                      data-analytics-open="resident-tax"
                     >
                       Explore context<i
                         data-lucide="arrow-up-right"
@@ -462,30 +466,14 @@
                 </article>
               </div>
             </div>
-            <div class="context-visual">
+            <div class="context-visual" data-analytics-deck data-state="stack">
               <div class="context-header">
-                <span class="eyebrow">RESIDENT TAX / GLOBAL BASELINE</span>
+                <span class="eyebrow">FOLLOW THE WORK / 7 VIEWS</span>
                 <span class="sample-tag">LIVE SAMPLE</span>
               </div>
-              <div
-                class="context-preview-viewport"
-                tabindex="0"
-                role="region"
-                aria-label="Resident Tax sample; scroll for the full breakdown and pan horizontally on narrow screens"
-              >
-                <iframe
-                  class="context-preview"
-                  data-resident-tax-frame
-                  src="./preview/index.html?sample=resident-tax"
-                  title="Resident Tax sample with category details and refresh"
-                ></iframe>
-              </div>
-              <p class="context-note">
-                The actual Megatron view with sample data. Explore a category
-                for its details. The bar shows the full context window,
-                including the autocompact reserve and free space; deferred tools
-                stay outside the loaded total. Scroll within the sample for the
-                full breakdown. Pan sideways on smaller screens.
+              <div class="deck-stage" data-deck-stage></div>
+              <p class="context-note" data-deck-note>
+                The actual Megatron views with sample data.
               </p>
             </div>
           </div>

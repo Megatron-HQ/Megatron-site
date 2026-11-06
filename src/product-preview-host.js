@@ -1,5 +1,6 @@
 import { refreshIcons } from './icons.js'
-import { USAGE_PANELS, parsePreviewThemeMessage } from './preview/protocol.ts'
+import { parsePreviewThemeMessage } from './preview/protocol.ts'
+import { isFocusMessage, revealFocusedRange } from './preview-focus.js'
 export { refreshIcons } from './icons.js'
 
 const SECTIONS = [
@@ -8,12 +9,16 @@ const SECTIONS = [
   { id: 'usage', label: 'Usage', icon: 'chart-no-axes-combined' }
 ]
 const LOAD_TIMEOUT_MS = 15000
-const FOCUS_GUTTER = 12
-const FOCUS_VISIBLE_WIDTH = 320
 
-export function mountProductDemo(root) {
+/**
+ * Mounts the full app preview. `onSampleTheme` receives the app's resolved
+ * light/dark appearance so other samples on the page can follow it.
+ */
+export function mountProductDemo(root, { onSampleTheme } = {}) {
   if (!(root instanceof HTMLElement))
     throw new TypeError('The product preview needs a root element.')
+  if (onSampleTheme !== undefined && typeof onSampleTheme !== 'function')
+    throw new TypeError('onSampleTheme must be a function.')
   const previewUrl = new URL(
     `${import.meta.env.BASE_URL}preview/index.html`,
     window.location.origin
@@ -37,17 +42,6 @@ export function mountProductDemo(root) {
   const viewport = root.querySelector('.preview-viewport')
   const notice = root.querySelector('[data-preview-notice]')
   const expandButton = root.querySelector('[data-preview-expand]')
-  const residentFrame = document.querySelector('[data-resident-tax-frame]')
-  let sampleDark = false
-  function synchronizeSampleTheme() {
-    residentFrame?.contentWindow?.postMessage(
-      { type: 'megatron-preview:theme', dark: sampleDark },
-      previewUrl.origin
-    )
-    residentFrame
-      ?.closest('.context-visual')
-      ?.classList.toggle('is-dark', sampleDark)
-  }
   let ready = false
   let pendingCommand = null
   let previousOverflow = ''
@@ -111,18 +105,10 @@ export function mountProductDemo(root) {
       event.data === null
     )
       return
-    if (event.source === residentFrame?.contentWindow) {
-      if (event.data.type === 'megatron-preview:sample-ready')
-        synchronizeSampleTheme()
-      else if (event.data.type === 'megatron-preview:error')
-        residentFrame.closest('.context-preview-viewport').scrollLeft = 0
-      return
-    }
     if (event.source !== frame.contentWindow) return
     const theme = parsePreviewThemeMessage(event.data)
     if (theme) {
-      sampleDark = theme.dark
-      synchronizeSampleTheme()
+      onSampleTheme?.(theme.dark)
       return
     }
     const message = event.data
@@ -153,17 +139,7 @@ export function mountProductDemo(root) {
       host.dataset.expanded === 'true'
     )
       setExpanded(false)
-    else if (
-      message.type === 'megatron-preview:focus' &&
-      Number.isFinite(message.left) &&
-      Number.isFinite(message.right)
-    ) {
-      const right = Math.min(message.right, message.left + FOCUS_VISIBLE_WIDTH)
-      if (right > viewport.scrollLeft + viewport.clientWidth)
-        viewport.scrollLeft = right - viewport.clientWidth + FOCUS_GUTTER
-      else if (message.left < viewport.scrollLeft)
-        viewport.scrollLeft = Math.max(0, message.left - FOCUS_GUTTER)
-    }
+    else if (isFocusMessage(message)) revealFocusedRange(viewport, message)
   })
   root.addEventListener('click', (event) => {
     const button = event.target.closest('button')
@@ -197,15 +173,5 @@ export function mountProductDemo(root) {
             tabs.length
     navigate(tabs[next].dataset.previewSection)
     tabs[next].focus({ preventScroll: true })
-  })
-  return Object.freeze({
-    showUsage(panel) {
-      if (!USAGE_PANELS.includes(panel))
-        throw new RangeError('Unknown Usage panel.')
-      navigate('usage', panel)
-    },
-    showCost() {
-      navigate('usage', 'cost')
-    }
   })
 }
