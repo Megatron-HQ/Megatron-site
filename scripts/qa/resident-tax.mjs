@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { waitForFocus } from './interactions.mjs'
 
 export async function verifyResidentTaxSample(page) {
   const sample = page.frameLocator('[data-resident-tax-frame]')
@@ -39,10 +40,7 @@ export async function verifyResidentTaxSample(page) {
     .waitFor()
   await page.keyboard.press('Escape')
   await sample.getByRole('dialog').waitFor({ state: 'hidden' })
-  assert.equal(
-    await skills.evaluate((element) => element === document.activeElement),
-    true
-  )
+  await waitForFocus(skills)
   await sample.getByRole('button', { name: 'Refresh', exact: true }).click()
   await sample.getByRole('button', { name: 'Refresh', exact: true }).waitFor()
   assert.equal(

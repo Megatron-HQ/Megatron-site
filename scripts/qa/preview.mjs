@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { waitForFocus, focusForTooltip } from './interactions.mjs'
 
 export async function simulateInventoryChange(page, action) {
   await page.evaluate(
@@ -127,10 +128,7 @@ async function verifyResidentContext(page, app) {
     await dialog.getByRole('button', { name: 'Close', exact: true }).focus()
     await page.keyboard.press('Escape')
     await dialog.waitFor({ state: 'hidden' })
-    assert.equal(
-      await trigger.evaluate((button) => button === document.activeElement),
-      true
-    )
+    await waitForFocus(trigger)
   }
 }
 
@@ -150,13 +148,7 @@ export async function verifyPreview(page) {
   await app.getByRole('button', { name: 'Tokens', exact: true }).click()
   await app.locator('tbody tr').first().focus()
   await page.keyboard.press('ArrowDown')
-  assert.equal(
-    await app
-      .locator('tbody tr')
-      .nth(1)
-      .evaluate((row) => row === document.activeElement),
-    true
-  )
+  await waitForFocus(app.locator('tbody tr').nth(1))
   await page.keyboard.press('Enter')
   await app.getByRole('button', { name: 'View files', exact: true }).waitFor()
   await app.getByRole('button', { name: 'Back to skills', exact: true }).click()
@@ -232,10 +224,7 @@ export async function verifyPreview(page) {
     .getByText(/Activity details/)
     .waitFor()
   await page.keyboard.press('Escape')
-  assert.equal(
-    await activeDay.evaluate((button) => button === document.activeElement),
-    true
-  )
+  await waitForFocus(activeDay)
   await app.getByRole('radio', { name: '24 hours', exact: true }).click()
   await selectPanel(app, 'Cost')
   assert.equal(
@@ -252,10 +241,7 @@ export async function verifyPreview(page) {
     .getByText(/Cost details/)
     .waitFor()
   await page.keyboard.press('Escape')
-  assert.equal(
-    await pricedHour.evaluate((button) => button === document.activeElement),
-    true
-  )
+  await waitForFocus(pricedHour)
   await selectPanel(app, 'Models')
   const effort = app.locator('tbody button[aria-pressed]').first()
   await effort.click()
@@ -313,11 +299,8 @@ export async function verifyPreview(page) {
     await page.locator('[data-preview-host]').getAttribute('data-expanded'),
     'false'
   )
-  assert.equal(
-    await page
-      .getByRole('button', { name: 'Expand preview', exact: true })
-      .evaluate((button) => button === document.activeElement),
-    true
+  await waitForFocus(
+    page.getByRole('button', { name: 'Expand preview', exact: true })
   )
 }
 
@@ -429,10 +412,7 @@ export async function verifyUsageHistory(page, app) {
     .waitFor()
   await page.keyboard.press('Escape')
   await app.getByRole('dialog').waitFor({ state: 'hidden' })
-  assert.equal(
-    await day.evaluate((button) => button === document.activeElement),
-    true
-  )
+  await waitForFocus(day)
   await selectPanel(app, 'Activity')
   assert.equal(
     await app
@@ -490,10 +470,7 @@ async function verifyHistoryYearReview(page, app, year) {
     .waitFor()
   await page.keyboard.press('Escape')
   await app.getByRole('dialog').waitFor({ state: 'hidden' })
-  assert.equal(
-    await busiest.evaluate((button) => button === document.activeElement),
-    true
-  )
+  await waitForFocus(busiest)
 
   const timeline = app.getByRole('region', {
     name: 'Project timeline',
@@ -508,7 +485,7 @@ async function verifyHistoryYearReview(page, app, year) {
     await cell.evaluate((element) => getComputedStyle(element).borderTopStyle),
     'dashed'
   )
-  await cell.focus()
+  await focusForTooltip(cell)
   await app
     .getByRole('tooltip')
     .getByText('Unavailable', { exact: true })
@@ -519,19 +496,13 @@ async function verifyHistoryYearReview(page, app, year) {
     false
   )
   await page.keyboard.press('ArrowDown')
-  assert.equal(
-    await timeline
-      .locator('tbody tr')
-      .nth(1)
-      .locator('[role="img"]')
-      .nth(1)
-      .evaluate((element) => element === document.activeElement),
-    true
+  await waitForFocus(
+    timeline.locator('tbody tr').nth(1).locator('[role="img"]').nth(1)
   )
   const activeMonth = timeline
     .getByRole('img', { name: /Jul 2024.*recorded prompts/ })
     .first()
-  await activeMonth.focus()
+  await focusForTooltip(activeMonth)
   await app
     .getByRole('tooltip')
     .getByText(/of this month’s prompts/)

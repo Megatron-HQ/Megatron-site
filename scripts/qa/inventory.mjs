@@ -10,17 +10,19 @@ import {
   simulateInventoryChange
 } from './preview.mjs'
 
-async function selectWebProject(app) {
-  const expand = app.getByRole('button', {
-    name: 'Expand project list',
-    exact: true
-  })
-  if (await expand.isVisible()) await expand.click()
+export async function selectWebProject(app) {
+  // Clear detail-driven expansion before deliberately opening the project hierarchy.
+  await app.getByRole('button', { name: /^All (Skills|Plugins)$/ }).click()
+  await app.getByRole('button', { name: 'Projects', exact: true }).click()
   const parent = app.getByRole('button', {
-    name: 'Expand Dev repositories',
-    exact: true
+    name: /^(Expand|Collapse) Dev repositories$/
   })
-  if (await parent.isVisible()) await parent.click()
+  await parent.waitFor({ state: 'visible' })
+  if ((await parent.getAttribute('aria-expanded')) === 'false')
+    await parent.click()
+  await app
+    .getByRole('button', { name: 'Collapse Dev repositories', exact: true })
+    .waitFor()
   await app
     .getByRole('button', { name: /^web-app(?:\s|Unavailable|Missing)/ })
     .click()

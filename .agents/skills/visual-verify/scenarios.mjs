@@ -1,3 +1,4 @@
+import { focusForTooltip } from '../../../scripts/qa/interactions.mjs'
 import {
   openSkill,
   openResidentCategory,
@@ -298,11 +299,11 @@ export const scenarios = [
       .getByRole('navigation', { name: 'Contribution year', exact: true })
       .getByRole('button', { name: '2024', exact: true })
       .click()
-    await app
+    const month = app
       .getByRole('region', { name: 'Project timeline', exact: true })
       .getByRole('img', { name: /Jul 2024.*recorded prompts/ })
       .first()
-      .press('ArrowRight')
+    await focusForTooltip(month)
     await app
       .getByRole('tooltip')
       .getByText(/of this month’s prompts/)
