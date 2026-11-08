@@ -1,6 +1,5 @@
 import { refreshIcons } from './icons.js'
 import { parsePreviewThemeMessage } from './preview/protocol.ts'
-import { isFocusMessage, revealFocusedRange } from './preview-focus.js'
 export { refreshIcons } from './icons.js'
 
 const SECTIONS = [
@@ -9,6 +8,9 @@ const SECTIONS = [
   { id: 'usage', label: 'Usage', icon: 'chart-no-axes-combined' }
 ]
 const LOAD_TIMEOUT_MS = 15000
+// The vendored renderer's minimum layout width. Narrower viewports scale the
+// frame down to it rather than reflowing an app the site must not edit.
+const APP_WIDTH = 860
 
 /**
  * Mounts the full app preview. `onSampleTheme` receives the app's resolved
@@ -50,6 +52,15 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       notice.textContent =
         'The preview is taking longer to load. Use Reset sample to try again.'
   }, LOAD_TIMEOUT_MS)
+  new ResizeObserver(([entry]) => {
+    const width = entry.contentRect.width
+    // Closing the dialog to reopen it as a modal briefly measures 0.
+    if (width > 0)
+      viewport.style.setProperty(
+        '--preview-scale',
+        String(Math.min(1, width / APP_WIDTH))
+      )
+  }).observe(viewport)
 
   function selectSection(section) {
     if (!SECTIONS.some((item) => item.id === section)) return
@@ -117,7 +128,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       host.dataset.ready = 'true'
       window.clearTimeout(loadTimeout)
       notice.textContent =
-        'Explore every view. On smaller screens, swipe sideways or expand the preview.'
+        'Explore every view. On narrow screens the whole app is scaled to fit. Expand it or rotate your device for a closer look.'
       selectSection(message.section)
       if (pendingCommand) {
         const command = pendingCommand
@@ -139,7 +150,6 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       host.dataset.expanded === 'true'
     )
       setExpanded(false)
-    else if (isFocusMessage(message)) revealFocusedRange(viewport, message)
   })
   root.addEventListener('click', (event) => {
     const button = event.target.closest('button')
@@ -148,7 +158,6 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     else if (button.hasAttribute('data-preview-reset')) {
       if (ready) send({ type: 'megatron-preview:reset' })
       else frame.src = previewUrl.href
-      viewport.scrollLeft = 0
     } else if (button.hasAttribute('data-preview-expand'))
       setExpanded(host.dataset.expanded !== 'true')
   })

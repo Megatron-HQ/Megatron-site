@@ -229,7 +229,9 @@ export const scenarios = [
   }),
   sample('product-demo-usage-tokens-exact', 'demo-usage', async (app) => {
     await selectPanel(app, 'Tokens')
-    await app.locator('.text-usage-stat [tabindex="0"]').first().focus()
+    await focusForTooltip(
+      app.locator('.text-usage-stat [tabindex="0"]').first()
+    )
     await app
       .getByRole('tooltip')
       .getByText(/exact tokens/)
@@ -241,11 +243,11 @@ export const scenarios = [
       .getByRole('navigation', { name: 'Contribution year', exact: true })
       .getByRole('button', { name: '2024', exact: true })
       .click()
-    await app
-      .getByRole('button', {
+    await focusForTooltip(
+      app.getByRole('button', {
         name: /^(?:July 1, 2024|1 July 2024) · Prompt history unavailable$/
       })
-      .focus()
+    )
     await app
       .getByRole('tooltip')
       .getByText('162,200 exact tokens', { exact: true })

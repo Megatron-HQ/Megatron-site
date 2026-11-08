@@ -1,0 +1,641 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T04:53:25.200Z",
+  "title": "Design System: Megatron",
+  "extensions": {
+    "colorMeta": {
+      "signal-lime": {
+        "role": "primary",
+        "displayName": "Signal Lime",
+        "canonical": "#e4f222",
+        "oklch": "oklch(92.0% 0.201 114.0)",
+        "tonalRamp": [
+          "oklch(15% 0.072 114.0)",
+          "oklch(26% 0.090 114.0)",
+          "oklch(37% 0.109 114.0)",
+          "oklch(48% 0.127 114.0)",
+          "oklch(60% 0.147 114.0)",
+          "oklch(71% 0.166 114.0)",
+          "oklch(83% 0.186 114.0)",
+          "oklch(95% 0.196 114.0)"
+        ]
+      },
+      "signal-lime-pressed": {
+        "role": "primary",
+        "displayName": "Signal Lime Pressed",
+        "canonical": "#d4e019",
+        "oklch": "oklch(86.8% 0.191 113.7)",
+        "tonalRamp": [
+          "oklch(15% 0.077 113.7)",
+          "oklch(26% 0.094 113.7)",
+          "oklch(37% 0.111 113.7)",
+          "oklch(48% 0.129 113.7)",
+          "oklch(60% 0.148 113.7)",
+          "oklch(71% 0.165 113.7)",
+          "oklch(83% 0.185 113.7)",
+          "oklch(95% 0.178 113.7)"
+        ]
+      },
+      "signal-olive": {
+        "role": "primary",
+        "displayName": "Signal Olive",
+        "canonical": "#657100",
+        "oklch": "oklch(52.0% 0.120 116.8)",
+        "tonalRamp": [
+          "oklch(15% 0.083 116.8)",
+          "oklch(26% 0.094 116.8)",
+          "oklch(37% 0.105 116.8)",
+          "oklch(48% 0.116 116.8)",
+          "oklch(60% 0.112 116.8)",
+          "oklch(71% 0.101 116.8)",
+          "oklch(83% 0.089 116.8)",
+          "oklch(95% 0.077 116.8)"
+        ]
+      },
+      "status-moss": {
+        "role": "primary",
+        "displayName": "Status Moss",
+        "canonical": "#899300",
+        "oklch": "oklch(63.3% 0.143 114.5)",
+        "tonalRamp": [
+          "oklch(15% 0.085 114.5)",
+          "oklch(26% 0.098 114.5)",
+          "oklch(37% 0.112 114.5)",
+          "oklch(48% 0.125 114.5)",
+          "oklch(60% 0.139 114.5)",
+          "oklch(71% 0.134 114.5)",
+          "oklch(83% 0.120 114.5)",
+          "oklch(95% 0.105 114.5)"
+        ]
+      },
+      "caution-wash": {
+        "role": "tertiary",
+        "displayName": "Caution Wash",
+        "canonical": "#f2edde",
+        "oklch": "oklch(94.6% 0.021 91.6)",
+        "tonalRamp": [
+          "oklch(15% 0.007 91.6)",
+          "oklch(26% 0.009 91.6)",
+          "oklch(37% 0.011 91.6)",
+          "oklch(48% 0.013 91.6)",
+          "oklch(60% 0.015 91.6)",
+          "oklch(71% 0.017 91.6)",
+          "oklch(83% 0.019 91.6)",
+          "oklch(95% 0.021 91.6)"
+        ]
+      },
+      "caution-ochre": {
+        "role": "tertiary",
+        "displayName": "Caution Ochre",
+        "canonical": "#937227",
+        "oklch": "oklch(57.0% 0.100 84.3)",
+        "tonalRamp": [
+          "oklch(15% 0.065 84.3)",
+          "oklch(26% 0.074 84.3)",
+          "oklch(37% 0.083 84.3)",
+          "oklch(48% 0.092 84.3)",
+          "oklch(60% 0.097 84.3)",
+          "oklch(71% 0.088 84.3)",
+          "oklch(83% 0.078 84.3)",
+          "oklch(95% 0.068 84.3)"
+        ]
+      },
+      "caution-ink": {
+        "role": "tertiary",
+        "displayName": "Caution Ink",
+        "canonical": "#716341",
+        "oklch": "oklch(50.4% 0.053 88.1)",
+        "tonalRamp": [
+          "oklch(15% 0.037 88.1)",
+          "oklch(26% 0.042 88.1)",
+          "oklch(37% 0.047 88.1)",
+          "oklch(48% 0.052 88.1)",
+          "oklch(60% 0.048 88.1)",
+          "oklch(71% 0.044 88.1)",
+          "oklch(83% 0.038 88.1)",
+          "oklch(95% 0.033 88.1)"
+        ]
+      },
+      "bone-paper": {
+        "role": "neutral",
+        "displayName": "Bone Paper",
+        "canonical": "#f6f6f0",
+        "oklch": "oklch(97.1% 0.008 106.5)",
+        "tonalRamp": [
+          "oklch(15% 0.002 106.5)",
+          "oklch(26% 0.003 106.5)",
+          "oklch(37% 0.004 106.5)",
+          "oklch(48% 0.005 106.5)",
+          "oklch(60% 0.005 106.5)",
+          "oklch(71% 0.006 106.5)",
+          "oklch(83% 0.007 106.5)",
+          "oklch(95% 0.008 106.5)"
+        ]
+      },
+      "bone-shade": {
+        "role": "neutral",
+        "displayName": "Bone Shade",
+        "canonical": "#efefe7",
+        "oklch": "oklch(95.0% 0.011 106.6)",
+        "tonalRamp": [
+          "oklch(15% 0.004 106.6)",
+          "oklch(26% 0.005 106.6)",
+          "oklch(37% 0.005 106.6)",
+          "oklch(48% 0.006 106.6)",
+          "oklch(60% 0.008 106.6)",
+          "oklch(71% 0.008 106.6)",
+          "oklch(83% 0.010 106.6)",
+          "oklch(95% 0.011 106.6)"
+        ]
+      },
+      "bone-raised": {
+        "role": "neutral",
+        "displayName": "Bone Raised",
+        "canonical": "#fafaf6",
+        "oklch": "oklch(98.4% 0.005 106.5)",
+        "tonalRamp": [
+          "oklch(15% 0.002 106.5)",
+          "oklch(26% 0.002 106.5)",
+          "oklch(37% 0.003 106.5)",
+          "oklch(48% 0.003 106.5)",
+          "oklch(60% 0.004 106.5)",
+          "oklch(71% 0.004 106.5)",
+          "oklch(83% 0.005 106.5)",
+          "oklch(95% 0.005 106.5)"
+        ]
+      },
+      "bone-wash": {
+        "role": "neutral",
+        "displayName": "Bone Wash",
+        "canonical": "#eaece1",
+        "oklch": "oklch(93.9% 0.015 115.0)",
+        "tonalRamp": [
+          "oklch(15% 0.005 115.0)",
+          "oklch(26% 0.006 115.0)",
+          "oklch(37% 0.008 115.0)",
+          "oklch(48% 0.009 115.0)",
+          "oklch(60% 0.011 115.0)",
+          "oklch(71% 0.012 115.0)",
+          "oklch(83% 0.013 115.0)",
+          "oklch(95% 0.015 115.0)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#ddded5",
+        "oklch": "oklch(89.7% 0.012 111.8)",
+        "tonalRamp": [
+          "oklch(15% 0.005 111.8)",
+          "oklch(26% 0.006 111.8)",
+          "oklch(37% 0.007 111.8)",
+          "oklch(48% 0.008 111.8)",
+          "oklch(60% 0.009 111.8)",
+          "oklch(71% 0.010 111.8)",
+          "oklch(83% 0.011 111.8)",
+          "oklch(95% 0.012 111.8)"
+        ]
+      },
+      "carbon-ink": {
+        "role": "neutral",
+        "displayName": "Carbon Ink",
+        "canonical": "#191a17",
+        "oklch": "oklch(21.6% 0.006 121.9)",
+        "tonalRamp": [
+          "oklch(15% 0.006 121.9)",
+          "oklch(26% 0.006 121.9)",
+          "oklch(37% 0.005 121.9)",
+          "oklch(48% 0.005 121.9)",
+          "oklch(60% 0.004 121.9)",
+          "oklch(71% 0.003 121.9)",
+          "oklch(83% 0.003 121.9)",
+          "oklch(95% 0.002 121.9)"
+        ]
+      },
+      "carbon-ink-hover": {
+        "role": "neutral",
+        "displayName": "Carbon Ink Hover",
+        "canonical": "#3b3d35",
+        "oklch": "oklch(35.5% 0.014 118.5)",
+        "tonalRamp": [
+          "oklch(15% 0.011 118.5)",
+          "oklch(26% 0.013 118.5)",
+          "oklch(37% 0.014 118.5)",
+          "oklch(48% 0.012 118.5)",
+          "oklch(60% 0.011 118.5)",
+          "oklch(71% 0.010 118.5)",
+          "oklch(83% 0.008 118.5)",
+          "oklch(95% 0.007 118.5)"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#66675e",
+        "oklch": "oklch(51.0% 0.014 112.0)",
+        "tonalRamp": [
+          "oklch(15% 0.010 112.0)",
+          "oklch(26% 0.011 112.0)",
+          "oklch(37% 0.012 112.0)",
+          "oklch(48% 0.014 112.0)",
+          "oklch(60% 0.013 112.0)",
+          "oklch(71% 0.012 112.0)",
+          "oklch(83% 0.010 112.0)",
+          "oklch(95% 0.009 112.0)"
+        ]
+      },
+      "caption-olive": {
+        "role": "neutral",
+        "displayName": "Caption Olive",
+        "canonical": "#62694e",
+        "oklch": "oklch(50.7% 0.042 119.7)",
+        "tonalRamp": [
+          "oklch(15% 0.029 119.7)",
+          "oklch(26% 0.033 119.7)",
+          "oklch(37% 0.037 119.7)",
+          "oklch(48% 0.041 119.7)",
+          "oklch(60% 0.039 119.7)",
+          "oklch(71% 0.035 119.7)",
+          "oklch(83% 0.031 119.7)",
+          "oklch(95% 0.026 119.7)"
+        ]
+      },
+      "graphite-stage": {
+        "role": "neutral",
+        "displayName": "Graphite Stage",
+        "canonical": "#20211d",
+        "oklch": "oklch(24.5% 0.008 118.4)",
+        "tonalRamp": [
+          "oklch(15% 0.007 118.4)",
+          "oklch(26% 0.007 118.4)",
+          "oklch(37% 0.007 118.4)",
+          "oklch(48% 0.006 118.4)",
+          "oklch(60% 0.005 118.4)",
+          "oklch(71% 0.005 118.4)",
+          "oklch(83% 0.004 118.4)",
+          "oklch(95% 0.003 118.4)"
+        ]
+      },
+      "graphite-raised": {
+        "role": "neutral",
+        "displayName": "Graphite Raised",
+        "canonical": "#25261f",
+        "oklch": "oklch(26.5% 0.013 113.9)",
+        "tonalRamp": [
+          "oklch(15% 0.011 113.9)",
+          "oklch(26% 0.013 113.9)",
+          "oklch(37% 0.012 113.9)",
+          "oklch(48% 0.010 113.9)",
+          "oklch(60% 0.009 113.9)",
+          "oklch(71% 0.008 113.9)",
+          "oklch(83% 0.007 113.9)",
+          "oklch(95% 0.005 113.9)"
+        ]
+      },
+      "graphite-hover": {
+        "role": "neutral",
+        "displayName": "Graphite Hover",
+        "canonical": "#33352e",
+        "oklch": "oklch(32.5% 0.012 120.1)",
+        "tonalRamp": [
+          "oklch(15% 0.011 120.1)",
+          "oklch(26% 0.012 120.1)",
+          "oklch(37% 0.012 120.1)",
+          "oklch(48% 0.011 120.1)",
+          "oklch(60% 0.010 120.1)",
+          "oklch(71% 0.008 120.1)",
+          "oklch(83% 0.007 120.1)",
+          "oklch(95% 0.006 120.1)"
+        ]
+      },
+      "graphite-rule": {
+        "role": "neutral",
+        "displayName": "Graphite Rule",
+        "canonical": "#42463b",
+        "oklch": "oklch(38.7% 0.019 123.6)",
+        "tonalRamp": [
+          "oklch(15% 0.015 123.6)",
+          "oklch(26% 0.017 123.6)",
+          "oklch(37% 0.019 123.6)",
+          "oklch(48% 0.017 123.6)",
+          "oklch(60% 0.016 123.6)",
+          "oklch(71% 0.014 123.6)",
+          "oklch(83% 0.012 123.6)",
+          "oklch(95% 0.010 123.6)"
+        ]
+      },
+      "stage-text": {
+        "role": "neutral",
+        "displayName": "Stage Text",
+        "canonical": "#f2f3e8",
+        "oklch": "oklch(96.0% 0.015 110.9)",
+        "tonalRamp": [
+          "oklch(15% 0.005 110.9)",
+          "oklch(26% 0.006 110.9)",
+          "oklch(37% 0.007 110.9)",
+          "oklch(48% 0.009 110.9)",
+          "oklch(60% 0.010 110.9)",
+          "oklch(71% 0.012 110.9)",
+          "oklch(83% 0.013 110.9)",
+          "oklch(95% 0.014 110.9)"
+        ]
+      },
+      "stage-muted": {
+        "role": "neutral",
+        "displayName": "Stage Muted",
+        "canonical": "#bfc2b0",
+        "oklch": "oklch(80.7% 0.025 114.6)",
+        "tonalRamp": [
+          "oklch(15% 0.011 114.6)",
+          "oklch(26% 0.014 114.6)",
+          "oklch(37% 0.016 114.6)",
+          "oklch(48% 0.018 114.6)",
+          "oklch(60% 0.021 114.6)",
+          "oklch(71% 0.023 114.6)",
+          "oklch(83% 0.024 114.6)",
+          "oklch(95% 0.022 114.6)"
+        ]
+      }
+    },
+    "dataRamp": {
+      "name": "lime-to-graphite",
+      "values": [
+        "#e4f222",
+        "#aeb76d",
+        "#7c8255",
+        "#f3f3e9",
+        "#a7a8a0",
+        "#565750"
+      ],
+      "purpose": "Context-composition chart segments on Graphite Raised."
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The hero headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Two-line section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Feature panel and plugin headings."
+      },
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "Analytics list and local-principle headings."
+      },
+      "body-lead": {
+        "displayName": "Body Lead",
+        "purpose": "Hero description in Muted Ink."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Section, feature, and FAQ copy in Muted Ink, 360–450px measures; FAQ answers 14px within 450px at every width."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Qualifiers and short supporting sentences (sample notices, requirements, notes, footer row); the 12px sentence floor."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase mono eyebrows, section indexes, SAMPLE tags, and captions; 11px is the floor."
+      },
+      "mono-data": {
+        "displayName": "Mono Data",
+        "purpose": "Terminal commands, code snippets, and inline code, all at 11px."
+      },
+      "footer-mark": {
+        "displayName": "Footer Mark",
+        "purpose": "Giant closing MEGATRON wordmark."
+      }
+    },
+    "shadows": [
+      {
+        "name": "header-lift",
+        "value": "0 4px 16px #191a1708",
+        "purpose": "Sticky header after 20px of scroll, with Hairline border and 12px backdrop blur."
+      },
+      {
+        "name": "preview-scrim",
+        "value": "0 0 0 100vmax rgb(0 0 0 / 75%)",
+        "purpose": "Dims the page behind the expanded preview dialog."
+      },
+      {
+        "name": "dialog-backdrop",
+        "value": "rgb(20 22 18 / 45%)",
+        "purpose": "Native ::backdrop of the preview dialog (background, not box-shadow)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-change",
+        "value": "180ms",
+        "purpose": "Background, color, border, and opacity transitions on links, buttons, summaries."
+      },
+      {
+        "name": "section-enter",
+        "value": "550ms ease-out",
+        "purpose": "One-time fade-up from 60% opacity and 14px below at 12% visibility."
+      },
+      {
+        "name": "disclosure-rotate",
+        "value": "transform 180ms",
+        "purpose": "FAQ plus icon rotates 45° when open."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion removes all animation, transitions, and smooth scroll."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "laptop",
+        "value": "max-width: 1200px"
+      },
+      {
+        "name": "tablet",
+        "value": "max-width: 960px"
+      },
+      {
+        "name": "mobile",
+        "value": "max-width: 767px"
+      },
+      {
+        "name": "preview-compact",
+        "value": "max-width: 620px"
+      },
+      {
+        "name": "narrow",
+        "value": "max-width: 400px"
+      },
+      {
+        "name": "desktop-nav",
+        "value": "min-width: 768px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Signal Lime call to action; one per view, label left and arrow pushed right.",
+      "html": "<a class=\"ds-btn-lime\" href=\"#\">Get Megatron<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/></svg></a>",
+      "css": ".ds-btn-lime { min-height: 50px; display: inline-flex; align-items: center; justify-content: space-between; gap: 49px; padding: 14px 23px; border: 1px solid transparent; border-radius: 5px; background: var(--color-lime, #e4f222); color: var(--color-ink, #191a17); font: 500 14px/1.5 var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); text-decoration: none; white-space: nowrap; transition: background-color 180ms, border-color 180ms; } .ds-btn-lime:hover { background: #d4e019; border-color: #bdc817; } .ds-btn-lime:focus-visible { outline: 2px solid #657100; outline-offset: 5px; }"
+    },
+    {
+      "name": "Ink Button (Small)",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Carbon Ink fill for the nav and footer CTA; small 38px size.",
+      "html": "<a class=\"ds-btn-ink\" href=\"#\">Get Megatron<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/></svg></a>",
+      "css": ".ds-btn-ink { min-height: 38px; display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; padding: 9px 15px; border: 1px solid transparent; border-radius: 5px; background: var(--color-ink, #191a17); color: var(--color-paper, #f6f6f0); font: 500 12px/1.5 var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); text-decoration: none; white-space: nowrap; transition: background-color 180ms; } .ds-btn-ink:hover { background: #3b3d35; } .ds-btn-ink:focus-visible { outline: 2px solid #657100; outline-offset: 5px; }"
+    },
+    {
+      "name": "Text Link",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Inline link with a trailing arrow; underlines on hover.",
+      "html": "<a class=\"ds-text-link\" href=\"#\">Read the full setup guide<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/></svg></a>",
+      "css": ".ds-text-link { display: inline-flex; gap: 13px; align-items: center; color: var(--color-ink, #191a17); font: 500 13px/1.7 var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); text-decoration: none; text-underline-offset: 5px; } .ds-text-link:hover { text-decoration: underline; } .ds-text-link:focus-visible { outline: 2px solid #657100; outline-offset: 5px; }"
+    },
+    {
+      "name": "Preview Tabs",
+      "kind": "nav",
+      "refersTo": "preview-tab",
+      "description": "Section tabs on the Graphite product stage; selected tab takes the lime fill.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z\"/><path d=\"M9 13a4.5 4.5 0 0 0 3-4\"/><path d=\"M12 13h4\"/><path d=\"M12 18h6a2 2 0 0 1 2 2v1\"/><path d=\"M12 8h8\"/><path d=\"M16 8V5a2 2 0 0 1 2-2\"/></svg>Skills</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2\"/><rect x=\"14\" y=\"2\" width=\"8\" height=\"8\" rx=\"1\"/></svg>Plugins</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 16v5\"/><path d=\"M16 14.639V21\"/><path d=\"M20 10.656V21\"/><path d=\"m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15\"/><path d=\"M4 18.463V21\"/><path d=\"M8 14.656V21\"/></svg>Usage</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 5px; padding: 16px; background: var(--dark, #20211d); border-radius: 9px; } .ds-tab { display: flex; align-items: center; gap: 8px; padding: 9px 18px; border: 0; border-radius: 4px; background: transparent; color: #c6c8bc; font: 400 12px/1.5 var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); cursor: pointer; transition: background-color 180ms, color 180ms; } .ds-tab:hover { background: #33352e; color: #fff; } .ds-tab[aria-selected='true'] { background: var(--color-lime, #e4f222); color: var(--color-ink, #191a17); } .ds-tab:focus-visible { outline: 2px solid var(--color-lime, #e4f222); outline-offset: 3px; }"
+    },
+    {
+      "name": "Scope Pills",
+      "kind": "chip",
+      "refersTo": "scope-pill",
+      "description": "Static hairline pills naming plugin scopes, separated by slashes.",
+      "html": "<div class=\"ds-scopes\"><span class=\"ds-pill\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"5\"/><path d=\"M20 21a8 8 0 0 0-16 0\"/></svg>User</span><span aria-hidden=\"true\">/</span><span class=\"ds-pill\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 19a5 5 0 0 1-5-5v8\"/><path d=\"M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5\"/><circle cx=\"13\" cy=\"12\" r=\"2\"/><circle cx=\"20\" cy=\"19\" r=\"2\"/></svg>Project</span><span aria-hidden=\"true\">/</span><span class=\"ds-pill\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z\"/><path d=\"M20.054 15.987H3.946\"/></svg>Local</span></div>",
+      "css": ".ds-scopes { display: flex; flex-wrap: wrap; gap: 17px; align-items: center; color: #9b9f8c; font-family: var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); } .ds-pill { display: flex; align-items: center; gap: 8px; padding: 11px 15px; border: 1px solid var(--rule, #ddded5); border-radius: 5px; color: #3e4231; font-size: 12px; }"
+    },
+    {
+      "name": "Signal Eyebrow & Sample Tag",
+      "kind": "custom",
+      "refersTo": "sample-tag",
+      "description": "Mono uppercase label led by a status dot, with the SAMPLE tag used beside illustrative figures.",
+      "html": "<div class=\"ds-eyebrow-row\"><span class=\"ds-eyebrow\"><span class=\"ds-dot\"></span>RESIDENT CONTEXT</span><span class=\"ds-sample\">SAMPLE</span></div>",
+      "css": ".ds-eyebrow-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px; background: #25271e; border-radius: 7px; color: #d0d5b8; } .ds-eyebrow { display: flex; align-items: center; gap: 10px; font: 400 11px/1.5 var(--font-mono, 'Geist Mono', ui-monospace, monospace); letter-spacing: 0.065em; } .ds-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-lime, #e4f222); } .ds-sample { font: 400 11px/1.5 var(--font-mono, 'Geist Mono', ui-monospace, monospace); border: 1px solid #747667; border-radius: 3px; padding: 3px 5px; }"
+    },
+    {
+      "name": "Feature Panel",
+      "kind": "card",
+      "refersTo": "feature-panel",
+      "description": "Flat hairline panel on the Bone Shade tier; icon, title, muted body.",
+      "html": "<article class=\"ds-panel\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 5h8\"/><path d=\"M13 12h8\"/><path d=\"M13 19h8\"/><path d=\"m3 17 2 2 4-4\"/><path d=\"m3 7 2 2 4-4\"/></svg><h3>Catch the quiet failures.</h3><p>Broken references. Missing configuration. Shadowed names. Five deterministic checks surface the problems that are easy to miss.</p></article>",
+      "css": ".ds-panel { max-width: 480px; padding: 33px; border: 1px solid var(--rule, #ddded5); border-radius: 6px; background: #eeeee6; color: var(--color-ink, #191a17); font-family: var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); } .ds-panel svg { display: block; margin-bottom: 28px; } .ds-panel h3 { margin: 0 0 12px; font-size: 25px; font-weight: 500; letter-spacing: -0.035em; line-height: 1.5; } .ds-panel p { margin: 0; font-size: 14px; line-height: 1.75; color: var(--muted, #66675e); max-width: 430px; }"
+    },
+    {
+      "name": "Terminal Block",
+      "kind": "custom",
+      "refersTo": "terminal",
+      "description": "Graphite install snippet with a copy control and a requirements row above the commands it gates.",
+      "html": "<div class=\"ds-terminal\"><div class=\"ds-terminal-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 19h8\"/><path d=\"m4 17 6-6-6-6\"/></svg>YOUR TERMINAL</span><button class=\"ds-copy\" type=\"button\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg>Copy</button></div><p class=\"ds-terminal-foot\"><span class=\"ds-tdot\"></span>macOS + Windows · Node.js 22.x · npm · Git</p><pre><code>git clone https://github.com/Megatron-HQ/Megatron.git\ncd Megatron\nnpm ci\nnpm run dev</code></pre></div>",
+      "css": ".ds-terminal { background: #25261f; color: #e9ecdd; border-radius: 6px; overflow: hidden; font-family: var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); } .ds-terminal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 19px; border-bottom: 1px solid #424639; } .ds-terminal-head > span { display: flex; gap: 8px; align-items: center; font: 400 11px/1.5 var(--font-mono, 'Geist Mono', ui-monospace, monospace); color: #b6be9b; } .ds-copy { display: flex; align-items: center; gap: 6px; min-width: 57px; padding: 5px 8px; border: 1px solid #555b45; border-radius: 4px; background: transparent; color: #c6ccb5; font: 400 11px/1.5 var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); cursor: pointer; transition: background-color 180ms, color 180ms; } .ds-copy:hover { color: #fff; background: #3f4431; } .ds-copy:focus-visible { outline: 2px solid var(--color-lime, #e4f222); outline-offset: 5px; } .ds-terminal pre { margin: 0; padding: 26px 23px 28px; overflow-x: auto; font: 400 11px/2.4 var(--font-mono, 'Geist Mono', ui-monospace, monospace); } .ds-terminal-foot { display: flex; gap: 8px; align-items: center; margin: 0; padding: 15px 20px; border-bottom: 1px solid #424639; font-size: 12px; color: #b6be9b; } .ds-tdot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-lime, #e4f222); }"
+    },
+    {
+      "name": "FAQ Disclosure",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Native details/summary between hairline rules; plus icon rotates 45° when open.",
+      "html": "<div class=\"ds-faq\"><details open><summary>Is this a replacement for Claude Code?<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></summary><p>Megatron runs alongside your existing Claude Code workflow. Claude Code remains where you do the work.</p></details><details><summary>Will it change my skill files?<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></summary><p>Skill inspection and analytics are read-only.</p></details></div>",
+      "css": ".ds-faq { max-width: 560px; font-family: var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); color: var(--color-ink, #191a17); } .ds-faq details { border-top: 1px solid var(--rule, #ddded5); } .ds-faq details:last-child { border-bottom: 1px solid var(--rule, #ddded5); } .ds-faq summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 22px 0; font-size: 13px; font-weight: 500; letter-spacing: -0.01em; cursor: pointer; transition: color 180ms; } .ds-faq summary::-webkit-details-marker { display: none; } .ds-faq summary:hover { color: #657100; } .ds-faq summary:focus-visible { outline: 2px solid #657100; outline-offset: 5px; } .ds-faq summary svg { color: var(--muted, #66675e); transition: transform 180ms; } .ds-faq details[open] summary svg { transform: rotate(45deg); } .ds-faq details > p { max-width: 450px; margin: -4px 25px 23px 0; font-size: 14px; line-height: 1.75; color: var(--muted, #66675e); }"
+    },
+    {
+      "name": "Site Header",
+      "kind": "nav",
+      "refersTo": "site-header",
+      "description": "Floating sticky header in its scrolled state: hairline border, faint lift, legibility blur.",
+      "html": "<header class=\"ds-header\"><a class=\"ds-wordmark\" href=\"#\"><span class=\"ds-mark\"></span>Megatron</a><nav class=\"ds-links\"><a href=\"#\">Product</a><a href=\"#\">Analytics</a><a href=\"#\">Why local</a></nav><a class=\"ds-header-cta\" href=\"#\">Get Megatron<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/></svg></a></header>",
+      "css": ".ds-header { display: flex; align-items: center; justify-content: space-between; gap: 30px; min-height: 64px; padding: 10px 20px; background: #f6f6f0f2; border: 1px solid var(--rule, #ddded5); border-radius: 7px; box-shadow: 0 4px 16px #191a1708; backdrop-filter: blur(12px); font-family: var(--font-sans, 'Geist Sans', ui-sans-serif, system-ui, sans-serif); color: var(--color-ink, #191a17); } .ds-wordmark { display: inline-flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 600; letter-spacing: -0.045em; color: inherit; text-decoration: none; } .ds-mark { width: 31px; height: 31px; border-radius: 8px; background: var(--color-ink, #191a17); box-shadow: inset 0 0 0 9px var(--color-ink, #191a17), inset 0 0 0 31px var(--color-lime, #e4f222); } .ds-links { display: flex; gap: 30px; margin-right: auto; margin-left: 35px; font-size: 13px; } .ds-links a { color: var(--muted, #66675e); text-decoration: none; transition: color 180ms; } .ds-links a:hover { color: var(--color-ink, #191a17); } .ds-links a:focus-visible, .ds-header-cta:focus-visible { outline: 2px solid #657100; outline-offset: 5px; } .ds-header-cta { display: inline-flex; align-items: center; gap: 18px; min-height: 38px; padding: 9px 15px; border-radius: 5px; background: var(--color-ink, #191a17); color: var(--color-paper, #f6f6f0); font-size: 12px; font-weight: 500; text-decoration: none; transition: background-color 180ms; } .ds-header-cta:hover { background: #3b3d35; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Signal on Paper",
+    "overview": "The Megatron site is warm bone paper set in carbon ink, with one acid signal running through it. Signal Lime marks what is live, selected, or actionable: the primary call to action, the active preview tab, a status dot, a text selection. Everything else is paper, ink, and hairlines, so lime means something whenever it appears.\n\nThe mood is precise, candid, and calm. Large, tightly tracked Geist Sans headlines carry the confidence. Small Geist Mono captions carry the honesty (\"SAMPLE\", \"ILLUSTRATIVE FINDING\", \"LINE 13\"), placed right beside the figure they qualify. Density is editorial rather than dashboard-like: generous section padding, asymmetric two-column splits, and short copy blocks held to roughly 360–450px. The page drops into Graphite at a few chosen points (the live product stage, the local-first section, the terminal, the context visual), so the real app and real data read as an instrument set into the page.\n\nDepth comes from tone and hairlines, never from lift. The system rejects glass and glow: no blurred translucent panels, no glowing accents, no shadow-lifted cards. The embedded preview runs Megatron's own pinned renderer inside an iframe with its own stylesheet. This document governs the marketing surface around that iframe and nothing inside it.",
+    "keyCharacteristics": [
+      "Bone paper and carbon ink, with Signal Lime as the only accent.",
+      "Geist Sans for big, tightly tracked display type; Geist Mono for uppercase labels, captions, and data.",
+      "Flat surfaces separated by 1px hairlines and small tonal steps.",
+      "Graphite sections that frame the real app and the real install commands.",
+      "Small radii (2–9px) that grow with the element.",
+      "Every sample and estimate labeled in mono, next to the number."
+    ],
+    "rules": [
+      {
+        "name": "The Signal Rule",
+        "body": "Signal Lime marks only what is live, selected, or actionable. A lime element that is none of those is decoration, so remove it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Lime Never Writes on Paper Rule",
+        "body": "On light surfaces lime is a fill, never text, an icon stroke, or a focus ring. Use Signal Olive or Status Moss instead. On Graphite, lime may write.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ochre Means Lint Rule",
+        "body": "The caution family belongs to lint findings. No other warm hue appears on the site.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tight Display, Open Label Rule",
+        "body": "Sans display type tracks tighter as it grows, from -0.035em at 25px to -0.085em at the footer mark. Mono labels always track open (+0.045em to +0.065em). Never track a mono label negative or a headline positive.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two-Line Headline Rule",
+        "body": "Section headlines are two short declarative lines broken by hand (\"All the pieces. / Finally together.\"). A headline should never wrap to three lines at desktop width.",
+        "section": "typography"
+      },
+      {
+        "name": "The Candor Floor Rule",
+        "body": "Candor is the brand, so the honest lines are never the smallest text on the page. Nothing renders below 11px: mono labels, code, and control labels floor at 11px at every breakpoint. Every sentence, qualifiers included (sample notices, estimates, requirements, the independence line), floors at 12px and sits beside what it qualifies. When a column gets tight, text wraps or the layout gives way; type never shrinks below the floor to fit.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-at-Rest Rule",
+        "body": "Nothing casts a shadow at rest. A shadow appears only in response to state: the header after scrolling, or the expanded preview.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Glass Rule",
+        "body": "No translucent, blurred, or glowing panels. The one exception is the sticky header's 12px blur behind 95%-opaque paper, which exists to keep the nav legible over scrolling content.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Radius Tracks Size Rule",
+        "body": "A bigger container gets a slightly bigger radius, from 2px up to a 9px ceiling. Nothing is pill-shaped.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** keep Signal Lime (#e4f222) to live, selected, or actionable elements, with one lime CTA per view.",
+      "**Do** use Signal Olive (#657100) for focus rings, hover text, and status text on paper; save lime outlines for Graphite.",
+      "**Do** separate surfaces with 1px Hairline (#ddded5) borders and tonal steps, and drop to Graphite Stage (#20211d) to frame the real app or real commands.",
+      "**Do** label every illustrative figure with a mono SAMPLE tag or an \"Illustrative\" caption placed beside it.",
+      "**Do** keep radii between 2px and 9px, scaled to the size of the element.",
+      "**Do** track display type negative and mono labels positive.",
+      "**Do** keep secondary text at Muted Ink (#66675e) or darker on paper, and at Stage Muted (#bfc2b0) or lighter on Graphite.",
+      "**Do** keep marketing tokens out of the preview iframe; the vendored renderer's stylesheet owns everything inside it.",
+      "**Do** remove all animation, transitions, and smooth scrolling under `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "**Don't** use glassmorphism, blurred translucent panels, glowing accents, or shadow-lifted cards.",
+      "**Don't** set lime text, icons, or focus rings on Bone Paper; the pair measures 1.14:1.",
+      "**Don't** add a shadow to any surface at rest.",
+      "**Don't** introduce a second accent hue; warm ochre is reserved for lint findings.",
+      "**Don't** make buttons, cards, or tags pill-shaped; status dots are the only circles.",
+      "**Don't** lift, scale, or translate controls on hover; state changes are color only.",
+      "**Don't** shrink a label below 11px or a sentence below 12px to fit a narrow column; let it wrap instead."
+    ]
+  }
+}

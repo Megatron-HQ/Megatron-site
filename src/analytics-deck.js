@@ -357,6 +357,8 @@ export function mountAnalyticsDeck(root, { sampleClock, reducedMotion }) {
     const origin = cards.indexOf(card)
     viewer.show()
     setMode('inline')
+    // The view owns focus from the first frame; only the pile's fade waits for the commit.
+    stack.inert = true
     const { card: cardSurface, panel } = surfaces()
     void play(
       [

@@ -75,7 +75,7 @@ The production site is emitted to `dist/`. The local production preview serves a
 - `docs/`: interactive preview implementation notes and parity documentation.
 - `.github/workflows/ci.yml`: quality gates and cross-platform browser verification workflow.
 - `public/megatron-icon.png`: the desktop application's existing icon.
-- `design-system/MASTER.md`: approved design and content rules.
+- `DESIGN.md`: visual design system and rules.
 
 Geist fonts and Lucide icons are bundled with the site. The static website makes no analytics requests and has no account, form submission, backend server, or visitor local-file integration.
 
@@ -85,7 +85,7 @@ Usage retains recorded project locations and existing confirmed links. Project r
 
 Copy was grounded in the app's README, PRODUCT.md, DESIGN.md, main/preload IPC contracts, permission-aware scanners, deterministic linter, scoped plugin CLI actions, database cost/context queries, parent-folder discovery, and renderer views. The desktop app is not modified by this website.
 
-The official GitHub CLI release query returned no published releases on October 18, 2026. The page therefore offers the app's documented source setup and links to releases, without advertising unavailable installers. When releases ship, update the installation section and recheck platform/signing claims before adding platform download buttons.
+Megatron v0.1.0 was published on GitHub Releases on November 8, 2026. The installation section links that release's Apple silicon DMG and 64-bit Windows installer, says neither is notarized or code-signed yet, and keeps the source setup as the alternative. At each release, update the version label and both download links together in the installation section's release block, and recheck platform and signing claims.
 
 Megatron is presented as currently free and MIT-licensed, with no commitments about future pricing. Preview metrics, skills, plugins, and definitions are illustrative, not user testimonials or product performance claims.
 

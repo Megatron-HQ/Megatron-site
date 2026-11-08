@@ -3,4 +3,5 @@ dist/
 .qa/
 .visual-verify/
 .visual-verify-baselines/
+.visual-verify.lock
 *.log

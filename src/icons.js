@@ -1,6 +1,7 @@
 import {
   createIcons,
   Activity,
+  ArrowDown,
   ArrowLeft,
   ArrowUpRight,
   Blocks,
@@ -12,6 +13,7 @@ import {
   Copy,
   CornerDownLeft,
   Cpu,
+  Download,
   FileText,
   FolderCheck,
   FolderGit2,
@@ -37,6 +39,7 @@ import {
 } from 'lucide'
 const ICONS = {
   Activity,
+  ArrowDown,
   ArrowLeft,
   ArrowUpRight,
   Blocks,
@@ -48,6 +51,7 @@ const ICONS = {
   Copy,
   CornerDownLeft,
   Cpu,
+  Download,
   FileText,
   FolderCheck,
   FolderGit2,

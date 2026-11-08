@@ -100,6 +100,14 @@ test('a scenario with no baseline is captured despite a non-matching --only', ()
   )
 })
 
+test('--only is respected when no baselines exist', () => {
+  // With nothing baselined, "no baseline" can't single out a new scenario.
+  assert.deepEqual(names(selectScenarios(FIXTURE, ['sidebar'], [])), [
+    'sidebar-nav-hover',
+    'sidebar-filter-closes-open-detail'
+  ])
+})
+
 test('a baselined scenario on a non-matching screen is excluded', () => {
   assert.ok(
     !names(selectScenarios(FIXTURE, ['plugin-detail'], BASELINES)).includes(

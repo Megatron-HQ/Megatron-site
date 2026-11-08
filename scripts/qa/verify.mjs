@@ -116,9 +116,7 @@ try {
   )
   assert.ok(
     await page
-      .locator(
-        'a[href="https://github.com/Megatron-HQ/Megatron#getting-started"]'
-      )
+      .locator('a[href="https://github.com/Megatron-HQ/Megatron#install"]')
       .count()
   )
   results.push(
@@ -162,32 +160,34 @@ try {
     await frame
       .getByRole('button', { name: 'Search skills', exact: false })
       .waitFor()
-    const viewport = page.locator('.preview-viewport')
-    const dimensions = await viewport.evaluate((element) => ({
-      available: element.clientWidth,
-      content: element.scrollWidth
-    }))
+    const measureFrame = () =>
+      page.locator('.preview-viewport').evaluate((element) => {
+        const appFrame = element.querySelector('[data-preview-frame]')
+        return {
+          available: element.clientWidth,
+          layout: appFrame.offsetWidth,
+          rendered: appFrame.getBoundingClientRect().width
+        }
+      })
+    const inline = await measureFrame()
     assert.ok(
-      dimensions.content >= 860,
+      inline.layout >= 860,
       'Keep the app minimum width instead of redesigning its layout.'
     )
+    assert.ok(
+      inline.rendered <= inline.available + 1,
+      'Narrow screens must scale the whole app into view, not pan it.'
+    )
     if (width === 375) {
-      assert.ok(
-        dimensions.content > dimensions.available,
-        'Small screens must allow contained horizontal panning.'
-      )
-      await frame
-        .getByRole('button', { name: 'Search skills', exact: false })
-        .focus()
-      await page.waitForFunction(
-        () => document.querySelector('.preview-viewport').scrollLeft > 0
-      )
-      await viewport.evaluate((element) => {
-        element.scrollLeft = 0
-      })
       await page
         .getByRole('button', { name: 'Expand preview', exact: true })
         .click()
+      const expanded = await measureFrame()
+      assert.ok(
+        expanded.rendered > inline.rendered &&
+          expanded.rendered <= expanded.available + 1,
+        'Expanding must show the whole app larger than the inline preview.'
+      )
       await checkOverflow(page, width)
       await page
         .getByRole('button', { name: 'Close preview', exact: true })
@@ -212,7 +212,7 @@ try {
     }
   }
   results.push(
-    'All seven Usage views and the analytics card stack at 375/768/1024/1440px: no page overflow; in-place or full-screen analytics as the column allows, contained app panning, keyboard focus reveal, mobile expansion and navigation passed.'
+    'All seven Usage views and the analytics card stack at 375/768/1024/1440px: no page overflow; in-place or full-screen analytics as the column allows, scaled-to-fit app, mobile expansion and navigation passed.'
   )
 
   const motionPage = await context.newPage()

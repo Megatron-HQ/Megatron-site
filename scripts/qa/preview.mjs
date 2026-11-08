@@ -312,7 +312,7 @@ export async function verifyUsageHistory(page, app) {
   const exactLabel = await tokenValue.getAttribute('aria-label')
   assert.match(exactLabel, /^[\d,]+ tokens$/)
   assert.match(await tokenValue.textContent(), /[KMB]/)
-  await tokenValue.focus()
+  await focusForTooltip(tokenValue)
   await app
     .getByRole('tooltip')
     .getByText(exactLabel.replace(' tokens', ' exact tokens'), { exact: true })
@@ -372,7 +372,7 @@ export async function verifyUsageHistory(page, app) {
     'dashed'
   )
   assert.equal(await tokenOnlyDay.getAttribute('aria-haspopup'), 'dialog')
-  await tokenOnlyDay.focus()
+  await focusForTooltip(tokenOnlyDay)
   await app
     .getByRole('tooltip')
     .getByText('162,200 exact tokens', { exact: true })

@@ -92,6 +92,7 @@ jobs:
           name: browser-evidence-${{ matrix.platform }}
           path: |
             .visual-verify/*.png
+            .visual-verify/failed/*.png
             .qa/*.png
             .qa/results.json
           include-hidden-files: true

@@ -53,11 +53,13 @@ npm run verify:visual                               # full sweep
 # On Windows PowerShell, quote the flag: npm run verify:visual -- "--only" <screen>
 ```
 
-Use a production preview through `MEGATRON_TEST_URL` when a dev server is already running; the app’s development-only reduced-motion warning is intentionally absent from production. Preview scenarios use the real renderer in its iframe, with a frozen sample clock.
-
-This runs a production build (`npm run build`), ensures the preview or dev server is running, and
+This runs a production build (`npm run build`), serves that build on its own free port, and
 captures each scenario at all 4 responsive viewports (375px, 768px, 1024px, 1440px). Screenshots are
-saved to `.visual-verify/<scenario-name>--<viewport-label>.png`.
+saved to `.visual-verify/<scenario-name>--<viewport-label>.png`. Preview scenarios use the real renderer in its iframe, with a frozen sample clock.
+
+Set `MEGATRON_TEST_URL` only to target a specific production server; an unreachable URL fails the run. A dev server would test unbuilt code and log development-only warnings that count as console errors.
+
+One run per checkout at a time: a second run exits 1 while `.visual-verify.lock` names a live process.
 
 **Reading a diff result.** Every screenshot is pixel-diffed against stored baselines in
 `.visual-verify-baselines/` (gitignored, persists across runs).
@@ -67,11 +69,20 @@ Each screenshot lands in one bucket:
 - **changed** — differs from baseline by more than threshold (`0.1`, floor: `2000`px). Review carefully.
 - **unchanged** — matches accepted baseline. Skip reading these.
 
+With an empty `.visual-verify-baselines/`, every screenshot lands in **new** and nothing shows what
+your change moved. Run the full sweep and promote it before changing UI, so the run after your change
+shows real diffs.
+
 **3. Read everything and judge against the requirement from step 1.**
 
+- The last line, `RESULT: PASS|FAIL`, is the verdict, and the exit status matches it. When piping
+  output through `tail` or `grep`, keep the exit status (`set -o pipefail`).
 - Read every screenshot flagged `new` or `changed`. Confirm the requested change appears as intended.
-- Read the horizontal overflow and console error report: any reported overflow (`scrollWidth > clientWidth`)
-  or unhandled browser error is a defect to address.
+- Read the scenario failure, horizontal overflow and console error reports. Every `SCENARIO FAILURES`
+  entry (failure-state screenshot in `.visual-verify/failed/`), reported overflow
+  (`scrollWidth > clientWidth`) or unhandled browser error is a defect to address.
+- Before calling a defect pre-existing, reproduce it without your change, for example by running the
+  harness in a `git archive HEAD` copy in a scratch directory.
 - Check responsive viewports, especially mobile (375px) and laptop (1024px).
 
 **4. If you find a defect caused by this change, fix it — once.** Fix the specific issue, re-run

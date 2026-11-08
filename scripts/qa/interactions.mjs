@@ -20,11 +20,23 @@ export async function waitForFocus(
 }
 
 export async function focusForTooltip(locator) {
-  await locator.scrollIntoViewIfNeeded()
-  // Tooltip primitives dismiss on ancestor scroll; let that event finish before opening.
-  await locator.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(resolve))
-  )
+  // Tooltip primitives dismiss on ancestor scroll. Playwright's reveal can land
+  // frames after it resolves, so scroll synchronously here and focus only once
+  // that scroll's event has been delivered.
+  await locator.evaluate(async (element) => {
+    const offsets = () => {
+      const values = []
+      for (let node = element.parentElement; node; node = node.parentElement)
+        values.push(node.scrollTop, node.scrollLeft)
+      return values.join()
+    }
+    const before = offsets()
+    const scrolled = new Promise((resolve) =>
+      addEventListener('scroll', resolve, { capture: true, once: true })
+    )
+    element.scrollIntoViewIfNeeded(true)
+    if (offsets() !== before) await scrolled
+  })
   await locator.focus()
   await waitForFocus(locator)
 }

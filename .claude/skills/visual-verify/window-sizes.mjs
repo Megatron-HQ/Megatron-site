@@ -7,7 +7,7 @@ export const VIEWPORTS = [
 
 /**
  * Returns the responsive viewport sizes to test against.
- * Matches the four standard breakpoints documented in CLAUDE.md and MASTER.md.
+ * Matches the four standard breakpoints documented in CLAUDE.md.
  *
  * @param {string[]|string|null} [filter] Optional viewport labels or widths to filter by.
  * @returns {Array<{ label: string, width: number, height: number }>}

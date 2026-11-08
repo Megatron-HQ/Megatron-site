@@ -3,13 +3,15 @@
 // (mobile 375px, tablet 768px, laptop 1024px, desktop 1440px).
 //
 // Results are pixel-diffed against stored baselines in .visual-verify-baselines/.
-// Overflow and browser console errors are reported deterministically.
+// Overflow and browser console errors are reported deterministically. A failing
+// scenario is recorded and the sweep continues; the last stdout line is the verdict.
 
-import { execSync, spawn } from 'node:child_process'
-import { mkdir, readdir, readFile, rm } from 'node:fs/promises'
+import { execSync } from 'node:child_process'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
+import { preview } from 'vite'
 import { launchBrowser } from './browser-launch.mjs'
 import { scenarios } from './scenarios.mjs'
 import { parseOnly, selectScenarios } from './select-scenarios.mjs'
@@ -18,6 +20,7 @@ import { getWindowSizes } from './window-sizes.mjs'
 const REPO_ROOT = resolve(import.meta.dirname, '../../..')
 const OUT_DIR = join(REPO_ROOT, '.visual-verify')
 const BASELINE_DIR = join(REPO_ROOT, '.visual-verify-baselines')
+const LOCK_PATH = join(REPO_ROOT, '.visual-verify.lock')
 
 const DIFF_THRESHOLD = 0.1
 const DIFF_PIXEL_FLOOR = 2000
@@ -31,67 +34,53 @@ async function isServerUp(url) {
   }
 }
 
-async function ensureServer() {
-  const explicitUrl = process.env.MEGATRON_TEST_URL
-  if (explicitUrl && (await isServerUp(explicitUrl))) {
-    return { baseUrl: explicitUrl, cleanup: () => {} }
+function isAlive(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    // EPERM means the process exists but belongs to another user.
+    return error.code === 'EPERM'
   }
+}
 
-  if (await isServerUp('http://127.0.0.1:5173/')) {
-    return { baseUrl: 'http://127.0.0.1:5173/', cleanup: () => {} }
-  }
-
-  if (await isServerUp('http://127.0.0.1:4173/')) {
-    return { baseUrl: 'http://127.0.0.1:4173/', cleanup: () => {} }
-  }
-
-  console.log('[visual-verify] starting preview server on port 4173...')
-  const viteBin = join(REPO_ROOT, 'node_modules/vite/bin/vite.js')
-  const previewProcess = spawn(
-    process.execPath,
-    [viteBin, 'preview', '--port', '4173', '--host', '127.0.0.1'],
-    {
-      cwd: REPO_ROOT,
-      stdio: 'pipe'
-    }
-  )
-
-  const cleanup = () => {
+// One run per checkout: a second run would wipe .visual-verify/ and rebuild dist/
+// under the first. A lock left behind by a killed run is spotted by its dead pid.
+// ponytail: two runs starting at the same instant against a stale lock can both
+// win; switch to rename-based acquisition if that ever happens.
+async function acquireLock() {
+  for (;;) {
     try {
-      if (process.platform === 'win32' && previewProcess.pid) {
-        try {
-          execSync(`taskkill /pid ${previewProcess.pid} /T /F`, {
-            stdio: 'ignore'
-          })
-        } catch {
-          previewProcess.kill()
-        }
-      } else {
-        previewProcess.kill()
-      }
-    } catch {}
-  }
-
-  const startTime = Date.now()
-  let ready = false
-  while (Date.now() - startTime < 15_000) {
-    if (await isServerUp('http://127.0.0.1:4173/')) {
-      ready = true
-      break
+      await writeFile(LOCK_PATH, String(process.pid), { flag: 'wx' })
+      return
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error
     }
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    const pid = Number(await readFile(LOCK_PATH, 'utf8').catch(() => ''))
+    if (pid > 0 && isAlive(pid)) {
+      throw new Error(
+        `verify:visual is already running in this checkout (pid ${pid})`
+      )
+    }
+    await rm(LOCK_PATH, { force: true })
   }
+}
 
-  if (!ready) {
-    cleanup()
-    throw new Error(
-      'Vite preview server failed to start on http://127.0.0.1:4173/'
-    )
-  }
+async function startServer() {
+  const explicitUrl = process.env.MEGATRON_TEST_URL
+  if (explicitUrl) return { baseUrl: explicitUrl, close: async () => {} }
 
+  // Serve the dist/ this run just built on a free port, never a dev server or
+  // preview that another session left running.
+  const server = await preview({
+    configFile: join(REPO_ROOT, 'vite.config.js'),
+    root: REPO_ROOT,
+    logLevel: 'error',
+    preview: { host: '127.0.0.1', port: 0, strictPort: false }
+  })
   return {
-    baseUrl: 'http://127.0.0.1:4173/',
-    cleanup
+    baseUrl: `http://127.0.0.1:${server.httpServer.address().port}/`,
+    close: () => server.close()
   }
 }
 
@@ -179,7 +168,12 @@ async function captureAll(
 ) {
   const written = []
   const skipped = []
-  const defects = { consoleErrors: [], pageErrors: [], overflow: [] }
+  const defects = {
+    scenarioFailures: [],
+    consoleErrors: [],
+    pageErrors: [],
+    overflow: []
+  }
   const diff = { new: [], changed: [], unchanged: [] }
   const producedNames = new Set()
 
@@ -188,36 +182,48 @@ async function captureAll(
   for (const scenario of activeScenarios) {
     for (const size of sizes) {
       const name = `${scenario.name}--${size.label}.png`
-      await page.setViewportSize({ width: size.width, height: size.height })
-      await page.emulateMedia({ reducedMotion: 'reduce' })
-      const scenarioUrl = new URL(baseUrl)
-      scenarioUrl.searchParams.set('clock', '2026-10-09T12:00:00.000Z')
-      await page.clock.setFixedTime(new Date('2026-10-09T12:00:00.000Z'))
-      await page.goto(scenarioUrl.href, { waitUntil: 'domcontentloaded' })
-      await page.locator('#preview-skills').waitFor({ state: 'attached' })
-      await page.evaluate(() => document.fonts.ready)
+      try {
+        await page.setViewportSize({ width: size.width, height: size.height })
+        await page.emulateMedia({ reducedMotion: 'reduce' })
+        const scenarioUrl = new URL(baseUrl)
+        scenarioUrl.searchParams.set('clock', '2026-10-09T12:00:00.000Z')
+        await page.clock.setFixedTime(new Date('2026-10-09T12:00:00.000Z'))
+        await page.goto(scenarioUrl.href, { waitUntil: 'domcontentloaded' })
+        await page.locator('#preview-skills').waitFor({ state: 'attached' })
+        await page.evaluate(() => document.fonts.ready)
 
-      const skipReason = await scenario.shouldSkip?.(page, size)
-      if (skipReason) {
-        console.log(`[visual-verify]   skipping ${name}: ${skipReason}`)
-        skipped.push({ name, reason: skipReason })
+        const skipReason = await scenario.shouldSkip?.(page, size)
+        if (skipReason) {
+          console.log(`[visual-verify]   skipping ${name}: ${skipReason}`)
+          skipped.push({ name, reason: skipReason })
+          producedNames.add(name)
+          continue
+        }
+
+        await scenario.run(page, size)
+        await finishTransitions(page)
+
+        console.log(`[visual-verify]   capturing ${name}...`)
+        const path = join(outDir, name)
+        await page.screenshot({ path })
+        written.push(path)
         producedNames.add(name)
-        continue
-      }
 
-      await scenario.run(page, size)
-      await finishTransitions(page)
+        diff[await diffAgainstBaseline(path, name)].push(name)
 
-      console.log(`[visual-verify]   capturing ${name}...`)
-      const path = join(outDir, name)
-      await page.screenshot({ path })
-      written.push(path)
-      producedNames.add(name)
-
-      diff[await diffAgainstBaseline(path, name)].push(name)
-
-      if (await hasHorizontalOverflow(page)) {
-        defects.overflow.push(name)
+        if (await hasHorizontalOverflow(page)) {
+          defects.overflow.push(name)
+        }
+      } catch (error) {
+        // Record and move on, without retrying: one broken scenario must not hide
+        // the rest of the sweep, and a retry would hide flaky checks.
+        const message = String(error?.message ?? error).split('\n')[0]
+        console.log(`[visual-verify]   FAILED ${name}: ${message}`)
+        defects.scenarioFailures.push({ name, message })
+        await mkdir(join(outDir, 'failed'), { recursive: true })
+        await page
+          .screenshot({ path: join(outDir, 'failed', name) })
+          .catch(() => {})
       }
     }
   }
@@ -229,15 +235,6 @@ async function captureAll(
 function printScopeBanner(scope, { closing } = {}) {
   if (!scope) return
   const { only, activeCount, totalCount, baselineCount } = scope
-
-  if (baselineCount === 0) {
-    if (!closing) {
-      console.log(
-        `[visual-verify] --only ${only.join(',')} given, but no baselines exist yet — captured all ${activeCount} scenarios.`
-      )
-    }
-    return
-  }
 
   if (closing) {
     console.log(
@@ -251,6 +248,26 @@ function printScopeBanner(scope, { closing } = {}) {
   console.log(
     `[visual-verify]   ${totalCount - activeCount} scenarios NOT captured this run`
   )
+  if (baselineCount === 0) {
+    console.log(
+      '[visual-verify]   no baselines exist yet — every result will be new'
+    )
+  }
+}
+
+function printVerdict(defects) {
+  const counts = {
+    'scenario failures': defects.scenarioFailures.length,
+    overflow: defects.overflow.length,
+    console: defects.consoleErrors.length,
+    'page errors': defects.pageErrors.length
+  }
+  const failed = Object.values(counts).some((count) => count > 0)
+  const detail = Object.entries(counts)
+    .map(([label, count]) => `${count} ${label}`)
+    .join(', ')
+  console.log(`[visual-verify] RESULT: ${failed ? 'FAIL' : 'PASS'} — ${detail}`)
+  return failed
 }
 
 function printSummary(written, skipped, defects, diff, orphanBaselines, scope) {
@@ -282,6 +299,14 @@ function printSummary(written, skipped, defects, diff, orphanBaselines, scope) {
     for (const name of orphanBaselines) console.log(`  ${name}`)
   }
 
+  if (defects.scenarioFailures.length > 0) {
+    console.log(
+      '[visual-verify] SCENARIO FAILURES (screenshots in .visual-verify/failed/):'
+    )
+    for (const { name, message } of defects.scenarioFailures) {
+      console.log(`  ${name}: ${message}`)
+    }
+  }
   if (defects.overflow.length > 0) {
     console.log('[visual-verify] HORIZONTAL OVERFLOW at:')
     for (const name of defects.overflow) console.log(`  ${name}`)
@@ -309,7 +334,10 @@ async function main() {
   const only = parseOnly(process.argv.slice(2))
 
   await mkdir(BASELINE_DIR, { recursive: true })
-  const baselineNames = await readdir(BASELINE_DIR)
+  // PNGs only, so a stray .DS_Store doesn't count as a baseline.
+  const baselineNames = (await readdir(BASELINE_DIR)).filter((file) =>
+    file.endsWith('.png')
+  )
   const active = selectScenarios(scenarios, only, baselineNames)
   const scoped = only !== null && active.length < scenarios.length
   const scope =
@@ -322,15 +350,25 @@ async function main() {
           baselineCount: baselineNames.length
         }
 
-  console.log('[visual-verify] building...')
-  execSync('npm run build', { cwd: REPO_ROOT, stdio: 'inherit' })
-
-  await rm(OUT_DIR, { recursive: true, force: true })
-  await mkdir(OUT_DIR, { recursive: true })
-
-  const { baseUrl, cleanup: cleanupServer } = await ensureServer()
+  await acquireLock()
+  let server
   let browser
   try {
+    const explicitUrl = process.env.MEGATRON_TEST_URL
+    if (explicitUrl && !(await isServerUp(explicitUrl))) {
+      throw new Error(
+        `MEGATRON_TEST_URL ${explicitUrl} is not reachable (expected HTTP 200)`
+      )
+    }
+
+    console.log('[visual-verify] building...')
+    execSync('npm run build', { cwd: REPO_ROOT, stdio: 'inherit' })
+
+    await rm(OUT_DIR, { recursive: true, force: true })
+    await mkdir(OUT_DIR, { recursive: true })
+
+    server = await startServer()
+    console.log(`[visual-verify] testing ${server.baseUrl}`)
     console.log('[visual-verify] launching browser...')
     browser = await launchBrowser()
     const context = await browser.newContext({
@@ -341,23 +379,20 @@ async function main() {
 
     const sizes = getWindowSizes()
     const { written, skipped, defects, diff, orphanBaselines } =
-      await captureAll(page, baseUrl, OUT_DIR, active, sizes, scoped)
+      await captureAll(page, server.baseUrl, OUT_DIR, active, sizes, scoped)
 
     printSummary(written, skipped, defects, diff, orphanBaselines, scope)
-    if (
-      defects.overflow.length > 0 ||
-      defects.consoleErrors.length > 0 ||
-      defects.pageErrors.length > 0
-    ) {
-      process.exitCode = 1
-    }
+    if (printVerdict(defects)) process.exitCode = 1
   } finally {
     await browser?.close()
-    cleanupServer()
+    await server?.close()
+    await rm(LOCK_PATH, { force: true })
   }
 }
 
 main().catch((err) => {
   console.error('[visual-verify] failed:', err)
+  const reason = String(err?.message ?? err).split('\n')[0]
+  console.log(`[visual-verify] RESULT: FAIL — harness error: ${reason}`)
   process.exit(1)
 })

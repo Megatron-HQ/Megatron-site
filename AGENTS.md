@@ -34,14 +34,14 @@ Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v
 - `index.html`: Semantic landing page markup and structured metadata.
 - `src/styles.css`: Tailwind theme, tokens, responsive rules, and reduced motion.
 - `src/main.js`: Navigation, installation command copying, and scroll effects.
-- `src/product-preview-host.js`: Same-origin iframe navigation, reset, native modal expansion, and keyboard focus reveal.
+- `src/product-preview-host.js`: Same-origin iframe navigation, reset, native modal expansion, and scale-to-fit below the app's 860px width.
 - `src/analytics-deck.js`: Follow-the-work card stack; opens each Usage view in place or full screen, with card figures from `src/preview/card-stats.ts` and transitions from `src/analytics-deck-motion.js`.
 - `src/icons.js`: Marketing icon registry.
 - `preview/index.html`, `src/preview/`: App entry, typed sample API, fixture analytics, and trusted host protocol.
 - `vendor/megatron/`: Pinned actual renderer, shared API types, license, and reproducible provenance; never hand-edit.
 - `scripts/preview/`: Snapshot import and hash verification.
 - `public/`: Static assets (`megatron-icon.png`).
-- `design-system/MASTER.md`: Authoritative design tokens and interaction rules.
+- `DESIGN.md`: Authoritative visual design system (tokens, rules, components); sidecar in `.impeccable/design.json`.
 - `scripts/qa/`: Tracked, portable browser verification scripts.
 - `scripts/ci/`: Production QA orchestration and regression tests for process lifecycle and failure reporting.
 - `.github/workflows/ci.yml`: Quality checks and Linux/Windows/macOS browser verification.
@@ -50,12 +50,12 @@ Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v
 
 ## Locked decisions
 
-| Area                | Decision                                                                                                       | Why                                                                                                                                                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Generated mirrors   | `AGENTS.md` (from `CLAUDE.md`) and `.agents/skills/` (from `.claude/skills/`) — never hand-edited, no symlinks | Git symlinks need Developer Mode **and** `core.symlinks=true` on Windows. Instead `.githooks/pre-commit` regenerates and re-stages both every commit; `npm run pre-commit:check` acts as the backstop. |
-| Privacy             | No remote telemetry, forms, or analytics requests                                                              | Aligns with Megatron's local-first core philosophy.                                                                                                                                                    |
-| Verification        | Tracked browser checks in `scripts/qa/` and `.claude/skills/visual-verify/`; reports remain ignored            | Exercises responsive viewports (375px, 768px, 1024px, 1440px), keyboard controls, and ensures zero horizontal page overflow.                                                                           |
-| Interactive preview | Actual app renderer in an isolated iframe; typed sample API in `src/preview/`                                  | Preserves app visuals and controls; never accesses visitor local files or runs native commands. Retains 860px client width with contained panning and expansion.                                       |
+| Area                | Decision                                                                                                       | Why                                                                                                                                                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generated mirrors   | `AGENTS.md` (from `CLAUDE.md`) and `.agents/skills/` (from `.claude/skills/`) — never hand-edited, no symlinks | Git symlinks need Developer Mode **and** `core.symlinks=true` on Windows. Instead `.githooks/pre-commit` regenerates and re-stages both every commit; `npm run pre-commit:check` acts as the backstop.                                 |
+| Privacy             | No remote telemetry, forms, or analytics requests                                                              | Aligns with Megatron's local-first core philosophy.                                                                                                                                                                                    |
+| Verification        | Tracked browser checks in `scripts/qa/` and `.claude/skills/visual-verify/`; reports remain ignored            | Exercises responsive viewports (375px, 768px, 1024px, 1440px), keyboard controls, and ensures zero horizontal page overflow.                                                                                                           |
+| Interactive preview | Actual app renderer in an isolated iframe; typed sample API in `src/preview/`                                  | Preserves app visuals and controls; never accesses visitor local files or runs native commands. Lays out at 860px minimum and scales down to fit narrower viewports instead of reflowing or panning; expansion reuses the same iframe. |
 
 ## Testing & Verification
 

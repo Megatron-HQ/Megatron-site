@@ -5,8 +5,9 @@
 // Default (no --only) is still the full sweep. `--only <screen,screen>` narrows
 // the run to the scenarios tagged with those screens (scenarios.mjs `screen`
 // field), plus any scenario that has no baseline yet — a newly added screen must
-// be captured its first time even if its screen wasn't the one named. See
-// SKILL.md "Scope the run".
+// be captured its first time even if its screen wasn't the one named. With no
+// baselines at all, that rule can't single out a new scenario, so it's skipped.
+// See SKILL.md "Scope the run".
 
 /** The set of every screen name at least one scenario is tagged with. */
 export function knownScreens(scenarios) {
@@ -59,7 +60,7 @@ function hasBaseline(scenarioName, baselineNames) {
 /**
  * @param scenarios  the full scenario list (scenarios.mjs)
  * @param only       parseOnly()'s result — null for a full run, else screen names
- * @param baselineNames  filenames in `.visual-verify-baselines/` (readdir output)
+ * @param baselineNames  PNG filenames in `.visual-verify-baselines/`
  * @returns the scenarios to capture this run
  * @throws if `only` names a screen no scenario is tagged with
  */
@@ -78,6 +79,6 @@ export function selectScenarios(scenarios, only, baselineNames) {
   return scenarios.filter(
     (scenario) =>
       [].concat(scenario.screen).some((screen) => only.includes(screen)) ||
-      !hasBaseline(scenario.name, baselineNames)
+      (baselineNames.length > 0 && !hasBaseline(scenario.name, baselineNames))
   )
 }

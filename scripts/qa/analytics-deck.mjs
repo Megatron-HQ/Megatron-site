@@ -191,10 +191,16 @@ async function verifyStack(page) {
 
 async function verifyOpenedFromCard(page) {
   const card = page.locator('[data-deck-open="resident-tax"]')
+  const expected = await expectedOpenState(page)
   await card.focus()
   await card.press('Enter')
+  if (expected === 'inline')
+    assert.ok(
+      await page.locator('[data-deck-stack]').evaluate((stack) => stack.inert),
+      'Opening in place takes the stack out of the tab order at once.'
+    )
   await waitForView(page, 'resident-tax')
-  const expected = await expectedOpenState(page)
+  await waitForDeckMotion(page)
   assert.equal(await deckState(page), expected)
   await waitForFocus(page.locator('#deck-viewer-title'))
   const opened = await page.evaluate(() => {
