@@ -505,6 +505,7 @@ h1 {
   transform-origin: 0 0;
 }
 .preview-host-notice {
+  max-width: 450px;
   margin: 12px 0 0;
   color: #b4b6aa;
   font-size: 12px;
@@ -1444,21 +1445,46 @@ h2 {
 .installation-intro > .text-link {
   font-size: 12px;
 }
+/* The options stack at every width so each first-launch step stays directly under
+   its button. Both buttons fill one column capped at the intro's 360px measure,
+   so they match whichever label is longer. */
 .download-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  gap: 18px;
+  max-width: 360px;
+  margin-bottom: 22px;
 }
-.download-actions + p {
-  margin-bottom: 12px;
+.download-option {
+  display: grid;
+  gap: 8px;
+}
+/* A label longer than its column wraps inside the button instead of overflowing. */
+.download-option .button {
+  white-space: normal;
+}
+.download-option p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.download-meta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--caption-ink);
+}
+.download-note {
+  display: none;
 }
 .installation-guide {
   padding-top: 39px;
   min-width: 0;
 }
+/* Paper, not Graphite: running from source is the alternative path, so it must
+   not outweigh the lime downloads beside it. */
 .terminal {
-  background: #25261f;
-  color: #e9ecdd;
+  background: #fafaf6;
+  border: 1px solid var(--rule);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -1467,7 +1493,7 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #424639;
+  border-bottom: 1px solid var(--rule);
 }
 .terminal-header > span {
   display: flex;
@@ -1475,7 +1501,7 @@ h2 {
   align-items: center;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #b6be9b;
+  color: var(--caption-ink);
 }
 .terminal-header > span svg {
   width: 14px;
@@ -1485,9 +1511,8 @@ h2 {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #c6ccb5;
   border-radius: 4px;
-  border: 1px solid #555b45;
+  border: 1px solid var(--rule);
   padding: 5px 8px;
   font-size: 11px;
   min-width: 57px;
@@ -1497,11 +1522,7 @@ h2 {
   height: 11px;
 }
 .copy-button:hover {
-  color: #fff;
-  background: #3f4431;
-}
-.copy-button:focus-visible {
-  outline-color: var(--color-lime);
+  background: #eaece1;
 }
 .terminal pre {
   padding: 26px 23px 28px;
@@ -1511,21 +1532,30 @@ h2 {
   font-size: 11px;
   line-height: 2.4;
 }
+/* One block per command: a narrow terminal wraps the clone URL under a hanging
+   indent instead of hiding it. Copy reads textContent, so it is unaffected. */
 .terminal pre code {
-  white-space: pre;
+  white-space: normal;
+}
+.terminal pre code > span {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-left: 2ch;
+  text-indent: -2ch;
+}
+/* Keeps the clone URL whole: its own hyphen must never read as a line break. */
+.terminal pre code > span > span {
+  white-space: nowrap;
 }
 .terminal-footnote {
   display: flex;
   gap: 8px;
   align-items: center;
   padding: 15px 20px;
-  border-bottom: 1px solid #424639;
+  border-bottom: 1px solid var(--rule);
   font-size: 12px;
-  color: #b6be9b;
-}
-.terminal-footnote .status-dot {
-  width: 5px;
-  height: 5px;
+  color: var(--muted);
 }
 .copy-status {
   font-size: 12px;
@@ -1642,7 +1672,6 @@ h2 {
 }
 .footer-word {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   font-size: clamp(70px, 12vw, 176px);
   font-weight: 500;
@@ -1650,12 +1679,6 @@ h2 {
   line-height: 1;
   padding: 51px 0 41px;
   color: #292d21;
-}
-.footer-word > span {
-  font-size: 0.8em;
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: 0;
 }
 .footer-bottom {
   display: flex;
@@ -1996,6 +2019,9 @@ h2 {
   .preview-viewport {
     height: auto;
     aspect-ratio: 860 / 600;
+    /* A clipped (non-scroll) box with an aspect ratio grows to its content by default;
+       the iframe's unscaled layout height would otherwise stretch the window. */
+    min-height: 0;
   }
   /* Thinner sides than the deck modal so the expanded app renders larger than inline. */
   .preview-host[data-expanded='true'] {
@@ -2145,6 +2171,12 @@ h2 {
   .installation-intro > p:not(.eyebrow) {
     font-size: 14px;
     max-width: 420px;
+  }
+  /* Width, not device: a narrow desktop window sees this too, so the copy never says "phone". */
+  .download-note {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
   }
   .installation-guide {
     padding-top: 0;

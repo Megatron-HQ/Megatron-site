@@ -157,13 +157,13 @@ components:
     rounded: '{rounded.3xl}'
     padding: '{spacing.stage}'
   terminal:
-    backgroundColor: '{colors.graphite-raised}'
-    textColor: '{colors.stage-text}'
+    backgroundColor: '{colors.bone-raised}'
+    textColor: '{colors.carbon-ink}'
     typography: '{typography.mono-data}'
     rounded: '{rounded.lg}'
   copy-button:
     backgroundColor: 'transparent'
-    textColor: '{colors.stage-muted}'
+    textColor: '{colors.carbon-ink}'
     rounded: '{rounded.sm}'
     padding: '5px 8px'
   site-header:
@@ -180,7 +180,7 @@ components:
 
 The Megatron site is warm bone paper set in carbon ink, with one acid signal running through it. Signal Lime marks what is live, selected, or actionable: the primary call to action, the active preview tab, a status dot, a text selection. Everything else is paper, ink, and hairlines, so lime means something whenever it appears.
 
-The mood is precise, candid, and calm. Large, tightly tracked Geist Sans headlines carry the confidence. Small Geist Mono captions carry the honesty ("SAMPLE", "ILLUSTRATIVE FINDING", "LINE 13"), placed right beside the figure they qualify. Density is editorial rather than dashboard-like: generous section padding, asymmetric two-column splits, and short copy blocks held to roughly 360–450px. The page drops into Graphite at a few chosen points (the live product stage, the local-first section, the terminal, the context visual), so the real app and real data read as an instrument set into the page.
+The mood is precise, candid, and calm. Large, tightly tracked Geist Sans headlines carry the confidence. Small Geist Mono captions carry the honesty ("SAMPLE", "ILLUSTRATIVE FINDING", "LINE 13"), placed right beside the figure they qualify. Density is editorial rather than dashboard-like: generous section padding, asymmetric two-column splits, and short copy blocks held to roughly 360–450px. The page drops into Graphite at a few chosen points (the live product stage, the local-first section, the context visual), so the real app and real data read as an instrument set into the page.
 
 Depth comes from tone and hairlines, never from lift. The system rejects glass and glow: no blurred translucent panels, no glowing accents, no shadow-lifted cards. The embedded preview runs Megatron's own pinned renderer inside an iframe with its own stylesheet. This document governs the marketing surface around that iframe and nothing inside it.
 
@@ -199,7 +199,7 @@ A warm, slightly green-cast neutral system with one high-voltage accent and a sm
 
 ### Primary
 
-- **Signal Lime** (#e4f222): The only loud color, inherited from the desktop app. It fills the primary CTA, the selected preview tab, status dots on Graphite, the lead segment of the context chart, `::selection`, and the skip link. On paper it is fill-only (1.14:1 against Bone Paper). On Graphite it can carry text and focus outlines (13.1:1).
+- **Signal Lime** (#e4f222): The only loud color, inherited from the desktop app. It fills the primary CTAs (the hero button and the install section's download pair), the selected preview tab, status dots on Graphite, the lead segment of the context chart, `::selection`, and the skip link. On paper it is fill-only (1.14:1 against Bone Paper). On Graphite it can carry text and focus outlines (13.1:1).
 - **Signal Lime Pressed** (#d4e019): Hover fill for lime buttons, paired with a #bdc817 border.
 - **Signal Olive** (#657100): Lime darkened enough to write with on paper (4.94:1 on Bone Paper). Used for the focus outline on paper, FAQ summary hover text, and the copy-status message. Two near-identical drift values (#647005, #617009) exist in the code; treat both as this token.
 - **Status Moss** (#899300): Status dots on paper (hero eyebrow, release status, scope caption), where full lime would disappear. #8b961e and #849226 are drift of the same role. The hero spark mark uses #c5d008, between moss and lime, as a one-off.
@@ -214,18 +214,18 @@ A warm, slightly green-cast neutral system with one high-voltage accent and a sm
 
 - **Bone Paper** (#f6f6f0): Page background, `theme-color`, and text on ink buttons.
 - **Bone Shade** (#efefe7): One tonal step down, for full-bleed bands (analytics). The inventory panel (#eeeee6) and footer (#edeee5) sit in the same tier.
-- **Bone Raised** (#fafaf6): The lighter panel tier (lint feature).
-- **Bone Wash** (#eaece1): Hover fill for controls on paper: menu toggle, mobile nav rows.
+- **Bone Raised** (#fafaf6): The lighter panel tier (lint feature, run-from-source terminal).
+- **Bone Wash** (#eaece1): Hover fill for controls on paper: menu toggle, mobile nav rows, terminal copy button.
 - **Hairline** (#ddded5): 1px rules, panel borders, FAQ dividers, the scrolled header border, and the preview viewport border. Slightly darker variants (#d9dccb, #d4d7c7, #dedfd2) appear on shaded bands and snippets.
 - **Carbon Ink** (#191a17): All primary text, ink buttons, and text on lime.
 - **Carbon Ink Hover** (#3b3d35): Hover fill for ink buttons.
 - **Muted Ink** (#66675e): Secondary body copy and nav links (5.28:1 on Bone Paper, 4.96:1 on Bone Shade).
 - **Caption Olive** (#62694e): Mono captions, line numbers, step labels, and the footer legal row.
 - **Graphite Stage** (#20211d): The product stage, the local-first section, and the expanded preview.
-- **Graphite Raised** (#25261f): The terminal. The context visual uses the same tier at #25271e.
+- **Graphite Raised** (#25261f): The raised dark tier. The context visual uses it at #25271e.
 - **Graphite Hover** (#33352e): Hover fill for controls on Graphite.
 - **Graphite Rule** (#42463b): Dividers on Graphite. Bordered dark controls use #515449 or #555b45.
-- **Stage Text** (#f2f3e8): Primary text on Graphite. #f4f4ec (stage) and #e9ecdd (terminal) are local variants.
+- **Stage Text** (#f2f3e8): Primary text on Graphite. #f4f4ec (stage) is a local variant.
 - **Stage Muted** (#bfc2b0): Secondary text on Graphite (8.91:1). #c6c8bc (tabs, hints) and #b4b6aa (fine print) are its lighter and darker siblings.
 
 The context-composition chart uses a lime-to-graphite data ramp on Graphite Raised: #e4f222, #aeb76d, #7c8255, #f3f3e9, #a7a8a0, #565750. Chart color comes from this family, not from an outside palette.
@@ -326,11 +326,13 @@ Motion follows the same restraint. State changes are 180ms transitions on backgr
 ### Buttons
 
 - **Shape:** Gently squared corners (5px).
-- **Primary:** Signal Lime fill, Carbon Ink text, 14px/500, 50px minimum height, 14px 23px padding. The label sits left and a 19px arrow-up-right icon is pushed right by a wide gap (30px, 49px in the hero). Used once per view.
-- **Ink:** Carbon Ink fill with Bone Paper text, used for the "Get Megatron" button in the nav and footer.
+- **Primary:** Signal Lime fill, Carbon Ink text, 14px/500, 50px minimum height, 14px 23px padding. The label sits left and a 19px icon chosen by the Glyph Convention (arrow-down on the hero CTA) is pushed right by a wide gap (30px, 49px in the hero). Used once per view. The install section's two platform downloads are one choice, so both take it: each carries the download icon and sits over its own 12px Muted Ink first-launch step (8px apart, 18px between options). The step opens with an 11px mono Caption Olive file line (".dmg · 136 MB", sizes as GitHub's release page shows them). Below 768px, a 12px/500 Carbon Ink note ("Desktop installers: download on your Mac or Windows PC.") sits above the pair; it is worded for any narrow window, not just phones. The options stack at every width in one column capped at 360px, so both buttons always match, whichever label is longer.
+- **Ink:** Carbon Ink fill with Bone Paper text. Used for the "Get Megatron" button in the nav and footer.
 - **Small:** 38px tall, 9px 15px padding, 12px text, 18px gap.
 - **Hover / Focus:** Lime moves to Signal Lime Pressed with a #bdc817 border; ink moves to Carbon Ink Hover. Focus is a 2px Signal Olive outline at 5px offset on paper, and a lime outline on Graphite.
-- **Text link:** 13px/500 with a 16px trailing arrow, underlined on hover with a 5px offset. On Graphite the text is #ecf2d2.
+- **Text link:** 13px/500 with a 16px trailing arrow chosen by the Glyph Convention, underlined on hover with a 5px offset. On Graphite the text is #ecf2d2.
+
+**The Glyph Convention.** A trailing icon says where the control takes you. arrow-down jumps to a section that is always below it (the hero CTA). arrow-up-right goes somewhere else: an external page or new tab, a view opened in place, or an in-page jump from a spot whose position relative to the target varies (the sticky nav and footer "Get Megatron"). The download icon fetches a file. Never add a trailing arrow to something that isn't a control.
 
 ### Chips
 
@@ -354,7 +356,7 @@ Motion follows the same restraint. State changes are 180ms transitions on backgr
 
 ### Product Stage
 
-The signature component. A Graphite Stage frame (9px radius, 23px padding) holds the live app renderer. The top row pairs a lime-dot eyebrow with an "Explore the product" hint. The toolbar holds the Skills, Plugins, and Usage tabs: 4px radius, 12px Stage Muted text, Graphite Hover with white text on hover, and a lime fill with ink text when selected. Host buttons have a 1px #515449 border, 4px radius, and 11px text. The viewport has a 1px Hairline border, a 6px radius, a #fcfcfc ground, and a thin #777c6a scrollbar. A Caption row at the bottom (12px) says it is an interactive preview on sample data and that the visitor's local setup is never accessed. Expanding moves the same iframe into a native modal dialog inset 12px, with an 8px radius and the scrim shadow.
+The signature component. A Graphite Stage frame (9px radius, 23px padding) holds the live app renderer. The top row pairs a lime-dot eyebrow with an "Explore the product" hint. The toolbar holds the Skills, Plugins, and Usage tabs: 4px radius, 12px Stage Muted text, Graphite Hover with white text on hover, and a lime fill with ink text when selected. Host buttons have a 1px #515449 border, 4px radius, and 11px text. The viewport has a 1px Hairline border, a 6px radius, and a #fcfcfc ground; it clips rather than scrolls (see Layout for scaling). A Caption row at the bottom (12px) says it is an interactive preview on sample data and that the visitor's local setup is never accessed. Expanding moves the same iframe into a native modal dialog inset 12px, with an 8px radius and the scrim shadow.
 
 ### Signal Eyebrow
 
@@ -362,7 +364,7 @@ A mono uppercase label led by a 7px status dot: lime on Graphite, Status Moss on
 
 ### Terminal Block
 
-Graphite Raised with a 6px radius. The header row holds an 11px mono "YOUR TERMINAL" label and a copy button (1px #555b45 border, 4px radius, 11px text). Directly under the header, before the commands it gates, a 12px Caption row with a 5px dot lists the platform requirements, separated from the commands by a Graphite Rule. The button label changes to Copied, Selected, or Copy failed for 2.5 seconds, and a polite live region below the terminal reports the result in Signal Olive at 12px. The body is 11px mono at 2.4 line height; on phones the long clone line scrolls inside the terminal rather than shrinking.
+A paper panel: Bone Raised with a 1px Hairline border and a 6px radius, Carbon Ink commands. It sits beside the lime downloads as the alternative path, so it stays on paper and never outweighs them. The header row holds an 11px mono "OR RUN FROM SOURCE" label in Caption Olive and a copy button (1px Hairline border, 4px radius, 11px Carbon Ink text, Bone Wash hover, Signal Olive focus ring). Directly under the header, before the commands it gates, a 12px Muted Ink row lists the platform requirements, separated from the commands by a Hairline. It has no dot: requirements are neither live nor actionable. The button label changes to Copied, Selected, or Copy failed for 2.5 seconds, and a polite live region below the terminal reports the result in Signal Olive at 12px. The body is 11px mono at 2.4 line height with one block per command. When the terminal is too narrow, the clone line wraps after `git clone` and the URL continues under a 2ch hanging indent; nothing shrinks or hides behind a scroll.
 
 ### Lint Snippet
 
@@ -378,7 +380,7 @@ Native `details`/`summary` with Hairline top rules and a closing bottom rule. Su
 
 ### Footer Mark
 
-MEGATRON at Footer Mark size in #292d21, followed by an ↗ glyph at 0.8em and weight 400. It is decorative and hidden from assistive technology.
+MEGATRON at Footer Mark size in #292d21, left-aligned with no trailing glyph. It is decorative and hidden from assistive technology.
 
 ## Do's and Don'ts
 
@@ -386,7 +388,7 @@ MEGATRON at Footer Mark size in #292d21, followed by an ↗ glyph at 0.8em and w
 
 - **Do** keep Signal Lime (#e4f222) to live, selected, or actionable elements, with one lime CTA per view.
 - **Do** use Signal Olive (#657100) for focus rings, hover text, and status text on paper; save lime outlines for Graphite.
-- **Do** separate surfaces with 1px Hairline (#ddded5) borders and tonal steps, and drop to Graphite Stage (#20211d) to frame the real app or real commands.
+- **Do** separate surfaces with 1px Hairline (#ddded5) borders and tonal steps, and drop to Graphite Stage (#20211d) to frame the real app.
 - **Do** label every illustrative figure with a mono SAMPLE tag or an "Illustrative" caption placed beside it.
 - **Do** keep radii between 2px and 9px, scaled to the size of the element.
 - **Do** track display type negative and mono labels positive.
