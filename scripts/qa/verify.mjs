@@ -99,6 +99,23 @@ try {
   await page
     .locator('#product')
     .screenshot({ path: join(directory, 'cost-preview.png') })
+  // A Windows runner's user agent starts on the Windows tab, which hides Copy.
+  const macTab = page.getByRole('tab', { name: 'macOS', exact: true })
+  await macTab.click()
+  await macTab.press('ArrowRight')
+  assert.equal(
+    await page
+      .getByRole('tab', { name: 'Windows', exact: true })
+      .getAttribute('aria-selected'),
+    'true'
+  )
+  assert.ok(await page.locator('#install-panel-windows').isVisible())
+  assert.equal(await page.locator('#install-panel-mac').isVisible(), false)
+  await page.keyboard.press('Home')
+  assert.equal(await macTab.getAttribute('aria-selected'), 'true')
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: new URL(baseUrl).origin
+  })
   await page.locator('[data-copy-install]').click()
   await page.waitForFunction(
     () =>
@@ -108,6 +125,11 @@ try {
     null,
     { timeout: 5000 }
   )
+  if (/copied/i.test(await page.locator('[data-copy-status]').textContent()))
+    assert.equal(
+      await page.evaluate(() => navigator.clipboard.readText()),
+      'brew install --cask megatron-hq/tap/megatron'
+    )
   await page.locator('.faq-list summary').first().focus()
   await page.keyboard.press('Space')
   assert.equal(
@@ -120,7 +142,7 @@ try {
       .count()
   )
   results.push(
-    'Host arrow-key tabs, Cost navigation, installation copy and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, Cost navigation, platform tabs, exact install-command copy and keyboard FAQ disclosure passed.'
   )
   await page.goto(baseUrl)
   await verifyPreviewStates(page, baseUrl)
@@ -235,9 +257,36 @@ try {
   const noScriptPage = await noScriptContext.newPage()
   await noScriptPage.goto(baseUrl)
   assert.ok(await noScriptPage.locator('#install-commands').isVisible())
+  assert.ok(
+    await noScriptPage
+      .getByRole('link', { name: 'Download for Windows' })
+      .isVisible()
+  )
+  assert.equal(
+    await noScriptPage.locator('[data-install-tabs]').isVisible(),
+    false
+  )
   await checkOverflow(noScriptPage, 375)
+  const windowsContext = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+  })
+  const windowsPage = await windowsContext.newPage()
+  await windowsPage.goto(baseUrl)
+  assert.equal(
+    await windowsPage
+      .getByRole('tab', { name: 'Windows', exact: true })
+      .getAttribute('aria-selected'),
+    'true'
+  )
+  assert.equal(
+    await windowsPage.locator('#install-panel-mac').isVisible(),
+    false
+  )
+  await windowsContext.close()
   results.push(
-    'Reduced motion and readable installation content without JavaScript passed.'
+    'Reduced motion, both install paths readable without JavaScript, and Windows visitors starting on the Windows tab passed.'
   )
 
   const normalContext = await browser.newContext({

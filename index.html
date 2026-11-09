@@ -565,51 +565,11 @@
             Free and open source. Run Megatron locally on macOS or Windows and
             get to know your Claude Code setup.
           </p>
-          <!-- Release block: at each release, change the version label, both download links and both file sizes together. -->
           <div class="release-status">
             <span class="status-dot" aria-hidden="true"></span>
             <div>
               <strong>Megatron 0.1.0</strong
-              ><span>For Apple silicon Macs and 64-bit Windows.</span
-              ><span id="download-signing"
-                >Neither installer is notarized or code-signed yet.</span
-              >
-            </div>
-          </div>
-          <div class="download-actions">
-            <p class="download-note">
-              Desktop installers: download on your Mac or Windows PC.
-            </p>
-            <div class="download-option">
-              <a
-                class="button button-lime"
-                href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.1.0/megatron-0.1.0.dmg"
-                aria-describedby="download-signing download-mac-step"
-                >Download for Apple silicon Mac<i
-                  data-lucide="download"
-                  aria-hidden="true"
-                ></i
-              ></a>
-              <p id="download-mac-step">
-                <span class="download-meta">.dmg · 136 MB</span>macOS blocks the
-                first launch: open System Settings → Privacy &amp; Security and
-                choose Open Anyway.
-              </p>
-            </div>
-            <div class="download-option">
-              <a
-                class="button button-lime"
-                href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.1.0/megatron-0.1.0-setup.exe"
-                aria-describedby="download-signing download-windows-step"
-                >Download for Windows<i
-                  data-lucide="download"
-                  aria-hidden="true"
-                ></i
-              ></a>
-              <p id="download-windows-step">
-                <span class="download-meta">.exe · 115 MB</span>Windows
-                SmartScreen may warn: choose More info → Run anyway.
-              </p>
+              ><span>For Apple silicon Macs and 64-bit Windows.</span>
             </div>
           </div>
           <a
@@ -621,28 +581,110 @@
           ></a>
         </div>
         <div class="installation-guide">
-          <div class="terminal">
-            <div class="terminal-header">
-              <span
-                ><i data-lucide="terminal" aria-hidden="true"></i>OR RUN FROM
-                SOURCE</span
+          <p class="download-note">
+            Desktop installers: download on your Mac or Windows PC.
+          </p>
+          <!-- Release block: at each release, change the version label, both download links and both file sizes together. The brew command is versionless. -->
+          <div class="install-panel">
+            <div
+              class="install-tabs"
+              role="tablist"
+              aria-label="Platform"
+              data-install-tabs
+              hidden
+            >
+              <button
+                type="button"
+                class="install-tab"
+                id="install-tab-mac"
+                role="tab"
+                aria-selected="true"
+                aria-controls="install-panel-mac"
+                data-platform="mac"
+              >
+                macOS</button
               ><button
                 type="button"
-                class="copy-button"
-                data-copy-install
-                aria-label="Copy installation commands"
+                class="install-tab"
+                id="install-tab-windows"
+                role="tab"
+                aria-selected="false"
+                aria-controls="install-panel-windows"
+                tabindex="-1"
+                data-platform="windows"
               >
-                <i data-lucide="copy" aria-hidden="true"></i
-                ><span data-copy-label>Copy</span>
+                Windows
               </button>
             </div>
-            <p class="terminal-footnote">
-              macOS + Windows · Node.js 22.x · npm · Git
-            </p>
-            <pre><code id="install-commands"><span>git clone <span>https://github.com/Megatron-HQ/Megatron.git</span></span>
-<span>cd Megatron</span>
-<span>npm ci</span>
-<span>npm run dev</span></code></pre>
+            <div
+              class="install-platform"
+              id="install-panel-mac"
+              role="tabpanel"
+              aria-labelledby="install-tab-mac"
+              data-platform-panel="mac"
+            >
+              <p class="install-label">INSTALL WITH HOMEBREW · APPLE SILICON</p>
+              <div class="install-command">
+                <code id="install-commands"
+                  >brew install --cask
+                  <span>megatron-hq/tap/megatron</span></code
+                ><button
+                  type="button"
+                  class="copy-button"
+                  data-copy-install
+                  aria-label="Copy Homebrew install command"
+                >
+                  <i data-lucide="copy" aria-hidden="true"></i
+                  ><span data-copy-label>Copy</span>
+                </button>
+              </div>
+              <p class="install-note">
+                Update later with <code>brew upgrade --cask megatron</code>.
+              </p>
+              <div class="install-alternative">
+                <p class="install-download">
+                  <a
+                    class="text-link"
+                    href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.1.0/megatron-0.1.0.dmg"
+                    aria-describedby="install-dmg-step"
+                    >Or download the .dmg<i
+                      data-lucide="download"
+                      aria-hidden="true"
+                    ></i></a
+                  ><span class="install-size">136 MB</span>
+                </p>
+                <p class="install-note" id="install-dmg-step">
+                  Not notarized yet: on first launch, open System Settings →
+                  Privacy &amp; Security and choose Open Anyway. Homebrew skips
+                  this step.
+                </p>
+              </div>
+            </div>
+            <div
+              class="install-platform"
+              id="install-panel-windows"
+              role="tabpanel"
+              aria-labelledby="install-tab-windows"
+              data-platform-panel="windows"
+            >
+              <p class="install-label">WINDOWS INSTALLER · 64-BIT</p>
+              <p class="install-download">
+                <a
+                  class="button button-lime"
+                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.1.0/megatron-0.1.0-setup.exe"
+                  aria-describedby="install-exe-step"
+                  >Download for Windows<i
+                    data-lucide="download"
+                    aria-hidden="true"
+                  ></i></a
+                ><span class="install-size">115 MB</span>
+              </p>
+              <p class="install-note" id="install-exe-step">
+                Installs for your user only, with no administrator prompt, and
+                updates itself. Not code-signed yet: if SmartScreen warns,
+                choose More info → Run anyway.
+              </p>
+            </div>
           </div>
           <p
             class="copy-status"
@@ -656,26 +698,12 @@
               <h3>Bring your projects into view.</h3>
               <p>
                 On first launch, Megatron finds your global and plugin skills.
-                Open <strong>Settings → Project folders → Manage…</strong> to
-                include your project repositories or parent folders.
+                Add your repositories under
+                <strong>Settings → Project folders → Manage…</strong>
               </p>
               <p>
-                Existing local Claude Code data populates the app. Plugin
-                actions and Resident tax measurements also require the
+                Plugin actions and Resident tax also need the
                 <code>claude</code> CLI on your PATH.
-              </p>
-              <p>
-                Megatron watches approved inventory locations and updates skills
-                and plugins as files are added, edited, moved, or deleted. These
-                background updates leave Usage history alone. Full refreshes
-                also run when its window regains focus, after folder grants
-                change, and after plugin actions. Use
-                <strong>Settings → Rescan now</strong> for a manual refresh.
-                Settings shows scan progress and any sources that could not be
-                refreshed, including usage history. Deleted projects discovered
-                under a readable parent are removed from the inventory. Missing
-                folders you granted directly and unreadable folders retain
-                cached data; unreadable sources retry automatically.
               </p>
             </div>
           </div>
@@ -810,9 +838,10 @@
             </summary>
             <p>
               The desktop app runs on Apple silicon Macs and 64-bit Windows.
-              Install the packaged app or run it from source. It is specifically
-              built for Claude Code. Skills from other tools and Linux
-              distribution are outside the current scope.
+              Install it with Homebrew or the .dmg on a Mac, or with the
+              installer on Windows. It is specifically built for Claude Code.
+              Skills from other tools and Linux distribution are outside the
+              current scope.
             </p>
           </details>
           <details>

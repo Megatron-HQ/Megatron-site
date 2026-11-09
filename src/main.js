@@ -69,19 +69,23 @@ function initializeInstallationCopy() {
     try {
       if (!navigator.clipboard?.writeText)
         throw new DOMException('Clipboard is unavailable', 'NotSupportedError')
-      await navigator.clipboard.writeText(code.textContent.trim())
+      // Collapse whitespace as the browser renders it: a formatter line break inside
+      // the code would otherwise paste as a newline and run a truncated command.
+      await navigator.clipboard.writeText(
+        code.textContent.replace(/\s+/g, ' ').trim()
+      )
       label.textContent = 'Copied'
-      status.textContent = 'Installation commands copied.'
+      status.textContent = 'Install command copied.'
     } catch (error) {
       if (!(error instanceof DOMException)) {
         label.textContent = 'Copy failed'
         status.textContent =
-          'The commands could not be copied. Select the code to copy it manually.'
+          'The command could not be copied. Select it to copy it manually.'
         console.error('Installation copy failed:', error)
       } else {
         selectCommands(code)
         label.textContent = 'Selected'
-        status.textContent = 'Commands selected. Press Ctrl+C or Cmd+C to copy.'
+        status.textContent = 'Command selected. Press Ctrl+C or Cmd+C to copy.'
       }
     } finally {
       copying = false
@@ -91,6 +95,46 @@ function initializeInstallationCopy() {
       }, COPY_FEEDBACK_DURATION_MS)
     }
   })
+}
+
+// The markup ships both platforms visible and the tabs hidden, so visitors without
+// JavaScript read both install paths stacked instead of meeting dead tabs. Only
+// Windows is detected: every other visitor, phones included, starts on macOS.
+function initializePlatformTabs() {
+  const tablist = requireElement('[data-install-tabs]')
+  const tabs = [...tablist.querySelectorAll('[role="tab"]')]
+  const panels = [...document.querySelectorAll('[data-platform-panel]')]
+  function select(platform) {
+    for (const tab of tabs) {
+      const selected = tab.dataset.platform === platform
+      tab.setAttribute('aria-selected', String(selected))
+      tab.tabIndex = selected ? 0 : -1
+    }
+    for (const panel of panels)
+      panel.hidden = panel.dataset.platformPanel !== platform
+  }
+  tablist.addEventListener('click', (event) => {
+    const tab = event.target.closest('[role="tab"]')
+    if (tab) select(tab.dataset.platform)
+  })
+  tablist.addEventListener('keydown', (event) => {
+    const tab = event.target.closest('[role="tab"]')
+    if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+      return
+    event.preventDefault()
+    const index = tabs.indexOf(tab)
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? tabs.length - 1
+          : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) %
+            tabs.length
+    select(tabs[next].dataset.platform)
+    tabs[next].focus()
+  })
+  select(/Windows/.test(navigator.userAgent) ? 'windows' : 'mac')
+  tablist.hidden = false
 }
 
 function initializeHeaderElevation() {
@@ -172,6 +216,7 @@ mountProductDemo(requireElement('#product-demo'), {
   onSampleTheme: analyticsDeck.setTheme
 })
 initializeNavigation()
+initializePlatformTabs()
 initializeInstallationCopy()
 initializeHeaderElevation()
 initializeSectionReveals()

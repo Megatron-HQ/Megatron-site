@@ -156,16 +156,23 @@ components:
     textColor: '{colors.stage-text}'
     rounded: '{rounded.3xl}'
     padding: '{spacing.stage}'
-  terminal:
-    backgroundColor: '{colors.bone-raised}'
-    textColor: '{colors.carbon-ink}'
-    typography: '{typography.mono-data}'
+  install-panel:
+    backgroundColor: '{colors.graphite-stage}'
+    textColor: '{colors.stage-text}'
+    rounded: '{rounded.3xl}'
+    padding: '{spacing.stage}'
+  install-command:
+    backgroundColor: '{colors.carbon-ink}'
+    textColor: '{colors.stage-text}'
     rounded: '{rounded.lg}'
+    padding: '17px 18px 17px 20px'
   copy-button:
     backgroundColor: 'transparent'
-    textColor: '{colors.carbon-ink}'
+    textColor: '{colors.signal-lime}'
     rounded: '{rounded.sm}'
-    padding: '5px 8px'
+    padding: '5px 9px'
+  copy-button-hover:
+    backgroundColor: '{colors.graphite-hover}'
   site-header:
     backgroundColor: '#f6f6f0f2'
     rounded: '{rounded.xl}'
@@ -199,7 +206,7 @@ A warm, slightly green-cast neutral system with one high-voltage accent and a sm
 
 ### Primary
 
-- **Signal Lime** (#e4f222): The only loud color, inherited from the desktop app. It fills the primary CTAs (the hero button and the install section's download pair), the selected preview tab, status dots on Graphite, the lead segment of the context chart, `::selection`, and the skip link. On paper it is fill-only (1.14:1 against Bone Paper). On Graphite it can carry text and focus outlines (13.1:1).
+- **Signal Lime** (#e4f222): The only loud color, inherited from the desktop app. It fills the primary CTAs (the hero button and the Windows download), the selected preview and platform tabs, status dots on Graphite, the lead segment of the context chart, `::selection`, and the skip link. On paper it is fill-only (1.14:1 against Bone Paper). On Graphite it can carry text and focus outlines (13.1:1), as on the install panel's Copy button.
 - **Signal Lime Pressed** (#d4e019): Hover fill for lime buttons, paired with a #bdc817 border.
 - **Signal Olive** (#657100): Lime darkened enough to write with on paper (4.94:1 on Bone Paper). Used for the focus outline on paper, FAQ summary hover text, and the copy-status message. Two near-identical drift values (#647005, #617009) exist in the code; treat both as this token.
 - **Status Moss** (#899300): Status dots on paper (hero eyebrow, release status, scope caption), where full lime would disappear. #8b961e and #849226 are drift of the same role. The hero spark mark uses #c5d008, between moss and lime, as a one-off.
@@ -214,14 +221,14 @@ A warm, slightly green-cast neutral system with one high-voltage accent and a sm
 
 - **Bone Paper** (#f6f6f0): Page background, `theme-color`, and text on ink buttons.
 - **Bone Shade** (#efefe7): One tonal step down, for full-bleed bands (analytics). The inventory panel (#eeeee6) and footer (#edeee5) sit in the same tier.
-- **Bone Raised** (#fafaf6): The lighter panel tier (lint feature, run-from-source terminal).
-- **Bone Wash** (#eaece1): Hover fill for controls on paper: menu toggle, mobile nav rows, terminal copy button.
+- **Bone Raised** (#fafaf6): The lighter panel tier (lint feature).
+- **Bone Wash** (#eaece1): Hover fill for controls on paper: menu toggle and mobile nav rows.
 - **Hairline** (#ddded5): 1px rules, panel borders, FAQ dividers, the scrolled header border, and the preview viewport border. Slightly darker variants (#d9dccb, #d4d7c7, #dedfd2) appear on shaded bands and snippets.
 - **Carbon Ink** (#191a17): All primary text, ink buttons, and text on lime.
 - **Carbon Ink Hover** (#3b3d35): Hover fill for ink buttons.
 - **Muted Ink** (#66675e): Secondary body copy and nav links (5.28:1 on Bone Paper, 4.96:1 on Bone Shade).
 - **Caption Olive** (#62694e): Mono captions, line numbers, step labels, and the footer legal row.
-- **Graphite Stage** (#20211d): The product stage, the local-first section, and the expanded preview.
+- **Graphite Stage** (#20211d): The product stage, the local-first section, the expanded preview, and the install panel.
 - **Graphite Raised** (#25261f): The raised dark tier. The context visual uses it at #25271e.
 - **Graphite Hover** (#33352e): Hover fill for controls on Graphite.
 - **Graphite Rule** (#42463b): Dividers on Graphite. Bordered dark controls use #515449 or #555b45.
@@ -254,9 +261,9 @@ The context-composition chart uses a lime-to-graphite data ramp on Graphite Rais
 - **Title Small** (500, 19px, 1.5): Analytics list headings. Local principles use 18px and the after-install step uses 15px.
 - **Body Lead** (400, 16px, 1.6): The hero description, in Muted Ink.
 - **Body** (400, 14px, 1.75): Feature, section, and FAQ copy, in Muted Ink, held to 360–450px measures. FAQ answers stay at 14px within 450px at every width. Tight tablet columns step body down to 12–13px, never lower.
-- **Caption** (400, 12px, 1.6): Every short sentence that qualifies or supports something nearby: the stage's sample-data notice, the hero availability line, the card-stack note, platform requirements, copy status, lint messages, notes, after-install steps, and the footer row. Captions wrap rather than shrink.
+- **Caption** (400, 12px, 1.6): Every short sentence that qualifies or supports something nearby: the stage's sample-data notice, the hero availability line, the card-stack note, install notes, copy status, lint messages, notes, after-install steps, and the footer row. Captions wrap rather than shrink.
 - **Label** (400, 11px, 0.065em, uppercase): Eyebrows, section indexes ("01 / YOUR SETUP, ORGANIZED"), SAMPLE tags, "ILLUSTRATIVE FINDING", "LINE 13", "NEXT", card numbers and captions, uppercase in the markup and often led by a status dot. 11px is the floor; there are no smaller label variants.
-- **Mono Data** (400, 11px, 2.4): Terminal commands. Code snippets and inline code use the same 11px (2.25 line height in snippets).
+- **Mono Data** (400, 11px, 2.4): Code snippets and inline code (2.25 line height in snippets). The install command is the one exception at 13px/1.8 (12px below 768px), because it is the Mac call to action.
 - **Footer Mark** (500, clamp(70px, 12vw, 176px), 1, -0.085em): The giant MEGATRON wordmark that closes the page.
 
 Weights in use are 400 and 500. Weight 600 is reserved for the header wordmark.
@@ -307,7 +314,7 @@ Surfaces are flat. Depth comes from three things: tonal steps of paper (Bone Rai
 
 ## Shapes
 
-Corners are small and scale with the element: 2px on inline code, 3px on sample tags, 4px on tabs, the menu toggle, and copy controls, 5px on buttons and pills, 6px on panels, the terminal, and the preview viewport, 7px on the header and the context visual, 8px on icon tiles and the expanded preview, and 9px on the product stage. 9px is the ceiling. The only circles are status dots (7px, with a 5px variant). Context legend keys are 6px squares with a 1px radius.
+Corners are small and scale with the element: 2px on inline code, 3px on sample tags, 4px on tabs, the menu toggle, and copy controls, 5px on buttons and pills, 6px on panels, the install command, and the preview viewport, 7px on the header and the context visual, 8px on icon tiles and the expanded preview, and 9px on the product stage and the install panel. 9px is the ceiling. The only circles are status dots (7px, with a 5px variant). Context legend keys are 6px squares with a 1px radius.
 
 Borders are always 1px solid: Hairline on paper, and Graphite Rule or its control variants on Graphite.
 
@@ -326,7 +333,7 @@ Motion follows the same restraint. State changes are 180ms transitions on backgr
 ### Buttons
 
 - **Shape:** Gently squared corners (5px).
-- **Primary:** Signal Lime fill, Carbon Ink text, 14px/500, 50px minimum height, 14px 23px padding. The label sits left and a 19px icon chosen by the Glyph Convention (arrow-down on the hero CTA) is pushed right by a wide gap (30px, 49px in the hero). Used once per view. The install section's two platform downloads are one choice, so both take it: each carries the download icon and sits over its own 12px Muted Ink first-launch step (8px apart, 18px between options). The step opens with an 11px mono Caption Olive file line (".dmg · 136 MB", sizes as GitHub's release page shows them). Below 768px, a 12px/500 Carbon Ink note ("Desktop installers: download on your Mac or Windows PC.") sits above the pair; it is worded for any narrow window, not just phones. The options stack at every width in one column capped at 360px, so both buttons always match, whichever label is longer.
+- **Primary:** Signal Lime fill, Carbon Ink text, 14px/500, 50px minimum height, 14px 23px padding. The label sits left and a 19px icon chosen by the Glyph Convention (arrow-down on the hero CTA) is pushed right by a wide gap (30px, 49px in the hero). Used once per view. In the install panel it is the Windows download, which carries the download icon; the Mac tab's call to action is the brew command and its lime Copy outline, so the two never share a view.
 - **Ink:** Carbon Ink fill with Bone Paper text. Used for the "Get Megatron" button in the nav and footer.
 - **Small:** 38px tall, 9px 15px padding, 12px text, 18px gap.
 - **Hover / Focus:** Lime moves to Signal Lime Pressed with a #bdc817 border; ink moves to Carbon Ink Hover. Focus is a 2px Signal Olive outline at 5px offset on paper, and a lime outline on Graphite.
@@ -341,7 +348,7 @@ Motion follows the same restraint. State changes are 180ms transitions on backgr
 
 ### Cards / Containers
 
-- **Corner Style:** 6px for feature panels and the terminal, 7px for the context visual.
+- **Corner Style:** 6px for feature panels and the install command, 7px for the context visual.
 - **Background:** Feature panels use the Bone Shade tier or Bone Raised. Dark panels use Graphite Raised.
 - **Shadow Strategy:** None. See Elevation & Depth.
 - **Border:** 1px Hairline on paper panels. None on Graphite panels.
@@ -362,9 +369,16 @@ The signature component. A Graphite Stage frame (9px radius, 23px padding) holds
 
 A mono uppercase label led by a 7px status dot: lime on Graphite, Status Moss on paper. Section indexes ("01 / …") sit in Muted Ink above each section heading.
 
-### Terminal Block
+### Install Panel
 
-A paper panel: Bone Raised with a 1px Hairline border and a 6px radius, Carbon Ink commands. It sits beside the lime downloads as the alternative path, so it stays on paper and never outweighs them. The header row holds an 11px mono "OR RUN FROM SOURCE" label in Caption Olive and a copy button (1px Hairline border, 4px radius, 11px Carbon Ink text, Bone Wash hover, Signal Olive focus ring). Directly under the header, before the commands it gates, a 12px Muted Ink row lists the platform requirements, separated from the commands by a Hairline. It has no dot: requirements are neither live nor actionable. The button label changes to Copied, Selected, or Copy failed for 2.5 seconds, and a polite live region below the terminal reports the result in Signal Olive at 12px. The body is 11px mono at 2.4 line height with one block per command. When the terminal is too narrow, the clone line wraps after `git clone` and the URL continues under a 2ch hanging indent; nothing shrinks or hides behind a scroll.
+The install section's one panel, in Graphite Stage with a 9px radius and 23px padding (17px below 768px), so the real install path gets the same frame as the real app. It holds macOS and Windows tabs styled exactly like the preview tabs. The visitor's platform is preselected, and only Windows is detected: everyone else, phones included, starts on macOS. Without JavaScript the tabs stay hidden and both platforms stack, separated by a 1px Graphite Hover rule.
+
+Each platform opens with an 11px mono Stage Muted label: "INSTALL WITH HOMEBREW · APPLE SILICON" or "WINDOWS INSTALLER · 64-BIT". Naming Apple silicon in the label is how Intel Mac visitors find out, since browsers can't report the architecture.
+
+- **macOS:** the brew command sits in a Carbon Ink box (1px Graphite Hover border, 6px radius) at 13px mono, after a Stage Muted `$` drawn as generated content so it is never copied. A narrow box wraps after `--cask` and indents the tap name 2ch under the command. The tap name never breaks, and Copy drops below only when the two can't share a row. Copy is the lime-outlined button: 1px Signal Lime border, lime 11px text, 4px radius, Graphite Hover on hover. Its label changes to Copied, Selected, or Copy failed for 2.5 seconds. A polite live region below the panel reports the result in Signal Olive at 12px. Copying collapses whitespace, so a formatter line break never pastes as a newline. Under the box, a 12px note gives the upgrade command. A Graphite Hover rule separates the secondary .dmg text link, which carries the download icon and has the 11px mono Stage Muted size beside it. The Gatekeeper step follows and says Homebrew skips it.
+- **Windows:** the lime Primary download sits beside its 11px mono size. A 12px note follows: per-user install with no administrator prompt, self-updating, and the SmartScreen step.
+
+Notes are 12px Stage Muted (#b4b6aa). Inline code in them sits on Graphite Hover in Stage Text. Below 768px, a 12px/500 Carbon Ink note ("Desktop installers: download on your Mac or Windows PC.") sits above the panel; it is worded for any narrow window, not just phones.
 
 ### Lint Snippet
 
