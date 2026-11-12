@@ -139,6 +139,46 @@ async function verifyFolderNarrowing(app) {
   await app.getByRole('button', { name: 'Done', exact: true }).click()
 }
 
+const CHAT_GROUP = /^Claude app chats \(\d+\)$/
+const ESTIMATED_COST_CAVEAT =
+  'Part of a branched conversation was cleaned up by Claude Code; its cost is an estimate.'
+
+// Folderless Claude desktop chats fold into one row that opens by keyboard,
+// read as titles or start dates, and never show their scratch path.
+async function verifyClaudeAppChats(app) {
+  for (const panel of ['Cost', 'History']) {
+    await selectPanel(app, panel)
+    const group = app.getByRole('button', { name: CHAT_GROUP }).first()
+    await group.waitFor()
+    assert.equal(await group.getAttribute('aria-expanded'), 'false')
+    await group.focus()
+    await group.press('Enter')
+    assert.equal(await group.getAttribute('aria-expanded'), 'true')
+    await app
+      .getByText('Draft the Q4 planning memo', { exact: true })
+      .first()
+      .waitFor()
+    assert.equal(
+      await app
+        .locator('main')
+        .getByText(/scratch-/)
+        .count(),
+      0,
+      `${panel} must name chats, never their scratch folders.`
+    )
+    await group.press('Enter')
+  }
+}
+
+async function verifyEstimatedCost(page, baseUrl) {
+  const url = new URL(baseUrl)
+  url.searchParams.set('scenario', 'cost-estimated')
+  await page.goto(url.href)
+  const app = await preparePreview(page)
+  await selectPanel(app, 'Cost')
+  await app.getByText(ESTIMATED_COST_CAVEAT, { exact: true }).first().waitFor()
+}
+
 async function verifyResidentScale(app) {
   await selectPanel(app, 'Resident tax')
   await app
@@ -153,9 +193,11 @@ export async function verifyReleaseFeatures(page, baseUrl, directory) {
   await verifyStaleSkills(app)
   await verifyPluginContents(app, directory)
   await verifyResidentScale(app)
+  await verifyClaudeAppChats(app)
   await verifyFolderNarrowing(app)
   await page.getByRole('button', { name: 'Reset sample', exact: true }).click()
   await app
     .getByRole('button', { name: 'Search skills', exact: false })
     .waitFor()
+  await verifyEstimatedCost(page, baseUrl)
 }

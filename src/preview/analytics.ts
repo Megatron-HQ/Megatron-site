@@ -265,6 +265,7 @@ function costBreakdown(events: SampleEvent[]) {
     costUsd: sum(priced, (row) => row.costCents ?? 0) / 100,
     pricedSessionCount: sessionCount(priced),
     hasUnknownModelCost: false,
+    hasEstimatedCost: priced.some((row) => row.costEstimated === true),
     byModel: [
       ...grouped(
         priced,
@@ -306,6 +307,7 @@ function costWindow(state: SampleState, days: 1 | 7 | 30): CostWindow {
     totalCostUsd: breakdown.costUsd,
     pricedSessionCount: breakdown.pricedSessionCount,
     hasUnknownModelCost: breakdown.hasUnknownModelCost,
+    hasEstimatedCost: breakdown.hasEstimatedCost,
     byModel: breakdown.byModel,
     byProject: breakdown.byProject,
     byDay,

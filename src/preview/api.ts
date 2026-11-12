@@ -60,6 +60,15 @@ const INITIAL_UPDATE_STATE: UpdateState = {
 const UPDATES_UNAVAILABLE_NOTICE =
   'The browser preview never checks for updates. Installed builds ask github.com for new releases; turn that off in Settings → Updates.'
 
+// Simulates a fork lineage whose shared ancestor Claude Code pruned: the
+// totals stay the same, but the session's cost is now an estimate.
+function markNewestPricedSessionEstimated(state: SampleState): void {
+  const newest = state.events.findLast((event) => event.costCents !== null)
+  if (!newest) throw new RangeError('The sample has no priced session.')
+  for (const event of state.events)
+    if (event.sessionId === newest.sessionId) event.costEstimated = true
+}
+
 function projectName(path: string): string {
   return path.split('\\').at(-1) ?? path
 }
@@ -70,6 +79,7 @@ import {
   groupSampleUsageOverview,
   linkSampleUsageProjects,
   reconcileSampleUsageProjects,
+  sampleClaudeAppChat,
   sampleUsageProjectCatalog,
   unlinkSampleUsageProject
 } from './usage-projects.ts'
@@ -102,6 +112,8 @@ export function createDemoApi(options: DemoOptions = {}) {
     bareSlash: event.bareSlash,
     copies: 1
   }))
+  if (options.scenario === 'cost-estimated')
+    markNewestPricedSessionEstimated(initial)
   if (options.scenario === 'activity-partial')
     initial.promptCoverage = 'partial'
   if (options.scenario === 'activity-unavailable') {
@@ -159,7 +171,9 @@ export function createDemoApi(options: DemoOptions = {}) {
     options.onNotice?.(
       'Updated sample Usage project locations. Inventory ownership and folder access are unchanged.'
     )
-    return sampleUsageProjectCatalog(currentUsageLocations())
+    return sampleUsageProjectCatalog(currentUsageLocations(), (path) =>
+      sampleClaudeAppChat(state, path)
+    )
   }
   const copy = <T>(value: T): T => structuredClone(value)
   function startSampleDiscovery(): void {
@@ -806,7 +820,9 @@ export function createDemoApi(options: DemoOptions = {}) {
       checkScenario('usage-projects')
       if (options.scenario === 'usage-projects-loading')
         await new Promise(() => {})
-      return sampleUsageProjectCatalog(currentUsageLocations())
+      return sampleUsageProjectCatalog(currentUsageLocations(), (path) =>
+        sampleClaudeAppChat(state, path)
+      )
     },
     linkUsageProjects: (input) =>
       changeUsageProjects(() =>

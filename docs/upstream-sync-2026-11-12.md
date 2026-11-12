@@ -52,8 +52,7 @@ and the update check; `DESIGN.md` records the deck's entity colors.
 ## After v0.2.0 (unreleased)
 
 Reviewed `v0.2.0..7f58033` (app `main`, PRs #20–#22) the same day. None of it
-touches `src/renderer/src`, `src/shared`, or `src/preload`, so the vendored
-renderer stays at `v0.2.0` with identical hashes. A v0.2.1 release shipping
+touches `src/renderer/src`, `src/shared`, or `src/preload`, so they needed no renderer re-sync; the snapshot later moved to app `main` at `e1399c4` for the changes below. A v0.2.1 release shipping
 these PRs is planned but not started; when it is published, update the install
 panel's release block (label, both links, and the Windows size).
 
@@ -104,3 +103,28 @@ presses Escape until the dialog closes (at most three times). The comparison
 also finishes finite animations on both pages before each capture, because
 the hidden Electron window can stall 0.2.0's fades; looping animations are
 left running.
+
+## Fork lineage cost, Claude app chats, and entrance animations (app `main` at `e1399c4`)
+
+Synced the renderer to app `main` at `e1399c465299e020b12084076c1522cdc377e7b4` (`package.json` still 0.2.0; dependencies unchanged). Three merged changes alter what the preview shows:
+
+- `e664137` counts each fork lineage's cost once. `CostWindow`, `CostDay`,
+  and `CostHour` gain `hasEstimatedCost`, set when a lineage lost a shared
+  ancestor, and Cost and its detail dialog show a caveat. Sample events carry
+  an optional `costEstimated` mark derived into those flags; the
+  `?scenario=cost-estimated` preview marks the newest priced session, keeping
+  every total unchanged.
+- `06ea447` folds folderless Claude desktop chats into one "Claude app chats
+  (N)" row in every project ranking and the project timeline, named by title
+  or local start date and never by path, and keeps them out of grant
+  suggestions. Five sample chats under the sample home's
+  `AppData\Roaming\Claude\scratch-workspaces` (four titled, one with a `/`,
+  one untitled) take the rotation slots of five folders that own no skills, so
+  skill ownership, stale markers, and the 13-project timeline are unchanged.
+  The sample catalog marks each chat at read time with its title and earliest
+  recorded start, like the desktop.
+- PR #24 (merge `e1399c4`) gives History and Tokens the staggered chart entrance: Tokens trend bars rise from the baseline, contribution days pop in on a diagonal sweep (delays capped at 0.4s), and timeline fills sweep to their data shade, including chat rows revealed by the group chevron. Each skips animation under reduced motion, and the original-renderer comparison finishes finite animations before capturing.
+
+None of these changes is in a published release yet, so the landing page makes no
+claim about them; the interactive preview shows them because it runs the
+pinned renderer. Add copy when a release ships them.

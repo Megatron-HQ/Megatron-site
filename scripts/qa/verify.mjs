@@ -79,7 +79,7 @@ try {
   await verifyReleaseFeatures(page, baseUrl, join(directory, 'release'))
   await checkOverflow(page, 1440)
   results.push(
-    'Megatron 0.2.0: unsupported update state and automatic-check switch, welcome replay by keyboard, stale-skill markers and tooltip, plugin contents, Resident tax 200K scale caption, and folder narrowing passed.'
+    'Megatron 0.2.0: unsupported update state and automatic-check switch, welcome replay by keyboard, stale-skill markers and tooltip, plugin contents, Resident tax 200K scale caption, Claude app chats folded and opened by keyboard in Cost and History without scratch paths, the estimated-lineage cost caveat, and folder narrowing passed.'
   )
   results.push(
     'Actual renderer geometry, sorting and keyboard rows, files and tree resizing, activity dialogs, settings, install-specific plugin actions, all Usage panels, independent windows, reset, expansion and Escape passed.'

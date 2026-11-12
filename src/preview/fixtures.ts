@@ -35,20 +35,66 @@ export const NESTED_PROJECT = windowsPath(MONOREPO_PROJECT, 'tools', 'cli')
 export const EMPTY_PROJECT = windowsPath(SAMPLE_PARENT, 'empty-lab')
 export const ADDITIONAL_PARENT = windowsPath('C:', 'Clients')
 export const ADDITIONAL_PROJECT = windowsPath(ADDITIONAL_PARENT, 'docs-site')
+export const SAMPLE_HOME = windowsPath('C:', 'Users', 'demo')
+// A folderless Claude desktop chat runs in
+// <Claude app data>/scratch-workspaces/<id>/<id>/scratch-YYYY-MM-DD-<hex>.
+// The app folds these into one "Claude app chats" row and names each by its
+// title, else its start date; the path is never shown.
+const CLAUDE_APP_SCRATCH_ROOT = windowsPath(
+  SAMPLE_HOME,
+  'AppData',
+  'Roaming',
+  'Claude',
+  'scratch-workspaces'
+)
+function claudeAppChatPath(workspace: string, folder: string): string {
+  return windowsPath(CLAUDE_APP_SCRATCH_ROOT, workspace, workspace, folder)
+}
+export const SAMPLE_CLAUDE_APP_CHATS: readonly {
+  path: string
+  title: string | null
+}[] = [
+  {
+    path: claudeAppChatPath('a41c09', 'scratch-2026-09-22-3f8a1c'),
+    title: 'Draft the Q4 planning memo'
+  },
+  {
+    path: claudeAppChatPath('7be2d4', 'scratch-2026-10-01-9c04e7'),
+    title: 'Explain this stack trace'
+  },
+  {
+    path: claudeAppChatPath('c90f31', 'scratch-2026-10-06-0f5802'),
+    title: null
+  },
+  {
+    path: claudeAppChatPath('5d7a28', 'scratch-2026-10-10-b1d9a4'),
+    title: 'REST / GraphQL trade-offs'
+  },
+  {
+    path: claudeAppChatPath('e3b615', 'scratch-2026-10-14-6a2e3f'),
+    title: 'Summarize the meeting notes'
+  }
+]
+// Chats take the slots of folders that own no skills, so the rotation keeps
+// its length and every skill-owning project keeps the same sessions.
+const [CHAT_A, CHAT_B, CHAT_C, CHAT_D, CHAT_E] = SAMPLE_CLAUDE_APP_CHATS.map(
+  (chat) => chat.path
+)
 const SAMPLE_ACTIVITY_PROJECTS = [
   SAMPLE_PROJECT,
   API_PROJECT,
   MONOREPO_PROJECT,
-  ...['design-system', 'mobile-app', 'cli', 'dashboard', 'research'].map(
-    (name) => windowsPath(SAMPLE_PARENT, name)
-  ),
+  windowsPath(SAMPLE_PARENT, 'design-system'),
+  CHAT_A,
+  CHAT_B,
+  CHAT_C,
+  CHAT_D,
   ADDITIONAL_PROJECT,
-  windowsPath(SAMPLE_PARENT, 'library'),
+  CHAT_E,
   ARCHIVED_PROJECT,
   PREVIOUS_NAME_PROJECT,
   SAMPLE_PARENT
 ]
-export const SAMPLE_HOME = windowsPath('C:', 'Users', 'demo')
 const USER_CLAUDE_ROOT = windowsPath(SAMPLE_HOME, '.claude')
 const PLUGIN_CACHE_ROOT = windowsPath(USER_CLAUDE_ROOT, 'plugins', 'cache')
 const TOKEN_ONLY_SAMPLE_OUTPUT = 9000
@@ -205,6 +251,9 @@ export interface SampleEvent {
   outputTokens: number
   tokens: TokenCounts | null
   costCents: number | null
+  // Set when this session's fork lineage lost a shared ancestor, so its cost
+  // is the head's own counter rather than the exact branch sum.
+  costEstimated?: boolean
 }
 
 export interface SampleState {

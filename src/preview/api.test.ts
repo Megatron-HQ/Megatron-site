@@ -712,6 +712,28 @@ test('granting a parent absorbs its separately granted repository, so revoking t
   )
 })
 
+test('cost windows flag an estimated lineage only where its session contributes', async () => {
+  const exact = await (await createDemo()).api.getUsageOverview()
+  assert.equal(exact.cost?.last30d.hasEstimatedCost, false)
+  assert.ok(exact.cost?.last30d.byDay.every((day) => !day.hasEstimatedCost))
+
+  const { createDemoApi } = await import('./api.ts')
+  const estimated = await createDemoApi({
+    actionDelayMs: 0,
+    scenario: 'cost-estimated'
+  }).api.getUsageOverview()
+  const window = estimated.cost!.last30d
+  assert.equal(window.hasEstimatedCost, true)
+  const flaggedDays = window.byDay.filter((day) => day.hasEstimatedCost)
+  assert.ok(flaggedDays.length >= 1 && flaggedDays.length < window.byDay.length)
+  assert.ok(
+    estimated.cost!.last24h.byHourChronological.some(
+      (hour) => hour.hasEstimatedCost
+    )
+  )
+  assert.equal(window.totalCostUsd, exact.cost!.last30d.totalCostUsd)
+})
+
 test('the preview reports version 0.2.0 and a sample home outside the sample projects', async () => {
   const { api } = await createDemo()
   assert.equal(api.getVersion(), '0.2.0')

@@ -14,12 +14,14 @@ import {
   groupProjectMonths,
   groupProjectSpending,
   groupProjectTokens,
+  isClaudeAppScratchPath,
   primaryUsageProject,
   usageProjectOwner,
+  type UsageProject,
   type UsageProjectCatalog,
   type UsageProjectLocation
 } from '../../vendor/megatron/src/shared/usage-projects.ts'
-import type { SampleState } from './fixtures.ts'
+import { SAMPLE_CLAUDE_APP_CHATS, type SampleState } from './fixtures.ts'
 
 const MAXIMUM_LOCATION_ID_LENGTH = 128
 
@@ -99,8 +101,38 @@ function pathParts(path: string): string[] {
   return path.replace(/\\/g, '/').replace(/\/+$/, '').split('/')
 }
 
+type ClaudeAppChat = NonNullable<UsageProject['chat']>
+
+// Like the desktop, a chat is marked at read time from its title and its
+// earliest recorded start; neither is stored with the location.
+export function sampleClaudeAppChat(
+  state: SampleState,
+  path: string
+): ClaudeAppChat | null {
+  if (!isClaudeAppScratchPath(path)) return null
+  const key = normalizeProjectPath(path)
+  const matches = (project: string) => normalizeProjectPath(project) === key
+  const starts = [
+    ...state.events.filter((event) => matches(event.project)),
+    ...(state.prompts ?? []).filter((prompt) => matches(prompt.project))
+  ]
+    .map((record) => record.at)
+    .concat(
+      state.history
+        .filter((day) => day.byProject.some((row) => matches(row.project)))
+        .map((day) => day.startAt)
+    )
+    .sort()
+  return {
+    title:
+      SAMPLE_CLAUDE_APP_CHATS.find((chat) => matches(chat.path))?.title ?? null,
+    startedAt: starts[0] ?? null
+  }
+}
+
 export function sampleUsageProjectCatalog(
-  locations: UsageProjectLocation[]
+  locations: UsageProjectLocation[],
+  chatOf: (path: string) => ClaudeAppChat | null = () => null
 ): UsageProjectCatalog {
   const roots = locations.filter((location) => !location.linkedTo)
   const labels = roots.map((location) => ({
@@ -129,6 +161,7 @@ export function sampleUsageProjectCatalog(
     locations,
     projects: labels
       .map(({ location, parts, depth }) => ({
+        ...(chatOf(location.path) ? { chat: chatOf(location.path)! } : {}),
         id: location.id,
         path: location.path,
         label: parts.slice(-depth).join('/'),
