@@ -79,7 +79,12 @@ export async function verifySnapshot(root = SNAPSHOT_ROOT) {
   return manifest
 }
 
-function applyBrowserPatch(path, contents) {
+const INVENTORY_FOCUS_SEAM =
+  '    if (containerRef.current?.contains(document.activeElement)) return'
+const INACTIVE_FRAME_GUARD =
+  '    if (window.parent !== window && !document.hasFocus()) return'
+
+export function applyBrowserPatch(path, contents) {
   if (!PATCHES.some((patch) => patch.path === path)) return contents
   let text = contents.toString('utf8').replace(/\r\n/g, '\n')
   const replace = (needle, replacement) => {
@@ -104,9 +109,11 @@ function applyBrowserPatch(path, contents) {
       '  const nextToastId = useRef(0)\n  usePreviewNavigation(setSection, setUsagePanel)'
     )
   } else
+    // The guard sits after the active-element check so a pending Back focus
+    // restore stays pending until the frame is active.
     replace(
-      '    if (!hasRows) return',
-      '    if (!hasRows) return\n    if (window.parent !== window && !document.hasFocus()) return'
+      INVENTORY_FOCUS_SEAM,
+      `${INVENTORY_FOCUS_SEAM}\n${INACTIVE_FRAME_GUARD}`
     )
   return Buffer.from(text)
 }

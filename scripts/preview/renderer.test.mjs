@@ -42,3 +42,40 @@ test('a renderer snapshot detects changed and unexpected files without a sibling
       .files['src/view.tsx']
   )
 })
+
+const INVENTORY_FOCUS_SOURCE = `  const focusShownRows = useEffectEvent(() => {
+    if (containerRef.current?.contains(document.activeElement)) return
+    focusRow(0)
+  })
+`
+
+for (const view of ['SkillInventory', 'PluginInventory']) {
+  test(`${view} skips first-row focus while an embedded frame is inactive`, async () => {
+    const { applyBrowserPatch } = await tooling()
+    const patched = applyBrowserPatch(
+      `src/renderer/src/views/${view}.tsx`,
+      Buffer.from(INVENTORY_FOCUS_SOURCE)
+    ).toString('utf8')
+    const lines = patched.split('\n').map((line) => line.trim())
+    const activeElementGuard = lines.indexOf(
+      'if (containerRef.current?.contains(document.activeElement)) return'
+    )
+    assert.equal(
+      lines[activeElementGuard + 1],
+      'if (window.parent !== window && !document.hasFocus()) return'
+    )
+    assert.ok(activeElementGuard < lines.indexOf('focusRow(0)'))
+  })
+}
+
+test('an inventory without the focus seam stops the import', async () => {
+  const { applyBrowserPatch } = await tooling()
+  assert.throws(
+    () =>
+      applyBrowserPatch(
+        'src/renderer/src/views/SkillInventory.tsx',
+        Buffer.from('    if (!hasRows) return\n')
+      ),
+    /integration seam changed/i
+  )
+})
