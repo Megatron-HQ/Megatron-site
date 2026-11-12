@@ -49,6 +49,22 @@ onto the redesigned page. `PRODUCT.md` now records v0.2.0, the published
 Homebrew tap (0.2.0 as of November 12), the welcome, non-overlapping grants,
 and the update check; `DESIGN.md` records the deck's entity colors.
 
+## After v0.2.0 (unreleased)
+
+Reviewed `v0.2.0..7f58033` (app `main`, PRs #20–#22) the same day. None of it
+touches `src/renderer/src`, `src/shared`, or `src/preload`, so the vendored
+renderer stays at `v0.2.0` with identical hashes. A v0.2.1 release shipping
+these PRs is planned but not started; when it is published, update the install
+panel's release block (label, both links, and the Windows size).
+
+| Change                                                                 | Website treatment                                                                                                                               |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Window titled Megatron instead of Electron (`src/renderer/index.html`) | Not part of the snapshot; the preview page is already titled "Megatron interactive preview".                                                    |
+| One running copy per data folder; a second launch focuses it           | Not released, so not advertised.                                                                                                                |
+| Windows ACL step fails open and runs once per process                  | Main-process hardening, not released; the site makes no ACL claim.                                                                              |
+| Only the target platform's SQLite runtime ships                        | Not released. The next release's Windows installer drops from 114.6 MB to about 107 MB: update the install panel's rounded size with the links. |
+| Retry cleanup of a locked CLI test fixture on Windows (PR #22)         | Tests only.                                                                                                                                     |
+
 ## Upstream issue
 
 `getPluginDetail` returns components for every install path, and PluginDetail
@@ -78,3 +94,13 @@ The worktree's Electron binary was copied from the main checkout's identical
 43.8.7 install rather than downloaded. The comparison checks the original
 renderer with synthetic browser responses, not native ingestion, updates,
 permissions, or macOS behavior.
+
+After rebasing onto the install panel redesign, production QA, the full
+responsive sweep (245 captures, no overflow or browser errors), and the
+original-renderer comparison (86 captures, zero differing pixels) were rerun
+and passed. CI's macOS browser job then failed once: a History day's tooltip,
+still fading out, took the first Escape before the day dialog did. QA now
+presses Escape until the dialog closes (at most three times). The comparison
+also finishes finite animations on both pages before each capture, because
+the hidden Electron window can stall 0.2.0's fades; looping animations are
+left running.

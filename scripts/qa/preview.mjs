@@ -31,6 +31,24 @@ export async function simulateInventoryChange(page, action) {
   )
 }
 
+const ESCAPE_ATTEMPTS = 3
+const ESCAPE_SETTLE_MS = 1500
+
+// Since Megatron 0.2.0 a tooltip fades out, so it can still be the topmost
+// dismissable layer when Escape arrives; Radix then closes the tooltip first.
+// Escape is pressed until the dialog closes, never more than three times.
+export async function dismissWithEscape(page, dialog) {
+  for (let attempt = 1; attempt <= ESCAPE_ATTEMPTS; attempt++) {
+    await page.keyboard.press('Escape')
+    try {
+      await dialog.waitFor({ state: 'hidden', timeout: ESCAPE_SETTLE_MS })
+      return
+    } catch (error) {
+      if (attempt === ESCAPE_ATTEMPTS) throw error
+    }
+  }
+}
+
 export function previewFrame(page) {
   return page.frameLocator('[data-preview-frame]')
 }
@@ -386,8 +404,7 @@ export async function verifyUsageHistory(page, app) {
     .getByRole('dialog')
     .getByText(/estimated tokens processed/)
     .waitFor()
-  await page.keyboard.press('Escape')
-  await app.getByRole('dialog').waitFor({ state: 'hidden' })
+  await dismissWithEscape(page, app.getByRole('dialog'))
   assert.equal(await calendar.locator('button').count(), 366)
   assert.ok(
     (await calendar.locator('button[aria-disabled="true"]').count()) > 0

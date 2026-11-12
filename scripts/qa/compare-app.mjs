@@ -484,6 +484,15 @@ try {
         })
         await page.mouse.move(0, 0)
         await page.waitForTimeout(250)
+        // 0.2.0 fades screens and data in. The hidden Electron window can stall
+        // its animation timeline, so finite animations are finished on both
+        // pages and every capture shows the landed state; loops are left alone.
+        await page.evaluate(() => {
+          for (const animation of document.getAnimations())
+            if (animation.effect?.getComputedTiming().endTime !== Infinity)
+              animation.finish()
+        })
+        await page.waitForTimeout(50)
       }
       const label = `${name}-${size.width}`
       const nativeBytes = await electron.evaluate(async ({ BrowserWindow }) => {
