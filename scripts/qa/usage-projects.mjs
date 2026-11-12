@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { expectRowCount } from './interactions.mjs'
 import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -55,7 +56,7 @@ export async function verifyUsageProjects(page, baseUrl, directory) {
         true
       )
       if (section === 'Plugins')
-        assert.equal(await app.locator('tbody tr').count(), 1)
+        await expectRowCount(app.locator('tbody tr'), 1)
       await page.locator('[data-preview-host]').screenshot({
         path: join(directory, `pending-${section}-${width}.png`)
       })

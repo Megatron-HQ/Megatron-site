@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict'
-import { waitForFocus, focusForTooltip } from './interactions.mjs'
+import {
+  waitForFocus,
+  focusForTooltip,
+  expectRowCount
+} from './interactions.mjs'
 
 export async function simulateInventoryChange(page, action) {
   await page.evaluate(
@@ -150,7 +154,7 @@ async function verifyResidentContext(page, app) {
 
 export async function verifyPreview(page) {
   const app = await preparePreview(page)
-  assert.equal(await app.locator('tbody tr').count(), 20)
+  await expectRowCount(app.locator('tbody tr'), 20)
   const geometry = await app.locator('body').evaluate(() => {
     const rail = document.querySelector('button[aria-label="Skills"]')
       .parentElement.parentElement
@@ -283,7 +287,7 @@ export async function verifyPreview(page) {
   await app
     .getByRole('button', { name: 'Search skills', exact: false })
     .waitFor()
-  assert.equal(await app.locator('tbody tr').count(), 20)
+  await expectRowCount(app.locator('tbody tr'), 20)
   await page
     .getByRole('button', { name: 'Expand preview', exact: true })
     .click()

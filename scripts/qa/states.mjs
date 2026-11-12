@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { expectRowCount } from './interactions.mjs'
 import {
   preparePreview,
   previewFrame,
@@ -39,13 +40,13 @@ export async function verifyPreviewStates(page, baseUrl) {
       .getByRole('button', { name: 'Expand project list', exact: true })
       .click()
   }
-  assert.equal(
-    await app.locator('tbody tr').count(),
+  await expectRowCount(
+    app.locator('tbody tr'),
     20,
     'Chevron expansion must preserve the current filter.'
   )
   await app.getByRole('button', { name: 'Projects', exact: true }).click()
-  assert.equal(await app.locator('tbody tr').count(), 6)
+  await expectRowCount(app.locator('tbody tr'), 6)
   // Clicking an already-selected Projects button toggles folder list expansion (commit 3a2439c)
   await app.getByRole('button', { name: 'Projects', exact: true }).click()
   assert.equal(
@@ -64,7 +65,7 @@ export async function verifyPreviewStates(page, baseUrl) {
     'Clicking again must re-expand the list.'
   )
   await app.getByRole('button', { name: 'Global', exact: true }).click()
-  assert.equal(await app.locator('tbody tr').count(), 9)
+  await expectRowCount(app.locator('tbody tr'), 9)
   assert.equal(
     await app.locator('thead').getByText('Source', { exact: true }).count(),
     0
@@ -79,18 +80,18 @@ export async function verifyPreviewStates(page, baseUrl) {
       .locator('thead')
       .getByRole('button', { name: column, exact: true })
       .click()
-    assert.equal(await app.locator('tbody tr').count(), 20)
+    await expectRowCount(app.locator('tbody tr'), 20)
   }
   await app.getByRole('button', { name: /EST\. tokens/ }).click()
   await app
     .getByRole('button', { name: 'View disabled skills', exact: true })
     .click()
-  assert.equal(await app.locator('tbody tr').count(), 2)
+  await expectRowCount(app.locator('tbody tr'), 2)
   await app.getByRole('button', { name: /EST\. tokens/ }).click()
   await app
     .getByRole('button', { name: 'View user-invocable skills', exact: true })
     .click()
-  assert.equal(await app.locator('tbody tr').count(), 1)
+  await expectRowCount(app.locator('tbody tr'), 1)
 
   await app.getByRole('button', { name: 'Plugins', exact: true }).click()
   for (const repository of ['User', 'web-app']) {
@@ -109,8 +110,8 @@ export async function verifyPreviewStates(page, baseUrl) {
   await selectSkill(app, 'security-review')
   await app.getByText('No description provided.', { exact: true }).waitFor()
   await app.getByRole('button', { name: 'Back to skills', exact: true }).click()
-  assert.equal(
-    await app.locator('tbody tr').count(),
+  await expectRowCount(
+    app.locator('tbody tr'),
     20,
     'Palette navigation must clear an incompatible source filter.'
   )
@@ -490,8 +491,8 @@ export async function verifyPreviewStates(page, baseUrl) {
   await freshApp
     .getByRole('button', { name: 'All Skills', exact: true })
     .click()
-  assert.equal(
-    await freshApp.locator('tbody tr').count(),
+  await expectRowCount(
+    freshApp.locator('tbody tr'),
     20,
     'Revoking a parent grant that absorbed a repository must leave the original inventory intact.'
   )

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { expectRowCount } from './interactions.mjs'
 import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -35,13 +36,13 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
     await page.goto(baseUrl)
     const app = await preparePreview(page)
     await page.locator('#product').scrollIntoViewIfNeeded()
-    assert.equal(await app.locator('tbody tr').count(), 20)
+    await expectRowCount(app.locator('tbody tr'), 20)
     await simulateInventoryChange(page, 'add-skill')
     await app
       .locator('tbody tr')
       .filter({ hasText: 'release-readiness' })
       .waitFor()
-    assert.equal(await app.locator('tbody tr').count(), 21)
+    await expectRowCount(app.locator('tbody tr'), 21)
     await openSkill(app, 'deploy')
     await simulateInventoryChange(page, 'edit-skill')
     await app
