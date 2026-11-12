@@ -1,3 +1,5 @@
+// Must stay ahead of every app renderer import: it installs `window.api`.
+import { clock, demo, samplePanel } from './runtime.ts'
 import '../../vendor/megatron/src/renderer/src/assets/main.css'
 import './styles.css'
 import {
@@ -12,40 +14,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '../../vendor/megatron/src/renderer/src/App'
 import { createProjectLabelResolver } from '../../vendor/megatron/src/renderer/src/lib/project-tree'
 import { ProjectLabelContext } from '../../vendor/megatron/src/renderer/src/lib/use-project-label'
-import { createDemoApi } from './api.ts'
-import {
-  parsePreviewCommand,
-  parsePreviewThemeMessage,
-  type InventoryChange
-} from './protocol.ts'
+import { parsePreviewThemeMessage, type InventoryChange } from './protocol.ts'
 import { sendPreviewMessage } from './navigation.ts'
-import { parseSamplePanel, UsageSample } from './usage-sample.tsx'
+import { UsageSample } from './usage-sample.tsx'
 
-const parameters = new URLSearchParams(window.location.search)
-const requestedSample = parameters.get('sample')
-const samplePanel =
-  requestedSample === null ? null : parseSamplePanel(requestedSample)
-const initial = parsePreviewCommand({
-  type: 'megatron-preview:navigate',
-  section: parameters.get('section') ?? 'skills',
-  ...(parameters.has('panel') ? { panel: parameters.get('panel') } : {})
-})
-const requestedClock = parameters.get('clock')
-const clock = requestedClock ? new Date(requestedClock) : new Date()
-if (!Number.isFinite(clock.getTime()))
-  throw new RangeError('Invalid sample clock.')
-const demo = createDemoApi({
-  now: clock,
-  initialSection:
-    initial?.type === 'megatron-preview:navigate' ? initial.section : 'skills',
-  platform: parameters.get('platform') === 'darwin' ? 'darwin' : 'win32',
-  scenario: parameters.get('scenario') ?? undefined,
-  onSectionChange: (section) =>
-    sendPreviewMessage({ type: 'megatron-preview:section', section }),
-  onNotice: (message) =>
-    sendPreviewMessage({ type: 'megatron-preview:notice', message })
-})
-window.api = demo.api
 const queryClient = new QueryClient()
 const resolveSampleProjectLabel = createProjectLabelResolver(new Map())
 

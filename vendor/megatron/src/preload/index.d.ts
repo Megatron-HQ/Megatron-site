@@ -2,6 +2,7 @@ import type { UsageProjectCatalog } from '../shared/usage-projects'
 import type {
   AllowedPathRow,
   AppSection,
+  GrantChangeResult,
   OpenSkillMetaResult,
   OpenSkillResult,
   PluginActionInput,
@@ -23,7 +24,8 @@ import type {
   ScanActivity,
   ScanFinished,
   ScanProgress,
-  ScanSummary
+  ScanSummary,
+  UpdateState
 } from '../shared/ipc'
 
 interface Api {
@@ -36,7 +38,8 @@ interface Api {
   setTheme: (theme: ThemePreference) => Promise<void>
   listAllowedPaths: () => Promise<AllowedPathRow[]>
   listProjects: () => Promise<ProjectFolder[]>
-  pickAndAddFolders: () => Promise<AllowedPathRow[]>
+  pickAndAddFolders: () => Promise<GrantChangeResult>
+  narrowAllowedPath: (path: string) => Promise<GrantChangeResult>
   revokeAllowedPath: (path: string) => Promise<AllowedPathRow[]>
   openExternal: (url: string) => Promise<void>
   listPlugins: () => Promise<PluginRow[]>
@@ -56,13 +59,22 @@ interface Api {
   getRecordedRequest: () => Promise<RecordedRequest | null>
   getInitialSection: () => AppSection
   setLastSection: (section: AppSection) => Promise<void>
+  getInitialOnboarding: () => boolean
+  setOnboardingDone: () => Promise<void>
   rescan: () => Promise<ScanSummary>
   revealDataFolder: () => Promise<void>
   getVersion: () => string
+  getHomePath: () => string
+  getUpdateState: () => Promise<UpdateState>
+  checkForUpdates: () => Promise<void>
+  installUpdate: () => Promise<void>
+  setAutoUpdateCheck: (enabled: boolean) => Promise<void>
+  openUpdateDownload: () => Promise<void>
   onPluginUpdateProgress: (callback: (progress: PluginUpdateProgress) => void) => () => void
   onScanStarted: (callback: (activity: ScanActivity) => void) => () => void
   onScanComplete: (callback: (finished: ScanFinished) => void) => () => void
   onScanProgress: (callback: (progress: ScanProgress) => void) => () => void
+  onUpdateState: (callback: (state: UpdateState) => void) => () => void
 }
 
 declare global {

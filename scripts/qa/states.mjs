@@ -93,7 +93,7 @@ export async function verifyPreviewStates(page, baseUrl) {
   assert.equal(await app.locator('tbody tr').count(), 1)
 
   await app.getByRole('button', { name: 'Plugins', exact: true }).click()
-  for (const repository of ['User', 'Dev/web-app']) {
+  for (const repository of ['User', 'web-app']) {
     const row = app
       .locator('tbody tr')
       .filter({ hasText: 'frontend' })
@@ -152,7 +152,7 @@ export async function verifyPreviewStates(page, baseUrl) {
   await app.getByRole('button', { name: 'Add Folder...', exact: true }).click()
   await app
     .getByRole('button', {
-      name: 'Revoke access to Clients/docs-site',
+      name: 'Revoke access to docs-site',
       exact: true
     })
     .waitFor()
@@ -409,13 +409,16 @@ export async function verifyPreviewStates(page, baseUrl) {
     await missingApp.getByText('Scan needs attention', { exact: true }).count(),
     0
   )
+  // Since 0.2.0 Settings is taller (Updates), so its Close button can sit above
+  // the page viewport while the host page is scrolled into the frame.
+  await page.locator('[data-preview-frame]').scrollIntoViewIfNeeded()
   await missingApp.getByRole('button', { name: 'Close', exact: true }).click()
   await missingApp.getByRole('button', { name: 'Plugins', exact: true }).click()
   await missingApp
     .locator('tbody tr')
     .filter({ hasText: 'frontend' })
     .filter({ hasText: 'team-tools' })
-    .filter({ hasText: 'Dev/web-app' })
+    .filter({ hasText: 'web-app' })
     .click()
   await missingApp
     .getByText(
@@ -450,24 +453,39 @@ export async function verifyPreviewStates(page, baseUrl) {
   const freshApp = await preparePreview(page)
   await freshApp.getByRole('button', { name: 'Settings', exact: true }).click()
   await freshApp.getByRole('button', { name: 'Manage…', exact: true }).click()
-  await freshApp
-    .getByRole('button', { name: 'Add Folder...', exact: true })
-    .click()
-  await freshApp
-    .getByRole('button', {
-      name: 'Revoke access to Clients/docs-site',
-      exact: true
-    })
-    .waitFor()
-  await freshApp
-    .getByRole('button', { name: 'Add Folder...', exact: true })
-    .click()
-  const revokeParent = freshApp.getByRole('button', {
-    name: 'Revoke access to Clients',
+  const addFolder = freshApp.getByRole('button', {
+    name: 'Add Folder...',
     exact: true
   })
-  await revokeParent.click()
-  await revokeParent.waitFor({ state: 'hidden' })
+  const revokeButton = (name) =>
+    freshApp.getByRole('button', {
+      name: `Revoke access to ${name}`,
+      exact: true
+    })
+  await addFolder.click()
+  await revokeButton('docs-site').waitFor()
+  await addFolder.click()
+  await revokeButton('Clients').waitFor()
+  await revokeButton('docs-site').waitFor({ state: 'hidden' })
+  await addFolder.click()
+  await freshApp
+    .getByRole('status')
+    .getByText('docs-site is already included in Clients.', { exact: true })
+    .waitFor()
+  await revokeButton('Clients').click()
+  const confirmRevoke = freshApp.getByRole('group', {
+    name: 'Revoke Clients',
+    exact: true
+  })
+  await confirmRevoke
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click()
+  await revokeButton('Clients').waitFor()
+  await revokeButton('Clients').click()
+  await confirmRevoke
+    .getByRole('button', { name: 'Revoke', exact: true })
+    .click()
+  await revokeButton('Clients').waitFor({ state: 'hidden' })
   await freshApp.getByRole('button', { name: 'Done', exact: true }).click()
   await freshApp
     .getByRole('button', { name: 'All Skills', exact: true })
@@ -475,7 +493,7 @@ export async function verifyPreviewStates(page, baseUrl) {
   assert.equal(
     await freshApp.locator('tbody tr').count(),
     20,
-    'Removing an overlapping parent grant must preserve independently granted inventory.'
+    'Revoking a parent grant that absorbed a repository must leave the original inventory intact.'
   )
   await freshApp
     .getByRole('button', { name: 'Expand Dev repositories', exact: true })
@@ -483,10 +501,12 @@ export async function verifyPreviewStates(page, baseUrl) {
   await freshApp
     .getByRole('button', { name: 'Expand monorepo repositories', exact: true })
     .click()
-  await freshApp.getByRole('button', { name: /^tools\/cli/ }).click()
+  // Since 0.2.0 the tree mirrors folders: a nested repository with no skills
+  // sits in its parent's collapsed group and is labeled by name.
   await freshApp
-    .getByText('No skills found in Dev/monorepo/tools/cli', {
-      exact: true
-    })
-    .waitFor()
+    .getByRole('button', { name: 'Expand 1 without skills', exact: true })
+    .first()
+    .click()
+  await freshApp.getByRole('button', { name: /^tools\/cli/ }).click()
+  await freshApp.getByText('No skills found in cli', { exact: true }).waitFor()
 }

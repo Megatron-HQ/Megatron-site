@@ -2,6 +2,7 @@ import { ArrowUpCircle, CircleCheck, CircleHelp, Power, ShieldCheck, Store } fro
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useProjectLabel } from '@/lib/use-project-label'
+import { ProjectName } from '@/components/ProjectName'
 import { cn } from '@/lib/utils'
 import type { PluginScope } from '../../../shared/ipc'
 import { MISSING_PROJECT_STATUS_TOOLTIP } from '../../../shared/missing-project'
@@ -26,11 +27,11 @@ export function PluginUpdateBadge({
       <TooltipTrigger asChild>
         <div
           className={cn(
-            'inline-flex cursor-default items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning select-none shrink-0',
+            'inline-flex cursor-default items-center gap-1 rounded-full border border-info/30 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium text-info select-none shrink-0',
             className
           )}
         >
-          <ArrowUpCircle className="size-2.5 shrink-0 text-warning" />
+          <ArrowUpCircle className="size-2.5 shrink-0 text-info" />
           <span>Update</span>
         </div>
       </TooltipTrigger>
@@ -111,11 +112,7 @@ export function PluginStatusBadge({
 }): React.JSX.Element {
   const disabled = disabledReason !== null
   const Icon = !known ? CircleHelp : disabled ? Power : CircleCheck
-  const iconColor = !known
-    ? 'text-muted-foreground'
-    : disabled
-      ? 'text-disabled-flag'
-      : 'text-success'
+  const iconColor = !known ? 'text-muted-foreground' : disabled ? 'text-dormant' : 'text-success'
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -169,7 +166,7 @@ export function PluginScopeLabel({
           {projectName !== null && (
             <>
               <span aria-hidden="true">·</span>
-              <span className="truncate text-foreground">{projectName}</span>
+              <ProjectName label={projectName} className="text-foreground" />
             </>
           )}
         </span>

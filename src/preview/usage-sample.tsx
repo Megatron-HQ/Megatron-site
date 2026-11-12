@@ -9,23 +9,13 @@ import type {
   CostWindowKey,
   SkillStatsWindowKey
 } from '../../vendor/megatron/src/shared/ipc'
-import {
-  parsePreviewCommand,
-  USAGE_PANELS,
-  type PreviewPanel
-} from './protocol.ts'
+import { parsePreviewCommand, type PreviewPanel } from './protocol.ts'
 import { forwardUnhandledEscape, sendPreviewMessage } from './navigation.ts'
 
 // Matches the app's own Usage defaults so a fresh sample opens on the same window.
 const DEFAULT_WINDOW = '30d'
 const SKILL_DETAIL_NOTICE =
   'Skill details live in the full Megatron preview at the top of the page.'
-
-export function parseSamplePanel(value: string): PreviewPanel {
-  if (!USAGE_PANELS.includes(value as PreviewPanel))
-    throw new RangeError(`Unknown sample view: ${value}`)
-  return value as PreviewPanel
-}
 
 function UsagePanelSample({
   panel,

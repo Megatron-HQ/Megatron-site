@@ -250,10 +250,11 @@ async function verifyResidentTaxView(page) {
   )
   assert.equal(await sample.getByRole('img', { name: /deferred/i }).count(), 0)
   for (const [category, tokens, percent, color] of [
-    ['Skills', '10k', '1.0%', 'rgb(128, 100, 181)'],
-    ['MCP server instructions', '2k', '0.2%', 'rgb(66, 125, 179)'],
-    ['Memory files', '1.5k', '0.1%', 'rgb(50, 135, 121)'],
-    ['Custom agents', '600', '<0.1%', 'rgb(181, 104, 135)']
+    // Megatron 0.2.0 light entity identity colors.
+    ['Skills', '10k', '1.0%', 'rgb(107, 80, 194)'],
+    ['MCP server instructions', '2k', '0.2%', 'rgb(8, 154, 195)'],
+    ['Memory files', '1.5k', '0.1%', 'rgb(174, 49, 110)'],
+    ['Custom agents', '600', '<0.1%', 'rgb(211, 109, 2)']
   ]) {
     const segment = sample.getByRole('img', {
       name: `${category}, ${tokens} tokens, ${percent} of the context window`,

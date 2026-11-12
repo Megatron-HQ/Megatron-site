@@ -47,16 +47,24 @@ await writeFile(
   join(directory, 'index.html'),
   `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"><link rel="icon" href="data:,"><title>Megatron reference</title></head><body><div id="root"></div><script type="module" src="/entry.tsx"></script></body></html>`
 )
+// Installed in its own module, imported before the app, as the desktop preload
+// does: some app modules read window.api at import time.
+await writeFile(
+  join(directory, 'install-api.ts'),
+  `
+import { createDemoApi } from '${browserImport(join(root, 'src/preview/api.ts'))}'
+window.api = createDemoApi({now:new Date('2026-10-09T12:00:00.000Z')}).api
+`
+)
 await writeFile(
   join(directory, 'entry.tsx'),
   `
+import './install-api.ts'
 import './reference.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '${browserImport(join(sourceRoot, 'App.tsx'))}'
-import { createDemoApi } from '${browserImport(join(root, 'src/preview/api.ts'))}'
-window.api = createDemoApi({now:new Date('2026-10-09T12:00:00.000Z')}).api
 createRoot(document.getElementById('root')!).render(<StrictMode><QueryClientProvider client={new QueryClient()}><App /></QueryClientProvider></StrictMode>)
 `
 )
@@ -313,6 +321,8 @@ const scenes = [
       await page
         .getByRole('tooltip')
         .getByText(/of this month’s prompts/)
+        // 0.2.0's tooltip fade keeps the outgoing copy mounted briefly.
+        .first()
         .waitFor()
     }
   ],
@@ -385,6 +395,11 @@ const scenes = [
           name: 'Expand monorepo repositories',
           exact: true
         })
+        .click()
+      // Since 0.2.0 a nested repository without skills sits in a collapsed group.
+      await page
+        .getByRole('button', { name: 'Expand 1 without skills', exact: true })
+        .first()
         .click()
       await page.getByRole('button', { name: /^tools\/cli/ }).waitFor()
     }

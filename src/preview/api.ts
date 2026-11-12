@@ -11,7 +11,8 @@ import type {
   ScanSummary,
   SkillInvocationSliceInput,
   SkillRow,
-  ThemePreference
+  ThemePreference,
+  UpdateState
 } from '../../vendor/megatron/src/shared/ipc'
 import type { Api } from '../../vendor/megatron/src/preload/index.d.ts'
 import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
@@ -20,6 +21,7 @@ import { SCAN_BANNER_REVEAL_MS } from '../../vendor/megatron/src/shared/scan-ban
 import {
   ADDITIONAL_PARENT,
   ADDITIONAL_PROJECT,
+  SAMPLE_HOME,
   SAMPLE_PARENT,
   SAMPLE_PROJECT,
   CONTEXT_LIMIT,
@@ -27,6 +29,7 @@ import {
   createSampleState,
   sampleFiles,
   sampleFindings,
+  samplePluginComponents,
   samplePluginInstallPath,
   windowsPath,
   type SampleState
@@ -40,6 +43,26 @@ import {
 import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
 import { sampleContextBaseline, sampleRecordedRequest } from './context.ts'
 import { applyInventoryChange } from './inventory.ts'
+import { findStaleSkillIds, sampleStaleEvidence } from './stale-skills.ts'
+import {
+  resolveSampleGrantChange,
+  type SampleGrantChange
+} from './folder-grants.ts'
+
+export const PREVIEW_APP_VERSION = '0.2.0'
+// The desktop's updater never runs in a browser, so the preview shows the
+// state an uninstalled build reports.
+const INITIAL_UPDATE_STATE: UpdateState = {
+  status: 'unsupported',
+  version: null,
+  autoCheck: true
+}
+const UPDATES_UNAVAILABLE_NOTICE =
+  'The browser preview never checks for updates. Installed builds ask github.com for new releases; turn that off in Settings → Updates.'
+
+function projectName(path: string): string {
+  return path.split('\\').at(-1) ?? path
+}
 import { INVENTORY_CHANGES, type InventoryChange } from './protocol.ts'
 import {
   groupSampleCalendar,
@@ -118,6 +141,8 @@ export function createDemoApi(options: DemoOptions = {}) {
   const pluginProgressSubscriptions = new Set<
     (progress: PluginUpdateProgress) => void
   >()
+  let updateState: UpdateState = { ...INITIAL_UPDATE_STATE }
+  const updateSubscriptions = new Set<(state: UpdateState) => void>()
   const delay = options.actionDelayMs ?? 450
   function currentUsageLocations() {
     usageLocations = reconcileSampleUsageProjects(usageLocations, state)
@@ -441,6 +466,44 @@ export function createDemoApi(options: DemoOptions = {}) {
     }
   }
 
+  function changeGrants(add: string[], remove: string[]): SampleGrantChange {
+    const change = resolveSampleGrantChange(
+      state.folders,
+      { add, remove },
+      state.now
+    )
+    state.folders = change.folders
+    discoverProjects()
+    refreshPlugins()
+    notify()
+    return change
+  }
+
+  // Stands in for the native "Choose Folders to Keep" dialog: the sample
+  // keeps the first known repository inside the grant.
+  function narrowingChoice(grant: string): string | null {
+    const repositories = [
+      ...inventorySource.projects,
+      { path: ADDITIONAL_PROJECT, kind: 'repository' as const }
+    ].filter((project) => project.kind === 'repository')
+    return (
+      repositories.find(
+        (project) =>
+          project.path !== grant && isWithinProjectPath(project.path, grant)
+      )?.path ?? null
+    )
+  }
+
+  function grantNotice(change: SampleGrantChange): string {
+    const privacy = 'Your local folders are never accessed.'
+    const [skipped] = change.skipped
+    if (skipped)
+      return `The sample ${projectName(skipped.path)} repository is already covered by ${projectName(skipped.coveredBy)}, so it was skipped. Narrow or remove ${projectName(skipped.coveredBy)} to grant it on its own. ${privacy}`
+    if (change.added.includes(ADDITIONAL_PARENT))
+      return `Granted the sample Clients parent folder and discovered its repositories.${change.absorbed.length > 0 ? ' It covers docs-site, so that separate grant was folded into it.' : ''} ${privacy}`
+    return `Added the sample docs-site repository. Add Folder again to try a parent-folder grant. ${privacy}`
+  }
+
   function updateInstallVersion(
     plugin: PluginRow,
     install: PluginInstall
@@ -584,8 +647,17 @@ export function createDemoApi(options: DemoOptions = {}) {
     async listSkills() {
       checkScenario('skills')
       const skills = currentSkills()
+      // Like the desktop, the signal needs this session's transcripts and
+      // prompt archive to be complete.
+      const staleIds =
+        options.scenario === 'scan-failed'
+          ? new Set<number>()
+          : findStaleSkillIds(skills, sampleStaleEvidence(state))
       return copy({
-        skills,
+        skills: skills.map((skill) => ({
+          ...skill,
+          stale: staleIds.has(skill.id)
+        })),
         scanComplete: true,
         scanSummary: scanSummary(),
         scanActivity,
@@ -653,29 +725,35 @@ export function createDemoApi(options: DemoOptions = {}) {
       return copy(state.projects)
     },
     async pickAndAddFolders() {
-      const path = state.folders.some((row) => row.path === ADDITIONAL_PROJECT)
+      // Repository first, then its parent (which absorbs it), then the
+      // repository again (which the parent now covers, so it is skipped).
+      const pick = state.folders.some((row) => row.path === ADDITIONAL_PROJECT)
         ? ADDITIONAL_PARENT
         : ADDITIONAL_PROJECT
+      const change = changeGrants([pick], [])
+      options.onNotice?.(grantNotice(change))
+      return copy({ folders: change.folders, skipped: change.skipped })
+    },
+    async narrowAllowedPath(path) {
       if (!state.folders.some((row) => row.path === path))
-        state.folders.push({ path, granted_at: state.now })
-      discoverProjects()
-      refreshPlugins()
-      notify()
+        throw new RangeError('Folder is not granted.')
+      const keep = narrowingChoice(path)
+      if (keep === null) {
+        options.onNotice?.(
+          'This sample folder has no repositories inside it to keep.'
+        )
+        return copy({ folders: state.folders, skipped: [] })
+      }
+      const change = changeGrants([keep], [path])
       options.onNotice?.(
-        path === ADDITIONAL_PARENT
-          ? 'Granted the sample Clients parent folder and discovered its repositories. Your local folders are never accessed.'
-          : 'Added the sample docs-site repository. Add Folder again to try a parent-folder grant. Your local folders are never accessed.'
+        `Narrowed the sample ${projectName(path)} grant to ${projectName(keep)}. Everything else inside it lost access. Your local folders are never accessed.`
       )
-      return copy(state.folders)
+      return copy({ folders: change.folders, skipped: change.skipped })
     },
     async revokeAllowedPath(path) {
       if (!state.folders.some((row) => row.path === path))
         throw new RangeError('Unknown sample repository.')
-      state.folders = state.folders.filter((row) => row.path !== path)
-      discoverProjects()
-      refreshPlugins()
-      notify()
-      return copy(state.folders)
+      return copy(changeGrants([], [path]).folders)
     },
     async openExternal() {
       options.onNotice?.(
@@ -698,6 +776,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       return copy({
         plugin,
         skills,
+        components: samplePluginComponents(plugin),
         totalInvocations: skills.reduce(
           (sum, row) => sum + row.total_invocations,
           0
@@ -855,7 +934,39 @@ export function createDemoApi(options: DemoOptions = {}) {
         'This browser preview has no local data folder. The desktop app stores its index on your machine.'
       )
     },
-    getVersion: () => '0.1.0',
+    getVersion: () => PREVIEW_APP_VERSION,
+    getHomePath: () => SAMPLE_HOME,
+    // An embedded welcome would cover the landing page; Settings → Show
+    // welcome opens it on request.
+    getInitialOnboarding: () => options.scenario === 'onboarding',
+    async setOnboardingDone() {},
+    async getUpdateState() {
+      return copy(updateState)
+    },
+    async setAutoUpdateCheck(enabled) {
+      if (typeof enabled !== 'boolean')
+        throw new TypeError('Automatic update checks must be a boolean.')
+      updateState = { ...updateState, autoCheck: enabled }
+      for (const subscriber of updateSubscriptions)
+        subscriber(copy(updateState))
+    },
+    async checkForUpdates() {
+      options.onNotice?.(UPDATES_UNAVAILABLE_NOTICE)
+    },
+    async installUpdate() {
+      options.onNotice?.(UPDATES_UNAVAILABLE_NOTICE)
+    },
+    async openUpdateDownload() {
+      options.onNotice?.(
+        'External links are shown as sample content in this preview.'
+      )
+    },
+    onUpdateState(callback) {
+      updateSubscriptions.add(callback)
+      return () => {
+        updateSubscriptions.delete(callback)
+      }
+    },
     onPluginUpdateProgress(callback) {
       pluginProgressSubscriptions.add(callback)
       return () => {
@@ -968,6 +1079,9 @@ export function createDemoApi(options: DemoOptions = {}) {
       refreshPlugins()
       section = options.initialSection ?? 'skills'
       theme = options.initialTheme ?? 'light'
+      updateState = { ...INITIAL_UPDATE_STATE }
+      for (const subscriber of updateSubscriptions)
+        subscriber(copy(updateState))
       notify()
     }
   }

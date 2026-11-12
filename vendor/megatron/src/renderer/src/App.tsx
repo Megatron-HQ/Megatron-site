@@ -4,8 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppRail } from '@/components/AppRail'
 import { CommandPalette } from '@/components/CommandPalette'
 import { ManageFoldersDialog } from '@/components/ManageFoldersDialog'
+import { OnboardingDialog } from '@/components/onboarding/OnboardingDialog'
 import { PluginActionToasts, type PluginActionToast } from '@/components/PluginActionToasts'
 import { PluginSidebar } from '@/components/PluginSidebar'
+import { ScreenTransition } from '@/components/ScreenTransition'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { ScanStatusBanner, ScanUpdatingBanner } from '@/components/ScanStatus'
 import { useScanBanner } from '@/lib/use-scan-banner'
@@ -18,14 +20,18 @@ import {
 } from '@/components/usage/SkillInvocationDialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { TREE_WIDTH_DEFAULT } from '@/lib/file-tree'
-import { createPluginRows, type PluginContext, type PluginFilter } from '@/lib/plugin-filter'
+import {
+  createPluginRows,
+  pluginRowKey,
+  type PluginContext,
+  type PluginFilter
+} from '@/lib/plugin-filter'
 import { isWithinProjectPath, normalizeProjectPath } from '../../shared/project-path'
 import { matchesFilter, type SourceFilter } from '@/lib/source-filter'
 import {
   createProjectAvailabilityResolver,
   createProjectLabelResolver,
-  projectDisplayLabels,
-  resolveProjectSelection
+  projectDisplayLabels
 } from '@/lib/project-tree'
 import { ProjectLabelContext } from '@/lib/use-project-label'
 import { SkillDetail } from './views/SkillDetail'
@@ -38,6 +44,8 @@ import type {
   AppSection,
   ContextBudget,
   CostWindowKey,
+  GrantChangeResult,
+  SkippedGrant,
   SkillStatsWindowKey,
   ThemePreference,
   PluginUpdateProgress,
@@ -73,6 +81,7 @@ function App(): React.JSX.Element {
     window.api.getInitialTheme()
   )
   const [version] = useState(() => window.api.getVersion())
+  const [home] = useState(() => window.api.getHomePath())
   const [filter, setFilter] = useState<SourceFilter>({ kind: 'all' })
   const [view, setView] = useState<View>({ kind: 'list' })
   const [section, setSection] = useState<AppSection>(() => window.api.getInitialSection())
@@ -91,8 +100,14 @@ function App(): React.JSX.Element {
     useState<SkillInvocationSelection | null>(null)
   const [skillInvocationOpen, setSkillInvocationOpen] = useState(false)
   const [skillBackTarget, setSkillBackTarget] = useState<SkillBackTarget>('inventory')
+  // The row Back left from, so the list it returns to focuses it and scrolls it into view.
+  // Only Back sets these; a filter or section change clears them, so every other route to a list
+  // starts at row 0.
+  const [returnSkillId, setReturnSkillId] = useState<number | null>(null)
+  const [returnPluginKey, setReturnPluginKey] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [onboardingOpen, setOnboardingOpen] = useState(() => window.api.getInitialOnboarding())
   const [foldersDialogOpen, setFoldersDialogOpen] = useState(false)
   const [treeWidth, setTreeWidth] = useState(TREE_WIDTH_DEFAULT)
   const [pluginActionToasts, setPluginActionToasts] = useState<PluginActionToast[]>([])
@@ -140,6 +155,21 @@ function App(): React.JSX.Element {
     queryFn: () => window.api.listPlugins()
   })
 
+  const { data: updateState } = useQuery({
+    queryKey: ['updates'],
+    queryFn: () => window.api.getUpdateState()
+  })
+  useEffect(
+    () => window.api.onUpdateState((state) => queryClient.setQueryData(['updates'], state)),
+    [queryClient]
+  )
+  const updateNotice =
+    updateState?.status === 'ready'
+      ? 'Update ready'
+      : updateState?.status === 'available'
+        ? 'Update available'
+        : null
+
   useEffect(
     () =>
       window.api.onScanComplete(({ summary }) => {
@@ -156,22 +186,6 @@ function App(): React.JSX.Element {
             !projects.some(
               (entry) => normalizeProjectPath(entry.path) === normalizeProjectPath(path)
             )
-          setFilter((current) =>
-            current.kind === 'project' && current.projectRoot && disappeared(current.projectRoot)
-              ? {
-                  kind: 'project',
-                  projectRoot: resolveProjectSelection(current.projectRoot, projects)
-                }
-              : current
-          )
-          setPluginFilter((current) =>
-            current.kind === 'projects' && current.projectPath && disappeared(current.projectPath)
-              ? {
-                  kind: 'projects',
-                  projectPath: resolveProjectSelection(current.projectPath, projects)
-                }
-              : current
-          )
           setView((current) => {
             if (current.kind === 'list' || skills === undefined) return current
             const previousRoot = previousSkills.find(
@@ -217,6 +231,8 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
+      // The palette or Settings would stack over onboarding's modal and fight it for focus.
+      if (onboardingOpen) return
       // `!event.repeat` — a held Cmd+K otherwise toggles the palette on every
       // key-repeat, landing it open or closed at random depending on parity.
       if (event.key === 'k' && (event.metaKey || event.ctrlKey) && !event.repeat) {
@@ -230,7 +246,7 @@ function App(): React.JSX.Element {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [onboardingOpen])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -255,21 +271,16 @@ function App(): React.JSX.Element {
   const plugins = useMemo(() => pluginsData ?? [], [pluginsData])
   const projectLabels = useMemo(
     () =>
-      projectDisplayLabels(
-        [
-          ...projectCatalog
-            .filter((project) => project.kind === 'repository')
-            .map((project) => project.path),
-          ...skills.flatMap((skill) => (skill.project_root ? [skill.project_root] : [])),
-          ...plugins.flatMap((plugin) =>
-            plugin.installs.flatMap((install) =>
-              install.project_path ? [install.project_path] : []
-            )
-          )
-        ],
-        folders
-      ),
-    [projectCatalog, skills, plugins, folders]
+      projectDisplayLabels([
+        ...projectCatalog
+          .filter((project) => project.kind === 'repository')
+          .map((project) => project.path),
+        ...skills.flatMap((skill) => (skill.project_root ? [skill.project_root] : [])),
+        ...plugins.flatMap((plugin) =>
+          plugin.installs.flatMap((install) => (install.project_path ? [install.project_path] : []))
+        )
+      ]),
+    [projectCatalog, skills, plugins]
   )
   const scanComplete = data?.scanComplete ?? false
   const resolveProjectLabel = useMemo(
@@ -296,16 +307,18 @@ function App(): React.JSX.Element {
   )
 
   const filteredPlugins = useMemo(
-    () => createPluginRows(plugins, pluginFilter, projectCatalog, skills, folders, projectLabels),
-    [plugins, pluginFilter, projectCatalog, skills, folders, projectLabels]
+    () => createPluginRows(plugins, pluginFilter, projectCatalog, skills, projectLabels),
+    [plugins, pluginFilter, projectCatalog, skills, projectLabels]
   )
 
   function handleFilterChange(next: SourceFilter): void {
+    setReturnSkillId(null)
     setView({ kind: 'list' })
     setFilter(next)
   }
 
   function handlePluginFilterChange(next: PluginFilter): void {
+    setReturnPluginKey(null)
     setPluginView({ kind: 'list' })
     setPluginFilter(next)
   }
@@ -361,6 +374,7 @@ function App(): React.JSX.Element {
   }
 
   function leaveSkillDetail(): void {
+    if (skillBackTarget === 'inventory' && view.kind !== 'list') setReturnSkillId(view.skillId)
     setView({ kind: 'list' })
     if (skillBackTarget === 'usage-skills' || skillBackTarget === 'usage-skills-dialog') {
       setUsagePanel('skills')
@@ -370,12 +384,23 @@ function App(): React.JSX.Element {
   }
 
   function handleSectionChange(next: AppSection): void {
+    setReturnSkillId(null)
+    setReturnPluginKey(null)
     setSection(next)
     void window.api.setLastSection(next)
   }
 
   function openPluginDetail(name: string, marketplace: string, context?: PluginContext): void {
+    setReturnPluginKey(null)
     setPluginView({ kind: 'detail', name, marketplace, context })
+  }
+
+  function leavePluginDetail(): void {
+    if (pluginView.kind === 'detail')
+      setReturnPluginKey(
+        pluginRowKey(pluginView.name, pluginView.marketplace, pluginView.context ?? { kind: 'all' })
+      )
+    setPluginView({ kind: 'list' })
   }
 
   function selectPluginFromPalette(name: string, marketplace: string): void {
@@ -397,28 +422,30 @@ function App(): React.JSX.Element {
     void window.api.setTheme(next)
   }
 
-  async function handleAddFolders(): Promise<void> {
-    const folders = await window.api.pickAndAddFolders()
+  async function applyGrantChange(change: Promise<GrantChangeResult>): Promise<SkippedGrant[]> {
+    const result = await change
     await queryClient.cancelQueries({ queryKey: ['folders'] })
-    queryClient.setQueryData(['folders'], folders)
+    queryClient.setQueryData(['folders'], result.folders)
     void queryClient.invalidateQueries({ queryKey: ['skills'] })
     void queryClient.invalidateQueries({ queryKey: ['projects'] })
+    return result.skipped
+  }
+
+  function handleAddFolders(): Promise<SkippedGrant[]> {
+    return applyGrantChange(window.api.pickAndAddFolders())
+  }
+
+  function handleNarrowFolder(path: string): Promise<SkippedGrant[]> {
+    return applyGrantChange(window.api.narrowAllowedPath(path))
   }
 
   async function handleRevokeFolder(path: string): Promise<void> {
     const remaining = await window.api.revokeAllowedPath(path)
     await queryClient.cancelQueries({ queryKey: ['folders'] })
     queryClient.setQueryData(['folders'], remaining)
+    // Sidebar filters snap to a remaining row on their own once the tree rebuilds.
     const covered = (selectedPath: string): boolean =>
       remaining.some((folder) => isWithinProjectPath(selectedPath, folder.path))
-    if (filter.kind === 'project' && filter.projectRoot && !covered(filter.projectRoot))
-      handleFilterChange({ kind: 'project' })
-    if (
-      pluginFilter.kind === 'projects' &&
-      pluginFilter.projectPath &&
-      !covered(pluginFilter.projectPath)
-    )
-      handlePluginFilterChange({ kind: 'projects' })
     if (
       pluginView.kind === 'detail' &&
       pluginView.context?.kind === 'project' &&
@@ -429,6 +456,14 @@ function App(): React.JSX.Element {
     void queryClient.invalidateQueries({ queryKey: ['projects'] })
   }
 
+  function finishOnboarding(): void {
+    setOnboardingOpen(false)
+    void window.api.setOnboardingDone()
+    setFilter({ kind: 'all' })
+    setView({ kind: 'list' })
+    handleSectionChange('skills')
+  }
+
   function showPluginActionToast(message: string): void {
     const id = nextToastId.current++
     setPluginActionToasts((toasts) => [...toasts, { id, message }].slice(-MAX_SUCCESS_TOASTS))
@@ -437,168 +472,209 @@ function App(): React.JSX.Element {
     }, SUCCESS_TOAST_DURATION_MS)
   }
 
-  const content = (
+  const sidebar =
+    section === 'skills' ? (
+      <Sidebar
+        filter={filter}
+        onFilterChange={handleFilterChange}
+        onFilterSnap={setFilter}
+        contextBudget={contextBudget}
+        onSelectSkill={openDetailFromAnywhere}
+        skills={skills}
+        folders={folders}
+        projectCatalog={projectCatalog}
+        home={home}
+        expandedProjects={skillExpandedProjects}
+        setExpandedProjects={setSkillExpandedProjects}
+      />
+    ) : section === 'plugins' ? (
+      <PluginSidebar
+        plugins={plugins}
+        folders={folders}
+        projectCatalog={projectCatalog}
+        home={home}
+        expandedProjects={pluginExpandedProjects}
+        setExpandedProjects={setPluginExpandedProjects}
+        filter={pluginFilter}
+        onFilterChange={handlePluginFilterChange}
+        onFilterSnap={setPluginFilter}
+      />
+    ) : (
+      <UsageSidebar panel={usagePanel} onPanelChange={setUsagePanel} />
+    )
+
+  const content =
+    section === 'skills' ? (
+      view.kind === 'detail' ? (
+        <SkillDetail
+          skillId={view.skillId}
+          summary={skills.find((skill) => skill.id === view.skillId)}
+          onBack={leaveSkillDetail}
+          onViewFiles={() => setView({ kind: 'files', skillId: view.skillId })}
+          onNavigate={navigateSkillDetail}
+        />
+      ) : view.kind === 'files' ? (
+        <SkillFileViewer
+          skillId={view.skillId}
+          summary={skills.find((skill) => skill.id === view.skillId)}
+          treeWidth={treeWidth}
+          onTreeWidthChange={setTreeWidth}
+          onBack={() => setView({ kind: 'detail', skillId: view.skillId })}
+        />
+      ) : skillsError ? (
+        <div
+          role="alert"
+          className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+        >
+          <p>Could not load skills.</p>
+          <button
+            type="button"
+            className="underline underline-offset-2 hover:text-foreground"
+            onClick={() => void retrySkills()}
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <SkillInventory
+          availability={
+            filter.kind === 'project' ? projectAvailability(filter.projectRoot) : undefined
+          }
+          skills={filteredSkills}
+          loading={!skills.length && !scanComplete}
+          filter={filter}
+          onSelect={openDetail}
+          onOpenSearch={() => setPaletteOpen(true)}
+          onManageFolders={() => setFoldersDialogOpen(true)}
+          onGrantFolder={handleAddFolders}
+          restoreFocusId={returnSkillId}
+        />
+      )
+    ) : section === 'plugins' ? (
+      pluginView.kind === 'detail' ? (
+        <PluginDetail
+          name={pluginView.name}
+          marketplace={pluginView.marketplace}
+          updateProgress={pluginUpdateProgress[`${pluginView.name}@${pluginView.marketplace}`]}
+          context={pluginView.context}
+          availability={
+            pluginView.context?.kind === 'project'
+              ? projectAvailability(pluginView.context.path)
+              : undefined
+          }
+          onBack={leavePluginDetail}
+          onViewSkills={handleViewSkillsForPlugin}
+          onActionSuccess={showPluginActionToast}
+          onManageFolders={() => setFoldersDialogOpen(true)}
+        />
+      ) : pluginsError ? (
+        <div
+          role="alert"
+          className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+        >
+          <p>Could not load plugins.</p>
+          <button
+            type="button"
+            className="underline underline-offset-2 hover:text-foreground"
+            onClick={() => void retryPlugins()}
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <PluginInventory
+          availability={
+            pluginFilter.kind === 'projects'
+              ? projectAvailability(pluginFilter.projectPath)
+              : undefined
+          }
+          plugins={filteredPlugins}
+          loading={pluginsPending}
+          filter={pluginFilter}
+          onSelect={(plugin) => openPluginDetail(plugin.name, plugin.marketplace, plugin.context)}
+          onOpenSearch={() => setPaletteOpen(true)}
+          restoreFocusKey={returnPluginKey}
+        />
+      )
+    ) : (
+      <UsageView
+        panel={usagePanel}
+        activityWindow={usageActivityWindow}
+        tokenWindow={usageTokenWindow}
+        onTokenWindowChange={setUsageTokenWindow}
+        calendarYear={usageCalendarYear}
+        onCalendarYearChange={setUsageCalendarYear}
+        onActivityWindowChange={setUsageActivityWindow}
+        costWindow={usageCostWindow}
+        onCostWindowChange={setUsageCostWindow}
+        modelWindow={usageModelWindow}
+        onModelWindowChange={setUsageModelWindow}
+        skillWindow={usageSkillWindow}
+        onSkillWindowChange={changeSkillWindow}
+        onSelectSkill={openDetailFromUsage}
+        onShowInvocations={showSkillInvocations}
+      />
+    )
+
+  // Each screen's key and depth; a new key remounts the screen, as the detail views' own keys
+  // did, and depth sets which way it enters.
+  const screen =
+    section === 'skills'
+      ? view.kind === 'list'
+        ? { key: 'skills:list', depth: 0 }
+        : { key: `skills:${view.kind}:${view.skillId}`, depth: view.kind === 'detail' ? 1 : 2 }
+      : section === 'plugins'
+        ? pluginView.kind === 'list'
+          ? { key: 'plugins:list', depth: 0 }
+          : {
+              key: `plugins:detail:${pluginRowKey(pluginView.name, pluginView.marketplace, pluginView.context ?? { kind: 'all' })}`,
+              depth: 1
+            }
+        : { key: 'usage', depth: 0 }
+
+  const shell = (
     <TooltipProvider>
       <div className="flex h-screen flex-col">
-        {window.api?.platform === 'darwin' && (
-          <div className="relative h-8 shrink-0 drag-region">
-            <div className="drag-region absolute inset-x-1.5 top-1.5 bottom-0 rounded-xl bg-muted shadow" />
-          </div>
-        )}
-        {scanBanner.kind === 'updating' && <ScanUpdatingBanner message={scanBanner.message} />}
-        {scanBanner.kind === 'warning' && scanBannerSummary && (
-          <ScanStatusBanner
-            summary={scanBannerSummary}
-            onOpenDetails={() => setSettingsOpen(true)}
-          />
-        )}
+        {/* hiddenInset leaves macOS without a draggable titlebar, so this strip is it. Windows
+            keeps its native titlebar; the strip there only separates it from the sheet. */}
+        <div
+          className={
+            window.api?.platform === 'darwin' ? 'h-8 shrink-0 drag-region' : 'h-1.5 shrink-0'
+          }
+        />
         <div className="flex min-h-0 flex-1">
-          <AppRail
-            section={section}
-            onSectionChange={handleSectionChange}
-            onOpenSettings={() => setSettingsOpen(true)}
-          />
-          {section === 'skills' ? (
-            <>
-              <Sidebar
-                filter={filter}
-                onFilterChange={handleFilterChange}
-                contextBudget={contextBudget}
-                onSelectSkill={openDetailFromAnywhere}
-                skills={skills}
-                folders={folders}
-                projectCatalog={projectCatalog}
-                expandedProjects={skillExpandedProjects}
-                setExpandedProjects={setSkillExpandedProjects}
+          <div className="frame-surface flex shrink-0">
+            <AppRail
+              section={section}
+              onSectionChange={handleSectionChange}
+              onOpenSettings={() => setSettingsOpen(true)}
+              updateNotice={updateNotice}
+            />
+            <ScreenTransition screenKey={section} section={section} depth={0} className="flex">
+              {sidebar}
+            </ScreenTransition>
+          </div>
+          {/* The inset is the sheet's own margin so the rail and sidebars still reach the window's
+              bottom edge; overflow-hidden clips the banner and scrollbars to the radius. */}
+          <main className="mr-1.5 mb-1.5 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sheet">
+            {scanBanner.kind === 'updating' && <ScanUpdatingBanner message={scanBanner.message} />}
+            {scanBanner.kind === 'warning' && scanBannerSummary && (
+              <ScanStatusBanner
+                summary={scanBannerSummary}
+                onOpenDetails={() => setSettingsOpen(true)}
               />
-              {view.kind === 'detail' ? (
-                <SkillDetail
-                  key={view.skillId}
-                  skillId={view.skillId}
-                  onBack={leaveSkillDetail}
-                  onViewFiles={() => setView({ kind: 'files', skillId: view.skillId })}
-                  onNavigate={navigateSkillDetail}
-                />
-              ) : view.kind === 'files' ? (
-                <SkillFileViewer
-                  key={view.skillId}
-                  skillId={view.skillId}
-                  treeWidth={treeWidth}
-                  onTreeWidthChange={setTreeWidth}
-                  onBack={() => setView({ kind: 'detail', skillId: view.skillId })}
-                />
-              ) : skillsError ? (
-                <div
-                  role="alert"
-                  className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
-                >
-                  <p>Could not load skills.</p>
-                  <button
-                    type="button"
-                    className="underline underline-offset-2 hover:text-foreground"
-                    onClick={() => void retrySkills()}
-                  >
-                    Retry
-                  </button>
-                </div>
-              ) : (
-                <SkillInventory
-                  availability={
-                    filter.kind === 'project' ? projectAvailability(filter.projectRoot) : undefined
-                  }
-                  skills={filteredSkills}
-                  loading={!skills.length && !scanComplete}
-                  filter={filter}
-                  onSelect={openDetail}
-                  onOpenSearch={() => setPaletteOpen(true)}
-                  onManageFolders={() => setFoldersDialogOpen(true)}
-                  onGrantFolder={handleAddFolders}
-                />
-              )}
-            </>
-          ) : section === 'plugins' ? (
-            <>
-              <PluginSidebar
-                plugins={plugins}
-                folders={folders}
-                projectCatalog={projectCatalog}
-                expandedProjects={pluginExpandedProjects}
-                setExpandedProjects={setPluginExpandedProjects}
-                filter={pluginFilter}
-                onFilterChange={handlePluginFilterChange}
-              />
-              {pluginView.kind === 'detail' ? (
-                <PluginDetail
-                  key={`${pluginView.name}@${pluginView.marketplace}:${JSON.stringify(pluginView.context)}`}
-                  name={pluginView.name}
-                  marketplace={pluginView.marketplace}
-                  updateProgress={
-                    pluginUpdateProgress[`${pluginView.name}@${pluginView.marketplace}`]
-                  }
-                  context={pluginView.context}
-                  availability={
-                    pluginView.context?.kind === 'project'
-                      ? projectAvailability(pluginView.context.path)
-                      : undefined
-                  }
-                  onBack={() => setPluginView({ kind: 'list' })}
-                  onViewSkills={handleViewSkillsForPlugin}
-                  onActionSuccess={showPluginActionToast}
-                  onManageFolders={() => setFoldersDialogOpen(true)}
-                />
-              ) : pluginsError ? (
-                <div
-                  role="alert"
-                  className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
-                >
-                  <p>Could not load plugins.</p>
-                  <button
-                    type="button"
-                    className="underline underline-offset-2 hover:text-foreground"
-                    onClick={() => void retryPlugins()}
-                  >
-                    Retry
-                  </button>
-                </div>
-              ) : (
-                <PluginInventory
-                  availability={
-                    pluginFilter.kind === 'projects'
-                      ? projectAvailability(pluginFilter.projectPath)
-                      : undefined
-                  }
-                  plugins={filteredPlugins}
-                  loading={pluginsPending}
-                  filter={pluginFilter}
-                  onSelect={(plugin) =>
-                    openPluginDetail(plugin.name, plugin.marketplace, plugin.context)
-                  }
-                  onOpenSearch={() => setPaletteOpen(true)}
-                />
-              )}
-            </>
-          ) : (
-            <>
-              <UsageSidebar panel={usagePanel} onPanelChange={setUsagePanel} />
-              <UsageView
-                panel={usagePanel}
-                activityWindow={usageActivityWindow}
-                tokenWindow={usageTokenWindow}
-                onTokenWindowChange={setUsageTokenWindow}
-                calendarYear={usageCalendarYear}
-                onCalendarYearChange={setUsageCalendarYear}
-                onActivityWindowChange={setUsageActivityWindow}
-                costWindow={usageCostWindow}
-                onCostWindowChange={setUsageCostWindow}
-                modelWindow={usageModelWindow}
-                onModelWindowChange={setUsageModelWindow}
-                skillWindow={usageSkillWindow}
-                onSkillWindowChange={changeSkillWindow}
-                onSelectSkill={openDetailFromUsage}
-                onShowInvocations={showSkillInvocations}
-              />
-            </>
-          )}
+            )}
+            <div className="flex min-h-0 flex-1">
+              <ScreenTransition
+                screenKey={screen.key}
+                section={section}
+                depth={screen.depth}
+                className="flex min-h-0 min-w-0 flex-1"
+              >
+                {content}
+              </ScreenTransition>
+            </div>
+          </main>
         </div>
       </div>
       {skillInvocationSelection && (
@@ -630,12 +706,29 @@ function App(): React.JSX.Element {
           setSettingsOpen(false)
           setFoldersDialogOpen(true)
         }}
+        onShowWelcome={() => {
+          setSettingsOpen(false)
+          setOnboardingOpen(true)
+        }}
+        updateState={updateState}
+      />
+      <OnboardingDialog
+        open={onboardingOpen}
+        onFinish={finishOnboarding}
+        skills={skills}
+        plugins={plugins}
+        folders={folders}
+        scanComplete={scanComplete}
+        home={home}
+        onAddFolders={handleAddFolders}
       />
       <ManageFoldersDialog
         open={foldersDialogOpen}
         onOpenChange={setFoldersDialogOpen}
         folders={folders}
+        projectCatalog={projectCatalog}
         onAddFolders={handleAddFolders}
+        onNarrowFolder={handleNarrowFolder}
         onRevokeFolder={handleRevokeFolder}
       />
       <PluginActionToasts
@@ -647,9 +740,7 @@ function App(): React.JSX.Element {
     </TooltipProvider>
   )
   return (
-    <ProjectLabelContext.Provider value={resolveProjectLabel}>
-      {content}
-    </ProjectLabelContext.Provider>
+    <ProjectLabelContext.Provider value={resolveProjectLabel}>{shell}</ProjectLabelContext.Provider>
   )
 }
 

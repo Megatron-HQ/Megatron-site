@@ -11,6 +11,12 @@ export const USAGE_PANELS = [
 
 export type PreviewSection = (typeof PREVIEW_SECTIONS)[number]
 export type PreviewPanel = (typeof USAGE_PANELS)[number]
+
+export function parseSamplePanel(value: string): PreviewPanel {
+  if (!USAGE_PANELS.includes(value as PreviewPanel))
+    throw new RangeError(`Unknown sample view: ${value}`)
+  return value as PreviewPanel
+}
 export type PreviewThemeMessage = {
   type: 'megatron-preview:theme'
   dark: boolean

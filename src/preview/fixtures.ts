@@ -2,6 +2,7 @@ import type {
   AllowedPathRow,
   EffortBucket,
   LintFindingRow,
+  PluginComponent,
   PluginInstall,
   PluginRow,
   ProjectFolder,
@@ -47,7 +48,8 @@ const SAMPLE_ACTIVITY_PROJECTS = [
   PREVIOUS_NAME_PROJECT,
   SAMPLE_PARENT
 ]
-const USER_CLAUDE_ROOT = windowsPath('C:', 'Users', 'demo', '.claude')
+export const SAMPLE_HOME = windowsPath('C:', 'Users', 'demo')
+const USER_CLAUDE_ROOT = windowsPath(SAMPLE_HOME, '.claude')
 const PLUGIN_CACHE_ROOT = windowsPath(USER_CLAUDE_ROOT, 'plugins', 'cache')
 const TOKEN_ONLY_SAMPLE_OUTPUT = 9000
 export const CONTEXT_LIMIT = 2666
@@ -60,6 +62,134 @@ export function samplePluginInstallPath(
   version: string
 ): string {
   return windowsPath(PLUGIN_CACHE_ROOT, marketplace, name, version)
+}
+
+type SampleComponent = Omit<PluginComponent, 'install_path' | 'source_path'> & {
+  file: string[]
+}
+
+// Desktop MCP details keep only the transport and the URL host or command
+// basename, never arguments, environment, headers, or URL paths.
+const SAMPLE_PLUGIN_COMPONENTS: Record<string, SampleComponent[]> = {
+  'frontend@team-tools': [
+    {
+      kind: 'mcp',
+      name: 'figma',
+      detail: 'http · mcp.figma.com',
+      file: ['.mcp.json']
+    },
+    {
+      kind: 'mcp',
+      name: 'playwright',
+      detail: 'stdio · npx',
+      file: ['.mcp.json']
+    },
+    {
+      kind: 'agent',
+      name: 'accessibility-reviewer',
+      detail: 'Review components for keyboard and screen reader access.',
+      file: ['agents', 'accessibility-reviewer.md']
+    },
+    {
+      kind: 'command',
+      name: 'audit',
+      detail: 'Run a responsive and contrast audit on the current page.',
+      file: ['commands', 'audit.md']
+    },
+    {
+      kind: 'lsp',
+      name: 'css',
+      detail: '.css .scss',
+      file: ['.lsp.json']
+    }
+  ],
+  'commit@team-tools': [
+    {
+      kind: 'command',
+      name: 'push-pr',
+      detail: 'Commit, push, and open a pull request.',
+      file: ['commands', 'push-pr.md']
+    },
+    {
+      kind: 'hook',
+      name: 'PreToolUse',
+      detail: null,
+      file: ['hooks', 'hooks.json']
+    }
+  ],
+  'docs@community': [
+    {
+      kind: 'agent',
+      name: 'docs-writer',
+      detail: 'Draft and revise documentation in the project’s voice.',
+      file: ['agents', 'docs-writer.md']
+    },
+    {
+      kind: 'command',
+      name: 'changelog',
+      detail: 'Summarize merged changes for the next release.',
+      file: ['commands', 'changelog.md']
+    }
+  ],
+  'workflow@claude-plugins-official': [
+    {
+      kind: 'agent',
+      name: 'review:security',
+      detail: 'Check changes for common security issues.',
+      file: ['agents', 'review', 'security.md']
+    },
+    {
+      kind: 'hook',
+      name: 'SessionStart',
+      detail: null,
+      file: ['hooks', 'hooks.json']
+    },
+    {
+      kind: 'hook',
+      name: 'Stop',
+      detail: null,
+      file: ['hooks', 'hooks.json']
+    },
+    {
+      kind: 'mcp',
+      name: 'github',
+      detail: 'http · api.githubcopilot.com',
+      file: ['.mcp.json']
+    }
+  ]
+}
+
+function compareVersions(a: string, b: string): number {
+  const parts = (version: string) => version.split('.').map(Number)
+  const [left, right] = [parts(a), parts(b)]
+  for (let index = 0; index < Math.max(left.length, right.length); index++) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0)
+    if (difference !== 0) return difference
+  }
+  return 0
+}
+
+/**
+ * The desktop lists components per install path, so two installs at different
+ * versions repeat each name and collide on the detail view's React keys. The
+ * sample shows each component once, from the newest installed version.
+ */
+export function samplePluginComponents(plugin: PluginRow): PluginComponent[] {
+  const declared =
+    SAMPLE_PLUGIN_COMPONENTS[`${plugin.name}@${plugin.marketplace}`] ?? []
+  const [newest] = plugin.installs.toSorted((a, b) =>
+    compareVersions(b.installed_version, a.installed_version)
+  )
+  if (!newest) return []
+  return declared
+    .map(({ file, ...component }) => ({
+      ...component,
+      install_path: newest.install_path,
+      source_path: windowsPath(newest.install_path, ...file)
+    }))
+    .toSorted(
+      (a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name)
+    )
 }
 
 export interface SampleEvent {

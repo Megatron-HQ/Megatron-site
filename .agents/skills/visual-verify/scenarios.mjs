@@ -62,9 +62,13 @@ export const scenarios = [
     await app
       .getByRole('button', { name: 'Expand Dev repositories', exact: true })
       .click()
+    // Since 0.2.0 repositories without skills sit in a collapsed group.
+    await app
+      .getByRole('button', { name: 'Expand 1 without skills', exact: true })
+      .click()
     await app.getByRole('button', { name: /^empty-lab/ }).click()
     await app
-      .getByText('No skills found in Dev/empty-lab', { exact: true })
+      .getByText('No skills found in empty-lab', { exact: true })
       .waitFor()
   }),
   sample('product-demo-skill-detail', 'demo-skills', (app) =>

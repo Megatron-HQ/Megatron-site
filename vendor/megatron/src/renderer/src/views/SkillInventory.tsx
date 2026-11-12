@@ -1,5 +1,5 @@
 import { ProjectAvailabilityNotice } from '@/components/ProjectAvailabilityNotice'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -10,9 +10,10 @@ import {
   useTable
 } from '@tanstack/react-table'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
-import { AlertTriangle, BotOff, FolderOpen, Power, Search, Webhook } from 'lucide-react'
-import { motion } from 'motion/react'
+import { AlertTriangle, BotOff, Clock, FolderOpen, Power, Search, Webhook } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ClaudeIcon } from '@/components/ClaudeIcon'
+import { GlideTitle } from '@/components/GlideTitle'
 import { LintStatusBadge } from '@/components/LintStatusBadge'
 import { SourceBadge } from '@/components/SourceBadge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -25,6 +26,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ENTER, skillTitleGlideId, useSettle } from '@/lib/transitions'
 import { useGlideHighlight } from '@/lib/use-glide-highlight'
 import { cn } from '@/lib/utils'
 import { parseHookEvents } from '@/lib/hook-events'
@@ -37,13 +39,14 @@ import {
 import { SYNCED_ICON } from '@/lib/source-icon'
 import { useProjectLabel } from '@/lib/use-project-label'
 import type { ProjectLabelResolver } from '@/lib/project-tree'
+import { ProjectName } from '@/components/ProjectName'
 import {
   getPluginBareName,
   getSkillDisplayName,
   getSourceSortKey,
   getSourceTooltip
 } from '@/lib/source-name'
-import type { SkillRow } from '../../../shared/ipc'
+import type { InventorySkillRow } from '../../../shared/ipc'
 
 const ROW_HEIGHT = 40
 const HEADER_HEIGHT = 40
@@ -55,7 +58,7 @@ const features = tableFeatures({
   sortFns: { text: sortFn_text, number: sortFn_basic }
 })
 
-const columnHelper = createColumnHelper<typeof features, SkillRow>()
+const columnHelper = createColumnHelper<typeof features, InventorySkillRow>()
 
 const COLUMN_WIDTH: Record<string, string> = {
   repository: 'w-[220px] max-[1000px]:w-[180px]',
@@ -78,7 +81,9 @@ const nameColumn = columnHelper.accessor(
       const row = info.row.original
       return (
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate">{info.getValue()}</span>
+          <GlideTitle glideId={skillTitleGlideId(row.id)} level="list" className="truncate">
+            {info.getValue()}
+          </GlideTitle>
           {row.is_synced === 1 && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -121,13 +126,21 @@ const nameColumn = columnHelper.accessor(
           {row.disabled_reason !== null && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Power className="size-3 shrink-0 text-disabled-flag" />
+                <Power className="size-3 shrink-0 text-dormant" />
               </TooltipTrigger>
               <TooltipContent>
                 {row.disabled_reason === 'plugin'
                   ? 'Plugin is disabled — not loaded into context.'
                   : 'Disabled via /skills — not loaded into context.'}
               </TooltipContent>
+            </Tooltip>
+          )}
+          {row.stale && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Clock className="size-3 shrink-0 text-dormant" />
+              </TooltipTrigger>
+              <TooltipContent>Not run in the last 30 days of recorded sessions.</TooltipContent>
             </Tooltip>
           )}
         </span>
@@ -159,7 +172,7 @@ const statusColumn = columnHelper.accessor('lint_status', {
 
 const sourceColumn = (
   resolveProjectLabel: ProjectLabelResolver
-): ColumnDef<typeof features, SkillRow, string> =>
+): ColumnDef<typeof features, InventorySkillRow, string> =>
   columnHelper.accessor(
     (row) =>
       row.source_type === 'project'
@@ -221,7 +234,7 @@ const usesColumn = columnHelper.accessor('total_invocations', {
 
 const allColumns = (
   resolveProjectLabel: ProjectLabelResolver
-): ColumnDef<typeof features, SkillRow, unknown>[] =>
+): ColumnDef<typeof features, InventorySkillRow, unknown>[] =>
   columnHelper.columns([
     nameColumn,
     statusColumn,
@@ -233,18 +246,17 @@ const allColumns = (
 
 const repositoryColumn = (
   resolveProjectLabel: ProjectLabelResolver
-): ColumnDef<typeof features, SkillRow, string> =>
+): ColumnDef<typeof features, InventorySkillRow, string> =>
   columnHelper.accessor((skill) => resolveProjectLabel(projectRootForSkill(skill)), {
     id: 'repository',
     header: 'Repository',
     sortFn: 'text',
     cell: (info) => (
       <span
-        dir="ltr"
-        className="block truncate text-left text-xs text-muted-foreground"
+        className="block text-left text-xs text-muted-foreground"
         title={projectRootForSkill(info.row.original)}
       >
-        {info.getValue()}
+        <ProjectName label={info.getValue()} />
       </span>
     )
   })
@@ -253,7 +265,7 @@ function buildColumns(
   showSource: boolean,
   showRepository: boolean,
   resolveProjectLabel: ProjectLabelResolver
-): ColumnDef<typeof features, SkillRow, unknown>[] {
+): ColumnDef<typeof features, InventorySkillRow, unknown>[] {
   if (showRepository)
     return columnHelper.columns([
       nameColumn,
@@ -269,13 +281,16 @@ function buildColumns(
 
 interface SkillInventoryProps {
   availability?: import('../../../shared/ipc').ProjectFolder['status']
-  skills: SkillRow[]
+  skills: InventorySkillRow[]
   loading: boolean
   filter: SourceFilter
   onSelect: (id: number) => void
   onOpenSearch: () => void
   onManageFolders?: () => void
   onGrantFolder?: () => void
+  // The row Back left from: focused (and so scrolled into view) when the list mounts, so Back
+  // returns to where the user was instead of row 0 at the top.
+  restoreFocusId?: number | null
 }
 
 export function SkillInventory({
@@ -286,7 +301,8 @@ export function SkillInventory({
   onSelect,
   onOpenSearch,
   onManageFolders,
-  onGrantFolder
+  onGrantFolder,
+  restoreFocusId = null
 }: SkillInventoryProps): React.JSX.Element {
   const resolveProjectLabel = useProjectLabel()
   const [sorting, setSorting] = useState<SortingState>([])
@@ -316,22 +332,40 @@ export function SkillInventory({
   const highlightIndex =
     hoveredId !== null ? rows.findIndex((row) => row.original.id === hoveredId) : -1
 
+  const settle = useSettle(loading)
+
   const focusRow = useCallback(
     (index: number): void => {
       const clamped = Math.max(0, Math.min(index, rows.length - 1))
       setFocusedIndex(clamped)
-      const rowEl = containerRef.current?.querySelectorAll('tbody tr')[clamped]
-      if (rowEl instanceof HTMLElement) rowEl.focus()
+      // AnimatePresence keeps a leaving row mounted at its old position for a beat after the rows
+      // change, so a DOM position can name a row on its way out. The key can't.
+      const key = rows[clamped]?.id
+      const rowEl = [
+        ...(containerRef.current?.querySelectorAll<HTMLElement>('tbody tr') ?? [])
+      ].find((el) => el.dataset.rowKey === key)
+      rowEl?.focus()
     },
-    [rows.length]
+    [rows]
   )
 
-  useEffect(() => {
-    if (!hasRows) return
-    if (window.parent !== window && !document.hasFocus()) return
+  // Spent by the first focus; every later run (a filter change) starts at row 0.
+  const pendingRestoreId = useRef(restoreFocusId)
+  // An effect event, so the effect below keeps today's triggers rather than re-running whenever
+  // a poll hands back new rows.
+  const focusShownRows = useEffectEvent(() => {
     if (containerRef.current?.contains(document.activeElement)) return
-    focusRow(0)
-  }, [filter, hasRows, focusRow])
+    if (window.parent !== window && !document.hasFocus()) return
+    const restoreIndex = rows.findIndex((row) => row.original.id === pendingRestoreId.current)
+    pendingRestoreId.current = null
+    focusRow(Math.max(restoreIndex, 0))
+  })
+
+  // A layout effect, so Back's scroll to the opened row lands before the first paint rather than
+  // a frame after the list shows at the top.
+  useLayoutEffect(() => {
+    if (hasRows) focusShownRows()
+  }, [filter, hasRows, rows.length])
 
   let body: React.JSX.Element
   if (loading) {
@@ -399,7 +433,13 @@ export function SkillInventory({
     body = <EmptyState filter={filter} onGrantFolder={onGrantFolder} />
   } else {
     body = (
-      <div ref={containerRef} className="relative flex-1 overflow-auto" onMouseLeave={onMouseLeave}>
+      <motion.div
+        ref={containerRef}
+        layoutScroll
+        {...settle}
+        className="relative flex-1 overflow-auto"
+        onMouseLeave={onMouseLeave}
+      >
         {highlightIndex >= 0 && (
           <motion.div
             className="pointer-events-none absolute inset-x-0 z-0 bg-accent"
@@ -439,48 +479,52 @@ export function SkillInventory({
             ))}
           </TableHeadGroup>
           <TableBody>
-            {rows.map((row, index) => (
-              <motion.tr
-                key={row.id}
-                data-slot="table-row"
-                tabIndex={index === safeFocusedIndex ? 0 : -1}
-                className="h-10 cursor-pointer border-b-0 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={reduceMotion ? { duration: 0 } : { duration: 0.15, ease: 'easeOut' }}
-                onFocus={() => setFocusedIndex(index)}
-                onMouseEnter={() => setHoveredId(row.original.id)}
-                onClick={() => onSelect(row.original.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'ArrowDown') {
-                    event.preventDefault()
-                    focusRow(index + 1)
-                  } else if (event.key === 'ArrowUp') {
-                    event.preventDefault()
-                    focusRow(index - 1)
-                  } else if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    onSelect(row.original.id)
-                  }
-                }}
-              >
-                {row.getAllCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      'px-3 py-2',
-                      COLUMN_WIDTH[cell.column.id],
-                      cell.column.id === 'description' && NARROW_VIEWPORT_DESCRIPTION_CLASS
-                    )}
-                  >
-                    <table.FlexRender cell={cell} />
-                  </TableCell>
-                ))}
-              </motion.tr>
-            ))}
+            {/* Rows on screen when the list mounts arrive with it; rows added later fade in. */}
+            <AnimatePresence initial={false}>
+              {rows.map((row, index) => (
+                <motion.tr
+                  key={row.id}
+                  data-slot="table-row"
+                  data-row-key={row.id}
+                  tabIndex={index === safeFocusedIndex ? 0 : -1}
+                  className="h-10 cursor-pointer border-b-0 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={reduceMotion ? { duration: 0 } : ENTER}
+                  onFocus={() => setFocusedIndex(index)}
+                  onMouseEnter={() => setHoveredId(row.original.id)}
+                  onClick={() => onSelect(row.original.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault()
+                      focusRow(index + 1)
+                    } else if (event.key === 'ArrowUp') {
+                      event.preventDefault()
+                      focusRow(index - 1)
+                    } else if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      onSelect(row.original.id)
+                    }
+                  }}
+                >
+                  {row.getAllCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'px-3 py-2',
+                        COLUMN_WIDTH[cell.column.id],
+                        cell.column.id === 'description' && NARROW_VIEWPORT_DESCRIPTION_CLASS
+                      )}
+                    >
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </motion.tr>
+              ))}
+            </AnimatePresence>
           </TableBody>
         </Table>
-      </div>
+      </motion.div>
     )
   }
 

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader2, Power, RefreshCw, Trash2 } from 'lucide-react'
+import { motion } from 'motion/react'
+import { GlideTitle } from '@/components/GlideTitle'
 import {
   MarketplaceBadge,
   PluginScopeLabel,
@@ -15,6 +17,7 @@ import {
   type PluginActionVariables,
   type PluginActionVerb
 } from '@/lib/plugin-action'
+import { pluginTitleGlideId, useSettle } from '@/lib/transitions'
 import { isUpdateAvailable } from '../../../shared/version'
 import { TextLink } from '@/components/TextLink'
 import { useProjectLabel } from '@/lib/use-project-label'
@@ -31,13 +34,18 @@ import {
 import { cn } from '@/lib/utils'
 import {
   pluginInstallBlock,
+  pluginRowKey,
   scopePluginDetail,
   showsMissingProjectStatus,
   type PluginContext
 } from '@/lib/plugin-filter'
 import { ProjectAvailabilityNotice } from '@/components/ProjectAvailabilityNotice'
 import { missingProjectInstallMessage } from '../../../shared/missing-project'
+import { EntityGlyph, type Entity } from '@/components/EntityGlyph'
+import { Badge } from '@/components/ui/badge'
 import type {
+  PluginComponent,
+  PluginComponentKind,
   PluginInstall,
   ProjectFolder,
   PluginUpdateProgress,
@@ -112,6 +120,7 @@ export function PluginDetail({
         availability !== undefined && availability !== 'available'
       )
     : rawData
+  const settle = useSettle(isPending)
 
   const [uninstallTarget, setUninstallTarget] = useState<PluginInstall | null>(null)
   const mutationKey = ['plugin-action', name, marketplace]
@@ -165,39 +174,40 @@ export function PluginDetail({
     })
   }
 
-  if (isPending) {
+  // The name comes from the list row, so the header (and its title glide from that row) renders
+  // before the query returns; the rest of the header arrives with the data.
+  const glideId = pluginTitleGlideId(pluginRowKey(name, marketplace, context))
+  if (isPending || isError || !data) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
-
-  if (isError) {
-    return (
-      <div
-        role="alert"
-        className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
-      >
-        <p>Could not load this plugin.</p>
-        <TextLink onClick={() => void refetch()}>Retry</TextLink>
-        <TextLink onClick={onBack}>Back</TextLink>
-      </div>
-    )
-  }
-  if (!data) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-        <p className="text-sm font-medium">Plugin not found</p>
-        <p className="max-w-[320px] text-sm text-muted-foreground">
-          It may have been removed since the last scan.
-        </p>
-        <Button
-          onClick={onBack}
-          className="mt-2 bg-accent-lime text-accent-lime-foreground hover:bg-accent-lime hover:opacity-90"
-        >
-          Back to plugins
-        </Button>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <PluginHeader name={name} glideId={glideId} onBack={onBack} />
+        {isPending ? (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Loading…
+          </div>
+        ) : isError ? (
+          <div
+            role="alert"
+            className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
+          >
+            <p>Could not load this plugin.</p>
+            <TextLink onClick={() => void refetch()}>Retry</TextLink>
+            <TextLink onClick={onBack}>Back</TextLink>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+            <p className="text-sm font-medium">Plugin not found</p>
+            <p className="max-w-[320px] text-sm text-muted-foreground">
+              It may have been removed since the last scan.
+            </p>
+            <Button
+              onClick={onBack}
+              className="mt-2 bg-accent-lime text-accent-lime-foreground hover:bg-accent-lime hover:opacity-90"
+            >
+              Back to plugins
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
@@ -217,17 +227,7 @@ export function PluginDetail({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={onBack}
-          aria-label="Back to plugins"
-          className="shrink-0 text-muted-foreground"
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
-        <h2 className="min-w-0 truncate text-base font-semibold">{plugin.name}</h2>
+      <PluginHeader name={name} glideId={glideId} onBack={onBack}>
         <MarketplaceBadge marketplace={plugin.marketplace} />
         <div className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-muted-foreground whitespace-nowrap">
           <span title={`Installed version: ${versionLabel(plugin.installed_version)}`}>
@@ -260,74 +260,84 @@ export function PluginDetail({
           known={enablementKnown}
           projectMissing={showsMissingProjectStatus(plugin.installs)}
         />
-      </div>
+      </PluginHeader>
 
-      {context.kind === 'project' && (
-        <p
-          title={context.path}
-          className="shrink-0 truncate border-b border-border px-4 py-1.5 font-mono text-[11px] text-muted-foreground"
-        >
-          Repository: {resolveProjectLabel(context.path)}
-        </p>
-      )}
-      {noticeStatus && <ProjectAvailabilityNotice status={noticeStatus} />}
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-4 px-4 py-4">
-          <Card className="shadow-none py-4">
-            <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4 px-4 sm:grid-cols-5">
-              <Stat
-                label="Marketplace"
-                value={
-                  plugin.available_version ? versionLabel(plugin.available_version) : 'Unknown'
-                }
-                mono
-              />
-              <Stat
-                label="Skills"
-                value={plugin.skill_count.toLocaleString()}
-                onClick={
-                  plugin.skill_count > 0 ? () => onViewSkills(`${name}@${marketplace}`) : undefined
-                }
-              />
-              <Stat
-                label={context.kind === 'all' ? 'Uses' : 'Uses (all projects)'}
-                value={totalInvocations === 0 ? 'Never' : totalInvocations.toLocaleString()}
-                mono
-              />
-              <Stat label="Lint errors" value={errorCount.toLocaleString()} mono />
-              <Stat label="Lint warnings" value={warningCount.toLocaleString()} mono />
-            </CardContent>
-          </Card>
+      <motion.div {...settle} className="flex min-h-0 flex-1 flex-col">
+        {context.kind === 'project' && (
+          <p
+            title={context.path}
+            className="shrink-0 truncate border-b border-border px-4 py-1.5 font-mono text-[11px] text-muted-foreground"
+          >
+            Repository: {resolveProjectLabel(context.path)}
+          </p>
+        )}
+        {noticeStatus && <ProjectAvailabilityNotice status={noticeStatus} />}
+        <div className="flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-4 px-4 py-4">
+            <Card className="shadow-none py-4">
+              <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4 px-4 sm:grid-cols-5">
+                <Stat
+                  label="Marketplace"
+                  value={
+                    plugin.available_version ? versionLabel(plugin.available_version) : 'Unknown'
+                  }
+                  mono
+                />
+                <Stat
+                  label="Skills"
+                  value={plugin.skill_count.toLocaleString()}
+                  onClick={
+                    plugin.skill_count > 0
+                      ? () => onViewSkills(`${name}@${marketplace}`)
+                      : undefined
+                  }
+                />
+                <Stat
+                  label={context.kind === 'all' ? 'Uses' : 'Uses (all projects)'}
+                  value={totalInvocations === 0 ? 'Never' : totalInvocations.toLocaleString()}
+                  mono
+                />
+                <Stat label="Lint errors" value={errorCount.toLocaleString()} mono />
+                <Stat label="Lint warnings" value={warningCount.toLocaleString()} mono />
+              </CardContent>
+            </Card>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-              Installs
-            </p>
-            {plugin.installs.map((install) => (
-              <InstallRow
-                key={`${installKey(install)}:${install.install_path}`}
-                install={install}
-                fallbackAvailableVersion={plugin.available_version}
-                pendingKey={pendingKey}
-                updatePhase={
-                  updateProgress?.input.scope === install.scope &&
-                  updateProgress.input.projectPath === install.project_path
-                    ? updateProgress.phase
-                    : undefined
-                }
-                onManageFolders={onManageFolders}
-                errorMessage={
-                  actionError?.install === installKey(install) ? actionError.message : undefined
-                }
-                onEnable={() => runAction('enable', install)}
-                onDisable={() => runAction('disable', install)}
-                onUpdate={() => runAction('update', install)}
-                onUninstallRequest={() => setUninstallTarget(install)}
-              />
-            ))}
+            <PluginComponents
+              pluginName={plugin.name}
+              components={data.components}
+              disabled={plugin.disabled_reason !== null}
+            />
+
+            <div className="flex flex-col gap-2">
+              <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                Installs
+              </p>
+              {plugin.installs.map((install) => (
+                <InstallRow
+                  key={`${installKey(install)}:${install.install_path}`}
+                  install={install}
+                  fallbackAvailableVersion={plugin.available_version}
+                  pendingKey={pendingKey}
+                  updatePhase={
+                    updateProgress?.input.scope === install.scope &&
+                    updateProgress.input.projectPath === install.project_path
+                      ? updateProgress.phase
+                      : undefined
+                  }
+                  onManageFolders={onManageFolders}
+                  errorMessage={
+                    actionError?.install === installKey(install) ? actionError.message : undefined
+                  }
+                  onEnable={() => runAction('enable', install)}
+                  onDisable={() => runAction('disable', install)}
+                  onUpdate={() => runAction('update', install)}
+                  onUninstallRequest={() => setUninstallTarget(install)}
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <Dialog
         open={uninstallTarget !== null}
@@ -371,6 +381,41 @@ export function PluginDetail({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function PluginHeader({
+  name,
+  glideId,
+  onBack,
+  children
+}: {
+  name: string
+  glideId: string
+  onBack: () => void
+  children?: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={onBack}
+        aria-label="Back to plugins"
+        className="shrink-0 text-muted-foreground"
+      >
+        <ArrowLeft className="size-4" />
+      </Button>
+      <GlideTitle
+        as="h2"
+        glideId={glideId}
+        level="detail"
+        className="min-w-0 truncate text-base font-semibold"
+      >
+        {name}
+      </GlideTitle>
+      {children}
     </div>
   )
 }
@@ -491,9 +536,7 @@ function InstallRow({
             size="sm"
             disabled={anyPending || !actionable}
             onClick={onUpdate}
-            className={cn(
-              hasUpdate && 'border-warning/50 text-warning hover:bg-warning/10 hover:text-warning'
-            )}
+            className={cn(hasUpdate && 'border-info/50 text-info hover:bg-info/10 hover:text-info')}
           >
             {isPending('update') ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -553,6 +596,192 @@ function InstallRow({
         </p>
       )}
     </div>
+  )
+}
+
+const COMPONENT_PREVIEW_COUNT = 5
+
+// Static rows, with no hover, selection, or focus stop: no component has a view of its own yet.
+// MCP servers and agents are entities and get the glyph tile; commands, hooks, and LSP stay
+// neutral (DESIGN.md → Entity glyph).
+function PluginComponents({
+  pluginName,
+  components,
+  disabled
+}: {
+  pluginName: string
+  components: PluginComponent[]
+  disabled: boolean
+}): React.JSX.Element {
+  const of = (kind: PluginComponentKind): PluginComponent[] =>
+    components.filter((component) => component.kind === kind)
+  const hooks = of('hook')
+  return (
+    <>
+      <ComponentList label="MCP servers" items={of('mcp')}>
+        {(server) => (
+          <TileRow key={server.name} entity="mcp" disabled={disabled} component={server} mono />
+        )}
+      </ComponentList>
+      <ComponentList label="Agents" items={of('agent')}>
+        {(agent) => (
+          <TileRow
+            key={agent.name}
+            entity="agents"
+            disabled={disabled}
+            component={agent}
+            prefix={`${pluginName}:`}
+          />
+        )}
+      </ComponentList>
+      <ComponentList label="Commands" items={of('command')} panel>
+        {(command) => (
+          <DenseRow key={command.name} component={command} prefix={`/${pluginName}:`} />
+        )}
+      </ComponentList>
+      {hooks.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <ComponentCaption label="Hooks" count={hooks.length} />
+          <div className="flex flex-wrap gap-1.5">
+            {hooks.map((hook) => (
+              <Badge
+                key={hook.name}
+                variant="outline"
+                className="font-mono text-[11px] font-normal text-muted-foreground"
+              >
+                {hook.name}
+              </Badge>
+            ))}
+          </div>
+        </section>
+      )}
+      <ComponentList label="LSP servers" items={of('lsp')} panel>
+        {(server) => <DenseRow key={server.name} component={server} alignDetail="end" />}
+      </ComponentList>
+    </>
+  )
+}
+
+function ComponentCaption({ label, count }: { label: string; count: number }): React.JSX.Element {
+  return (
+    <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+      {label} · {count.toLocaleString()}
+    </h3>
+  )
+}
+
+function ComponentList({
+  label,
+  items,
+  panel = false,
+  children
+}: {
+  label: string
+  items: PluginComponent[]
+  panel?: boolean
+  children: (item: PluginComponent) => React.ReactNode
+}): React.JSX.Element | null {
+  const [expanded, setExpanded] = useState(false)
+  if (items.length === 0) return null
+  const hidden = expanded ? 0 : items.length - COMPONENT_PREVIEW_COUNT
+  return (
+    <section className="flex flex-col gap-2">
+      <ComponentCaption label={label} count={items.length} />
+      <div className={cn(panel && 'rounded-md bg-muted px-3 py-2')}>
+        <ul className={cn('flex flex-col', panel ? 'gap-1' : 'gap-2.5')}>
+          {(hidden > 0 ? items.slice(0, COMPONENT_PREVIEW_COUNT) : items).map(children)}
+        </ul>
+        {hidden > 0 && (
+          <button
+            type="button"
+            aria-expanded={false}
+            onClick={() => setExpanded(true)}
+            className={cn(
+              'rounded-sm text-[11px] text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+              panel ? 'mt-1' : 'mt-2.5'
+            )}
+          >
+            Show all {items.length.toLocaleString()}
+          </button>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// The name as the user types it, with the plugin prefix dimmed.
+function ComponentName({
+  prefix,
+  name,
+  className
+}: {
+  prefix?: string
+  name: string
+  className?: string
+}): React.JSX.Element {
+  return (
+    <span title={`${prefix ?? ''}${name}`} className={cn('truncate font-mono text-xs', className)}>
+      {prefix && <span className="text-muted-foreground">{prefix}</span>}
+      {name}
+    </span>
+  )
+}
+
+function TileRow({
+  entity,
+  disabled,
+  component,
+  prefix,
+  mono = false
+}: {
+  entity: Entity
+  disabled: boolean
+  component: PluginComponent
+  prefix?: string
+  mono?: boolean
+}): React.JSX.Element {
+  return (
+    <li className="flex min-w-0 items-center gap-2.5">
+      <EntityGlyph entity={entity} disabled={disabled} />
+      <div className="flex min-w-0 flex-col">
+        <ComponentName prefix={prefix} name={component.name} />
+        {component.detail && (
+          <span
+            title={component.detail}
+            className={cn('truncate text-[11px] text-muted-foreground', mono && 'font-mono')}
+          >
+            {component.detail}
+          </span>
+        )}
+      </div>
+    </li>
+  )
+}
+
+function DenseRow({
+  component,
+  prefix,
+  alignDetail = 'start'
+}: {
+  component: PluginComponent
+  prefix?: string
+  alignDetail?: 'start' | 'end'
+}): React.JSX.Element {
+  return (
+    <li className="flex min-w-0 items-baseline gap-3">
+      <ComponentName prefix={prefix} name={component.name} className="max-w-[60%] shrink-0" />
+      {component.detail && (
+        <span
+          title={component.detail}
+          className={cn(
+            'min-w-0 flex-1 truncate text-[11px] text-muted-foreground',
+            alignDetail === 'end' && 'text-right font-mono'
+          )}
+        >
+          {component.detail}
+        </span>
+      )}
+    </li>
   )
 }
 

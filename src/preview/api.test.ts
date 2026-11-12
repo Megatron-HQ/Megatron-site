@@ -3,8 +3,10 @@ import test from 'node:test'
 import {
   ADDITIONAL_PARENT,
   ADDITIONAL_PROJECT,
+  API_PROJECT,
   EMPTY_PROJECT,
   NESTED_PROJECT,
+  SAMPLE_HOME,
   SAMPLE_PARENT,
   SAMPLE_PROJECT
 } from './fixtures.ts'
@@ -682,15 +684,16 @@ test('uninstalling one version removes its skills while preserving the other ins
   assert.equal(detail?.plugin.installs[0].scope, 'project')
 })
 
-test('granting a parent discovers descendants and revoking it preserves independently granted repositories', async () => {
+test('granting a parent absorbs its separately granted repository, so revoking the parent removes both', async () => {
   const { api } = await createDemo()
-  await api.pickAndAddFolders()
-  await api.pickAndAddFolders()
-  assert.ok(
-    (await api.listAllowedPaths()).some(
-      (folder) => folder.path === ADDITIONAL_PARENT
-    )
+  const child = await api.pickAndAddFolders()
+  assert.deepEqual(child.skipped, [])
+  const parent = await api.pickAndAddFolders()
+  assert.deepEqual(
+    parent.folders.map((folder) => folder.path),
+    [SAMPLE_PARENT, ADDITIONAL_PARENT]
   )
+  assert.deepEqual(parent.skipped, [])
   assert.ok(
     (await api.listProjects()).some(
       (project) =>
@@ -699,13 +702,146 @@ test('granting a parent discovers descendants and revoking it preserves independ
   )
   await api.revokeAllowedPath(ADDITIONAL_PARENT)
   const projects = await api.listProjects()
-  assert.ok(projects.some((project) => project.path === ADDITIONAL_PROJECT))
+  assert.ok(!projects.some((project) => project.path === ADDITIONAL_PROJECT))
   assert.ok(!projects.some((project) => project.path === ADDITIONAL_PARENT))
   assert.equal(
     (await api.listSkills()).skills.filter(
       (skill) => skill.project_root === SAMPLE_PROJECT
     ).length,
     4
+  )
+})
+
+test('the preview reports version 0.2.0 and a sample home outside the sample projects', async () => {
+  const { api } = await createDemo()
+  assert.equal(api.getVersion(), '0.2.0')
+  const home = api.getHomePath()
+  assert.equal(home, SAMPLE_HOME)
+  assert.ok(!isWithinProjectPath(SAMPLE_PARENT, home))
+  assert.ok(!isWithinProjectPath(ADDITIONAL_PARENT, home))
+})
+
+test('the welcome stays closed on load unless a scenario asks for it', async () => {
+  const { createDemoApi } = await import('./api.ts')
+  assert.equal(
+    createDemoApi({ actionDelayMs: 0 }).api.getInitialOnboarding(),
+    false
+  )
+  const welcome = createDemoApi({ actionDelayMs: 0, scenario: 'onboarding' })
+  assert.equal(welcome.api.getInitialOnboarding(), true)
+  await welcome.api.setOnboardingDone()
+})
+
+test('updates are unsupported in the browser while the automatic-check preference still works', async () => {
+  const notices: string[] = []
+  const { createDemoApi } = await import('./api.ts')
+  const sample = createDemoApi({
+    actionDelayMs: 0,
+    onNotice: (message) => notices.push(message)
+  })
+  const { api } = sample
+  assert.deepEqual(await api.getUpdateState(), {
+    status: 'unsupported',
+    version: null,
+    autoCheck: true
+  })
+  const pushed: boolean[] = []
+  const unsubscribe = api.onUpdateState((state) => pushed.push(state.autoCheck))
+  await api.setAutoUpdateCheck(false)
+  assert.equal((await api.getUpdateState()).autoCheck, false)
+  assert.deepEqual(pushed, [false])
+  await assert.rejects(
+    () => api.setAutoUpdateCheck('yes' as unknown as boolean),
+    /boolean/i
+  )
+  unsubscribe()
+  await api.setAutoUpdateCheck(true)
+  assert.deepEqual(pushed, [false])
+  await api.checkForUpdates()
+  assert.match(notices.at(-1)!, /github\.com/i)
+  await api.setAutoUpdateCheck(false)
+  sample.reset()
+  assert.equal((await api.getUpdateState()).autoCheck, true)
+})
+
+test('plugin details list the contents of their own installs without credentials', async () => {
+  const { api } = await createDemo()
+  for (const plugin of await api.listPlugins()) {
+    const detail = (await api.getPluginDetail(plugin.name, plugin.marketplace))!
+    const installPaths = plugin.installs.map((install) => install.install_path)
+    const identities = detail.components.map(
+      (component) => `${component.kind}:${component.name}`
+    )
+    assert.equal(new Set(identities).size, identities.length)
+    for (const component of detail.components) {
+      assert.ok(installPaths.includes(component.install_path))
+      if (component.kind === 'hook') assert.equal(component.detail, null)
+      if (component.kind === 'mcp')
+        assert.match(component.detail ?? '', /^(stdio|http|sse) · [\w.-]+$/)
+    }
+  }
+  const frontend = (await api.getPluginDetail('frontend', 'team-tools'))!
+  assert.deepEqual(
+    [...new Set(frontend.components.map((component) => component.kind))],
+    ['agent', 'command', 'lsp', 'mcp']
+  )
+  const empty = (await api.getPluginDetail('frontend', 'community'))!
+  assert.deepEqual(empty.components, [])
+})
+
+test('plugin contents follow an install to its updated version', async () => {
+  const { api } = await createDemo()
+  await api.updatePlugin({
+    name: 'frontend',
+    marketplace: 'team-tools',
+    scope: 'user',
+    projectPath: null
+  })
+  const detail = (await api.getPluginDetail('frontend', 'team-tools'))!
+  assert.ok(
+    detail.components.length > 0 &&
+      detail.components.every((component) =>
+        component.install_path.endsWith('\\1.5.0')
+      )
+  )
+})
+
+test('a pick inside a granted parent is skipped and reports the covering grant', async () => {
+  const { api } = await createDemo()
+  await api.pickAndAddFolders()
+  await api.pickAndAddFolders()
+  const result = await api.pickAndAddFolders()
+  assert.deepEqual(result.skipped, [
+    { path: ADDITIONAL_PROJECT, coveredBy: ADDITIONAL_PARENT }
+  ])
+  assert.deepEqual(
+    result.folders.map((folder) => folder.path),
+    [SAMPLE_PARENT, ADDITIONAL_PARENT]
+  )
+})
+
+test('narrowing a parent keeps one chosen repository and drops everything else inside it', async () => {
+  const { api } = await createDemo()
+  const result = await api.narrowAllowedPath(SAMPLE_PARENT)
+  assert.deepEqual(
+    result.folders.map((folder) => folder.path),
+    [SAMPLE_PROJECT]
+  )
+  assert.deepEqual(result.skipped, [])
+  const projects = await api.listProjects()
+  assert.ok(projects.some((project) => project.path === SAMPLE_PROJECT))
+  assert.ok(!projects.some((project) => project.path === API_PROJECT))
+  assert.ok(!projects.some((project) => project.path === SAMPLE_PARENT))
+  const skills = (await api.listSkills()).skills
+  assert.ok(skills.some((skill) => skill.project_root === SAMPLE_PROJECT))
+  assert.ok(!skills.some((skill) => skill.project_root === API_PROJECT))
+})
+
+test('only an existing grant can be narrowed', async () => {
+  const { api } = await createDemo()
+  await assert.rejects(
+    () => api.narrowAllowedPath(SAMPLE_PROJECT),
+    /not granted/i
   )
 })
 

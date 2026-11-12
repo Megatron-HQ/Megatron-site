@@ -1,5 +1,4 @@
 import type {
-  AllowedPathRow,
   PluginDetailResult,
   PluginInstall,
   PluginRow,
@@ -144,6 +143,10 @@ function contextKey(context: PluginContext): string {
   return context.kind === 'project' ? normalizeProjectPath(context.path) : context.kind
 }
 
+export function pluginRowKey(name: string, marketplace: string, context: PluginContext): string {
+  return JSON.stringify([name, marketplace, context.kind, contextKey(context)])
+}
+
 function belongsToContext(install: PluginInstall, context: PluginContext): boolean {
   if (context.kind === 'all') return true
   if (context.kind === 'user') return install.scope === 'user'
@@ -174,7 +177,6 @@ export function createPluginRows(
   filter: PluginFilter = { kind: 'all' },
   projects: ProjectFolder[] = [],
   skillSources?: Pick<SkillRow, 'source_path' | 'plugin_name'>[],
-  folders: AllowedPathRow[] = [],
   displayLabels?: ReadonlyMap<string, string>
 ): PluginRepositoryRow[] {
   const availability = new Map(
@@ -182,19 +184,14 @@ export function createPluginRows(
   )
   const labels =
     displayLabels ??
-    projectDisplayLabels(
-      [
-        ...projects
-          .filter((project) => project.kind === 'repository')
-          .map((project) => project.path),
-        ...plugins.flatMap((plugin) =>
-          plugin.installs.flatMap((install) =>
-            install.project_path === null ? [] : [install.project_path]
-          )
+    projectDisplayLabels([
+      ...projects.filter((project) => project.kind === 'repository').map((project) => project.path),
+      ...plugins.flatMap((plugin) =>
+        plugin.installs.flatMap((install) =>
+          install.project_path === null ? [] : [install.project_path]
         )
-      ],
-      folders
-    )
+      )
+    ])
   return plugins.flatMap((plugin) => {
     const groups = new Map<string, { context: PluginContext; installs: PluginInstall[] }>()
     for (const install of plugin.installs) {
@@ -226,12 +223,7 @@ export function createPluginRows(
             }
           : {}),
         context,
-        rowKey: JSON.stringify([
-          plugin.name,
-          plugin.marketplace,
-          context.kind,
-          contextKey(context)
-        ]),
+        rowKey: pluginRowKey(plugin.name, plugin.marketplace, context),
         repositoryPath: context.kind === 'project' ? context.path : null,
         repositoryLabel:
           context.kind === 'project'
@@ -259,10 +251,20 @@ export function scopePluginDetail(
       : detail.skills.filter((skill) =>
           installs.some((install) => isWithinProjectPath(skill.source_path, install.install_path))
         )
+  // Installs at different versions each carry a copy of what they share; list each once.
+  const seen = new Set<string>()
+  const components = detail.components.filter((component) => {
+    const key = `${component.kind}\0${component.name}`
+    if (seen.has(key) || !installs.some((i) => i.install_path === component.install_path))
+      return false
+    seen.add(key)
+    return true
+  })
   return {
     ...detail,
     plugin: { ...withInstalls(detail.plugin, installs), skill_count: skills.length },
     skills,
+    components,
     errorCount: skills.reduce((sum, skill) => sum + skill.error_count, 0),
     warningCount: skills.reduce((sum, skill) => sum + skill.warning_count, 0)
   }

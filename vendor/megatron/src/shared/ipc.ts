@@ -12,6 +12,7 @@ export const IPC_CHANNELS = {
   listProjects: 'projects:list',
   pickAndAddFolders: 'folders:pickAndAdd',
   revokeAllowedPath: 'folders:revoke',
+  narrowAllowedPath: 'folders:narrow',
   openExternal: 'shell:openExternal',
   listPlugins: 'plugins:list',
   getPluginDetail: 'plugins:detail',
@@ -22,9 +23,12 @@ export const IPC_CHANNELS = {
   uninstallPlugin: 'plugins:uninstall',
   getInitialSection: 'app:getInitialSection',
   setLastSection: 'app:setLastSection',
+  getInitialOnboarding: 'app:getInitialOnboarding',
+  setOnboardingDone: 'app:setOnboardingDone',
   rescan: 'app:rescan',
   revealDataFolder: 'app:revealDataFolder',
   getVersion: 'app:getVersion',
+  getHomePath: 'app:getHomePath',
   usageOverview: 'usage:overview',
   usageCalendar: 'usage:calendar',
   usageDay: 'usage:day',
@@ -33,13 +37,42 @@ export const IPC_CHANNELS = {
   usageUnlinkProject: 'usage:projects:unlink',
   usageSkillInvocations: 'usage:skillInvocations',
   usageContextBaseline: 'usage:contextBaseline',
-  usageRecordedRequest: 'usage:recordedRequest'
+  usageRecordedRequest: 'usage:recordedRequest',
+  getUpdateState: 'updates:getState',
+  checkForUpdates: 'updates:check',
+  installUpdate: 'updates:install',
+  setAutoUpdateCheck: 'updates:setAutoCheck',
+  openUpdateDownload: 'updates:openDownload',
+  updateState: 'updates:state'
 } as const
+
+export type UpdateStatus =
+  'unsupported' | 'idle' | 'checking' | 'current' | 'available' | 'downloading' | 'ready' | 'error'
+
+export interface UpdateState {
+  status: UpdateStatus
+  version: string | null
+  autoCheck: boolean
+}
 
 export interface AllowedPathRow {
   path: string
   granted_at: string
 }
+
+export interface SkippedGrant {
+  path: string
+  coveredBy: string
+}
+
+export interface GrantChangeResult {
+  folders: AllowedPathRow[]
+  skipped: SkippedGrant[]
+}
+
+// Shown in Manage Folders and as the native picker's macOS message, so both say the same thing.
+export const GRANT_GUIDANCE =
+  'A parent folder includes every project inside it, including ones added later. To include only some, select them individually; you can pick several at once.'
 
 export interface ProjectFolder {
   path: string
@@ -101,6 +134,12 @@ export interface SkillRow {
   warning_count: number
 }
 
+// Not on SkillRow: staleness is computed at list time from the index plus the usage archive
+// (docs/usage-analytics.md, Stale skills), and the detail payloads never carry it.
+export interface InventorySkillRow extends SkillRow {
+  stale: boolean
+}
+
 export interface ContextBudget {
   used: number
   limit: number
@@ -146,7 +185,7 @@ export interface ScanProgress {
 }
 
 export interface SkillsListResult {
-  skills: SkillRow[]
+  skills: InventorySkillRow[]
   scanComplete: boolean
   scanSummary?: ScanSummary
   // Set while a scan is in progress so a renderer that missed scan:started can still time the banner.
@@ -293,9 +332,26 @@ export interface PluginRow {
   installs: PluginInstall[]
 }
 
+export type PluginComponentKind = 'agent' | 'command' | 'mcp' | 'hook' | 'lsp'
+
+// One install's component, resolved from disk by Claude Code's own rules (docs/skill-scanner.md,
+// Plugin components). Identity is (install_path, kind, name).
+export interface PluginComponent {
+  install_path: string
+  kind: PluginComponentKind
+  // Without the plugin prefix. Agents and commands keep their `:` subfolder segments.
+  name: string
+  // Agent/command description, MCP transport plus URL host or command basename (never args, env,
+  // headers, or URL path/query), LSP file extensions. NULL for hooks.
+  detail: string | null
+  // The file that declares it; NULL only when nothing on disk does.
+  source_path: string | null
+}
+
 export interface PluginDetailResult {
   plugin: PluginRow
   skills: SkillRow[]
+  components: PluginComponent[]
   totalInvocations: number
   errorCount: number
   warningCount: number
@@ -384,7 +440,7 @@ export interface ActivityStats {
   generatedAt: string
 }
 
-// The Cost section (docs/usage-view-ui-spec.md §C). Read verbatim from Claude Code's per-session
+// The Cost section (docs/usage-analytics.md). Read verbatim from Claude Code's per-session
 // `cost-state` remains the dollar source. Rolling windows use its proportional activity-time
 // shares; coverage metadata describes all retained priced terminal sessions.
 export type CostWindowKey = '24h' | '7d' | '30d'
@@ -560,7 +616,7 @@ export interface SkillCostAttribution {
   rows: SkillCostAttributionRow[]
 }
 
-// Resident tax (docs/usage-view-ui-spec.md §R): Claude Code's own `/context` breakdown, parsed
+// Resident tax (docs/usage-analytics.md): Claude Code's own `/context` breakdown, parsed
 // generically so a category Claude Code adds later passes through instead of being dropped.
 export type ContextCategoryGroup = 'used' | 'deferred' | 'buffer' | 'free'
 
@@ -600,7 +656,7 @@ export type ContextBaselineResult =
   | { ok: false; error: string; raw?: string }
 
 // The first request of the newest interactive session, read from its transcript on demand and
-// never stored (docs/usage-analytics.md). Sizes are exact characters; Megatron doesn't estimate
+// never stored (docs/usage-analytics.md, Resident tax). Sizes are exact characters; Megatron doesn't estimate
 // tokens for these — only /context's own per-item tokens are shown as tokens.
 export interface RecordedCacheControl {
   ttl: string | null
