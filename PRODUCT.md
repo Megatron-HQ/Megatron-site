@@ -29,7 +29,7 @@ The website follows the same rule. It sends no analytics or remote requests and 
 ## Operating Context
 
 - Visitors evaluate in a browser. The site embeds Megatron's actual renderer (pinned in `vendor/megatron/`) in an isolated iframe, with a typed sample API in `src/preview/`. Visitors can use Skills, Plugins, all five Usage panels, the command palette, settings, and dialogs. Native actions are simulated, and sample data is labeled as sample data.
-- The primary install path is the packaged v0.2.0 release: the `megatron-hq/tap/megatron` Homebrew cask or a DMG for Apple silicon Macs, and a per-user installer for 64-bit Windows. Neither build is notarized or code-signed yet, so the DMG asks for Open Anyway on first launch (Homebrew skips it) and Windows SmartScreen may warn. Running from source (`git clone`, `npm ci`, `npm run dev`) remains the alternative and requires macOS or Windows, Node.js 22.x, npm, and Git. Plugin actions also need the `claude` CLI on PATH.
+- The primary install path is the packaged v0.2.1 release: the `megatron-hq/tap/megatron` Homebrew cask or a DMG for Apple silicon Macs, and a per-user installer for 64-bit Windows. Neither build is notarized or code-signed yet, so the DMG asks for Open Anyway on first launch (Homebrew skips it) and Windows SmartScreen may warn. Running from source (`git clone`, `npm ci`, `npm run dev`) remains the alternative and requires macOS or Windows, Node.js 22.x, npm, and Git. Plugin actions also need the `claude` CLI on PATH.
 - On first launch, a short welcome shows what Megatron reads, what it found, and which folders Claude Code has used, and offers folder grants; it can be replayed from Settings. Users change grants under Settings → Project folders → Manage. Grants never overlap: a parent absorbs repositories granted inside it, and a parent can be narrowed.
 - Installed builds check github.com for a newer release 10 seconds after launch and every 6 hours; it is on by default and turned off in Settings → Updates. Windows installs updates itself; macOS upgrades through Homebrew or a new DMG. This is the only request the app makes itself.
 - Analytics depend on the local history and transcripts that Claude Code keeps.
@@ -48,7 +48,7 @@ The website follows the same rule. It sends no analytics or remote requests and 
 - Megatron runs alongside Claude Code and does not replace it. It does not edit skill definitions or run skill scripts. Plugin management is a separate capability that goes through Claude Code's own CLI.
 - Megatron is free and open source under MIT today. Future pricing is undecided: make no commitments either way.
 - Platforms are macOS and Windows only. Linux distribution and skills from other tools are out of scope.
-- Distribution: v0.1.0 was published on GitHub Releases on November 8, 2026, and v0.2.0 on November 12, each with an Apple silicon DMG (no Intel build) and a 64-bit Windows installer. The `Megatron-HQ/homebrew-tap` cask tracks each published release (0.2.0 as of November 12). Wherever downloads appear, say they are not notarized or code-signed yet. Check GitHub releases and the tap before changing version, platform, or signing claims.
+- Distribution: v0.1.0 was published on GitHub Releases on November 8, 2026, v0.2.0 on November 12, and v0.2.1 after it, each with an Apple silicon DMG (no Intel build) and a 64-bit Windows installer. The `Megatron-HQ/homebrew-tap` cask tracks each published release; its workflow writes the new version when a release is published. Wherever downloads appear, say they are not notarized or code-signed yet. Check GitHub releases and the tap before changing version, platform, or signing claims.
 - Never describe the app as making no network requests: it checks github.com for updates, and plugin actions and Resident tax run Claude Code's CLI, which may use the network.
 - The vendored renderer is never edited by hand. Updates go through `npm run preview:sync` with recorded provenance.
 - The site has no telemetry, analytics, forms, or remote requests.
@@ -64,7 +64,7 @@ The website follows the same rule. It sends no analytics or remote requests and 
 
 ## Evidence on Hand
 
-- **The interactive preview:** Megatron's real renderer (app `main` at `e1399c4`: v0.2.0 plus unreleased fork-lineage cost, Claude app chat grouping, and History/Tokens entrance animations) running on illustrative sample data. This is the strongest proof the site has.
+- **The interactive preview:** Megatron's real renderer (app `main` at `e1399c4`, shipped as v0.2.1: v0.2.0 plus exact fork-lineage cost, Claude app chat grouping, and History/Tokens entrance animations) running on illustrative sample data. This is the strongest proof the site has.
 - **Open source:** [github.com/Megatron-HQ/Megatron](https://github.com/Megatron-HQ/Megatron) under the MIT license.
 - **App icon:** `public/megatron-icon.png`.
 - **Absent, and must not be invented:** testimonials, customer or company logos, ratings, user or download counts, star counts, benchmarks, savings or performance claims, and press. Figures in the preview and illustrations are samples, not measurements.

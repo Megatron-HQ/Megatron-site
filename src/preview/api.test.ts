@@ -734,9 +734,9 @@ test('cost windows flag an estimated lineage only where its session contributes'
   assert.equal(window.totalCostUsd, exact.cost!.last30d.totalCostUsd)
 })
 
-test('the preview reports version 0.2.0 and a sample home outside the sample projects', async () => {
+test('the preview reports version 0.2.1 and a sample home outside the sample projects', async () => {
   const { api } = await createDemo()
-  assert.equal(api.getVersion(), '0.2.0')
+  assert.equal(api.getVersion(), '0.2.1')
   const home = api.getHomePath()
   assert.equal(home, SAMPLE_HOME)
   assert.ok(!isWithinProjectPath(SAMPLE_PARENT, home))

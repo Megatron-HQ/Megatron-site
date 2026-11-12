@@ -49,7 +49,7 @@ import {
   type SampleGrantChange
 } from './folder-grants.ts'
 
-export const PREVIEW_APP_VERSION = '0.2.0'
+export const PREVIEW_APP_VERSION = '0.2.1'
 // The desktop's updater never runs in a browser, so the preview shows the
 // state an uninstalled build reports.
 const INITIAL_UPDATE_STATE: UpdateState = {

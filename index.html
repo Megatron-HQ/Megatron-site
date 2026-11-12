@@ -338,7 +338,8 @@
                     <h3>See your estimated API cost.</h3>
                     <p>
                       Follow cost trends across 24 hours, 7 days, or 30 days,
-                      with breakdowns by model and project.
+                      with breakdowns by model and project. Resumed, rewound,
+                      and forked conversations count once.
                     </p>
                     <p class="analytics-note">
                       Cost views show estimated API-equivalent usage, not your
@@ -365,8 +366,9 @@
                       Prompts, sessions, and active days across 24 hours, 7
                       days, or 30 days, from retained prompt history. Search
                       projects, follow daily and hourly patterns, and open a day
-                      or hour for its details. Coverage notes identify
-                      incomplete history.
+                      or hour for its details. Chats started in the Claude app
+                      without a project folder share one row. Coverage notes
+                      identify incomplete history.
                     </p>
                     <button
                       type="button"
@@ -573,7 +575,7 @@
           <div class="release-status">
             <span class="status-dot" aria-hidden="true"></span>
             <div>
-              <strong>Megatron 0.2.0</strong
+              <strong>Megatron 0.2.1</strong
               ><span>For Apple silicon Macs and 64-bit Windows.</span>
             </div>
           </div>
@@ -650,13 +652,13 @@
                 <p class="install-download">
                   <a
                     class="text-link"
-                    href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.2.0/megatron-0.2.0.dmg"
+                    href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.2.1/megatron-0.2.1.dmg"
                     aria-describedby="install-dmg-step"
                     >Or download the .dmg<i
                       data-lucide="download"
                       aria-hidden="true"
                     ></i></a
-                  ><span class="install-size">136 MB</span>
+                  ><span class="install-size">126 MB</span>
                 </p>
                 <p class="install-note" id="install-dmg-step">
                   Not notarized yet: on first launch, open System Settings →
@@ -676,13 +678,13 @@
               <p class="install-download">
                 <a
                   class="button button-lime"
-                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.2.0/megatron-0.2.0-setup.exe"
+                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.2.1/megatron-0.2.1-setup.exe"
                   aria-describedby="install-exe-step"
                   >Download for Windows<i
                     data-lucide="download"
                     aria-hidden="true"
                   ></i></a
-                ><span class="install-size">115 MB</span>
+                ><span class="install-size">107 MB</span>
               </p>
               <p class="install-note" id="install-exe-step">
                 Installs for your user only, with no administrator prompt, and
@@ -834,7 +836,10 @@
               Megatron uses cost information recorded by Claude Code. Time and
               skill breakdowns are approximate allocations. They represent
               estimated API-equivalent usage, not subscription charges or
-              invoices. Missing data is shown as a coverage gap.
+              invoices. Resumed, rewound, and forked conversations are counted
+              once; when Claude Code has cleaned up part of a branched
+              conversation, its cost is marked as an estimate. Missing data is
+              shown as a coverage gap.
             </p>
           </details>
           <details>

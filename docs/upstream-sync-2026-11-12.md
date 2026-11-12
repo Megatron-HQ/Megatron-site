@@ -125,6 +125,4 @@ Synced the renderer to app `main` at `e1399c465299e020b12084076c1522cdc377e7b4` 
   recorded start, like the desktop.
 - PR #24 (merge `e1399c4`) gives History and Tokens the staggered chart entrance: Tokens trend bars rise from the baseline, contribution days pop in on a diagonal sweep (delays capped at 0.4s), and timeline fills sweep to their data shade, including chat rows revealed by the group chevron. Each skips animation under reduced motion, and the original-renderer comparison finishes finite animations before capturing.
 
-None of these changes is in a published release yet, so the landing page makes no
-claim about them; the interactive preview shows them because it runs the
-pinned renderer. Add copy when a release ships them.
+These changes ship in v0.2.1 (tag `75e8faa`; its renderer is unchanged since `e1399c4`). The landing page describes them once v0.2.1 is published: Cost and its FAQ say resumed, rewound, and forked conversations count once and note the estimate caveat, and Activity says folderless Claude app chats share one row. The install panel moves to v0.2.1 at the same time: label, both links, and sizes of 126 MB (DMG, 132,393,212 bytes) and 107 MB (Windows installer, 112,235,465 bytes), in the panel's binary-megabyte rounding.

@@ -43,7 +43,7 @@ async function verifyUpdatesAndWelcome(app, page, directory) {
         .contentDocument.querySelector('#auto-update-check')
         ?.getAttribute('aria-checked') === 'false'
   )
-  await settings.getByText('Megatron v0.2.0', { exact: true }).waitFor()
+  await settings.getByText('Megatron v0.2.1', { exact: true }).waitFor()
   await settings.screenshot({ path: join(directory, 'settings-updates.png') })
 
   await activate(
