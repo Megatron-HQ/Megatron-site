@@ -13,6 +13,7 @@ import { verifyInventoryChanges } from './inventory.mjs'
 import { verifyUsageProjects } from './usage-projects.mjs'
 import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
+import { verifyReleaseFeatures } from './release-features.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -75,6 +76,11 @@ try {
   assert.ok(desktopDeck.checkedInline, 'Desktop opens analytics in place.')
   await verifyPreviewSettings(page)
   await checkOverflow(page, 1440)
+  await verifyReleaseFeatures(page, baseUrl, join(directory, 'release'))
+  await checkOverflow(page, 1440)
+  results.push(
+    'Megatron 0.2.0: unsupported update state and automatic-check switch, welcome replay by keyboard, stale-skill markers and tooltip, plugin contents, Resident tax 200K scale caption, and folder narrowing passed.'
+  )
   results.push(
     'Actual renderer geometry, sorting and keyboard rows, files and tree resizing, activity dialogs, settings, install-specific plugin actions, all Usage panels, independent windows, reset, expansion and Escape passed.'
   )

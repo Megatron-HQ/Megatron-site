@@ -386,7 +386,7 @@ A #eeefe7 header row with the file name and an 11px "ILLUSTRATIVE FINDING" label
 
 ### Context Visual
 
-A Graphite Raised panel with a 77px/400 headline number and a smaller unit. A proportional stacked bar (37px tall, 3px gaps) uses the data ramp, followed by a two-column legend with 6px square keys and mono values, a SAMPLE tag, and a 12px Caption note explaining the sample. On the card stack that replaced this panel, card numbers and uppercase captions are 11px Labels; the front card's caption may wrap to two lines on narrow cards, and the phone layout sizes the front card for that.
+A Graphite Raised panel with a 77px/400 headline number and a smaller unit. A proportional stacked bar (37px tall, 3px gaps) uses the data ramp, followed by a two-column legend with 6px square keys and mono values, a SAMPLE tag, and a 12px Caption note explaining the sample. On the card stack that replaced this panel, card numbers and uppercase captions are 11px Labels; the front card's caption may wrap to two lines on narrow cards, and the phone layout sizes the front card for that. The Resident tax card's segments and legend dots use the desktop app's entity identity colors (Megatron 0.2.0), matching the opened view: skills #6b50c2, MCP #089ac3, memory #ae316e, agents #d36d02 on light, and #816dd2, #0cb0d4, #c25485, #c9690c on dark. Color stays on the marks; text and row surfaces stay neutral, and system overhead keeps the neutral fill.
 
 ### FAQ Disclosure
 

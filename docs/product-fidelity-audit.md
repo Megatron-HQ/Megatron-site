@@ -1,8 +1,11 @@
 # Megatron product fidelity audit
 
-Reviewed on October 18, 2026 and updated on November 5, 2026 against the
-desktop app at `ffd88643e368e66c7d2782d22ad661040ef66f93`
-(Megatron 0.1.0). The renderer provenance records the exact source-file hashes.
+Reviewed on October 18, 2026 and updated on November 12, 2026 against the
+desktop app at `c86e8af605b3fc7224a6892aeb4fe450469bcb7a`
+(Megatron 0.2.0). The renderer provenance records the exact source-file hashes.
+The 0.2.0 additions (stale skills, plugin contents, non-overlapping grants,
+first-run welcome, updates, palette and motion) are reviewed in
+`docs/upstream-sync-2026-11-12.md`.
 
 ## Product and website architecture
 
@@ -126,8 +129,10 @@ scenarios reflect the new contract. The old resident-context fixture is removed.
    enabled. Missing granted projects return unknown enablement and block actions.
 5. **Folder-grant fidelity:** the sample catalog includes an empty nested
    repository. The first Add Folder grants `docs-site`; a second Add Folder grants
-   its `Clients` parent. Revoking overlapping grants preserves independently
-   granted repositories. Revoked access also cancels a pending scoped mutation.
+   its `Clients` parent, which absorbs the `docs-site` grant as Megatron 0.2.0's
+   non-overlapping rule requires; a third reports `docs-site` as already
+   included. Keep some folders… narrows a parent to a chosen sample repository.
+   Revoked access also cancels a pending scoped mutation.
 6. **Scan contract:** the browser adapter exposes matching scan-start and
    scan-finished events, active-scan state, and prior-success timestamps. Reset
    prevents stale pending work from mutating the restored sample session.
@@ -180,10 +185,12 @@ remain in place.
 ## Distribution and evidence limits
 
 The official GitHub CLI release query returned no published releases on October
-18, 2026. The site therefore provides source setup for macOS and Windows and a
-link to check releases. Packaging configuration alone is not evidence of a
-published downloadable installer. The project is currently MIT-licensed; the
-site makes no promise about future pricing.
+18, 2026. On November 12, 2026 it listed v0.2.0 as the latest release, after
+v0.1.0, and the `Megatron-HQ/homebrew-tap` cask was at 0.2.0. The install
+panel's macOS tab leads with the Homebrew cask and offers the v0.2.0 DMG; the
+Windows tab offers the v0.2.0 per-user installer. Both state that builds are
+unsigned. The project is currently MIT-licensed; the site makes no promise
+about future pricing.
 
 Every preview metric and definition is illustrative. Browser controls simulate
 native actions and do not prove that a visitor's Claude installation, folders,

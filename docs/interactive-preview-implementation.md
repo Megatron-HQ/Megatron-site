@@ -4,9 +4,11 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `61084a2d88d85b4fdf1fdeb1ae5878cb9a353d9e` plus the reviewed Usage header removal recorded by source hashes, version `0.1.0`; exact source hashes pin the imported files.
-- Snapshot: 109 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
-- Five recorded integration patches: scoped Tailwind discovery, trusted host navigation, inactive-frame autofocus guards in the two inventories, and an explicit `.ts` import in the shared Usage grouping helper for Node's adapter tests. App tokens, layouts, labels, icons, and motion rules are preserved.
+- App revision: `c86e8af605b3fc7224a6892aeb4fe450469bcb7a` (tag `v0.2.0`), version `0.2.0`; exact source hashes pin the imported files.
+- Snapshot: 121 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
+- Five recorded integration patches: scoped Tailwind discovery, trusted host navigation, inactive-frame autofocus guards in the two inventories (hooked after `focusShownRows`' active-element check since 0.2.0, so a pending Back focus restore stays pending), and an explicit `.ts` import in the shared Usage grouping helper for Node's adapter tests. App tokens, layouts, labels, icons, and motion rules are preserved.
+- `src/preview/runtime.ts` installs `window.api` before any app module evaluates, as the desktop preload does. Since 0.2.0 the onboarding dialog reads `window.api.platform` at import time.
+- 0.2.0 sample behavior: the updater reports `unsupported`, so Check now stays disabled while the automatic-check switch works for the session; the first-run welcome stays closed on load and opens from Settings → Show welcome (or `?scenario=onboarding`); the sample home is `C:\Users\demo`, outside every sample project, so folder suggestions appear; stale-skill markers, plugin contents, and non-overlapping grants follow the desktop rules over sample data.
 - `npm run build` checks TypeScript and snapshot hashes before building the marketing and preview entries. Normal builds and CI require no sibling app checkout.
 - The original app repository remains unchanged.
 
@@ -64,7 +66,7 @@ longer renders the Manage projects button or dialog. Existing identities and
 confirmed links remain in the catalog. Historical integration details remain in
 the [November 5 audit](upstream-sync-2026-11-05-usage-projects.md).
 
-The October 18 product review corrected version-specific plugin paths/counts, shared-install updates and uninstalls, aggregate enablement, missing-folder state, overlapping parent grants, scan lifecycle events, and lint line destinations. Add Folder first grants the sample `C:\Clients\docs-site` repository; a second click grants its `Clients` parent. See the [product fidelity audit](product-fidelity-audit.md) for the complete capability and content review.
+The October 18 product review corrected version-specific plugin paths/counts, shared-install updates and uninstalls, aggregate enablement, missing-folder state, overlapping parent grants, scan lifecycle events, and lint line destinations. Add Folder first grants the sample `C:\Clients\docs-site` repository; a second click grants its `Clients` parent, which absorbs it under Megatron 0.2.0's non-overlapping grant rule, and a third reports it as already included. See the [product fidelity audit](product-fidelity-audit.md) for the complete capability and content review.
 
 The October 19 update imports the Activity details dialog. The sample overview gives every Activity day and hour its clipped interval, sessions, prompts, bare slash commands, and project ranking, derived by the same summary as the window totals. Nested sidebar projects show parent-relative names (`tools/cli` under `monorepo`). The app now hides empty Git repositories nested inside another repository; the sample nested repository stays listed because it represents one with its own `.claude` settings and no skills.
 

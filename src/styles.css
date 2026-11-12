@@ -893,10 +893,12 @@ h2 {
   --deck-bar-fill: #2b2c27;
   --deck-system: #c4c5ba;
   --deck-shadow: 0 -12px 20px -16px rgb(25 26 23 / 32%);
-  --deck-skills: #8064b5;
-  --deck-mcp: #427db3;
-  --deck-memory: #328779;
-  --deck-agents: #b56887;
+  /* The app's entity identity colors (Megatron 0.2.0 main.css). Resident tax
+     bars and legend dots use the base hues, which the app validates there. */
+  --deck-skills: #6b50c2;
+  --deck-mcp: #089ac3;
+  --deck-memory: #ae316e;
+  --deck-agents: #d36d02;
 }
 .context-visual.is-dark {
   --muted: #a3a3a3;
@@ -908,10 +910,10 @@ h2 {
   --deck-bar-fill: #e9e9e2;
   --deck-system: #5c5c58;
   --deck-shadow: 0 -12px 20px -16px rgb(0 0 0 / 75%);
-  --deck-skills: #ad94d8;
-  --deck-mcp: #7eafe0;
-  --deck-memory: #6bb8a8;
-  --deck-agents: #d798b1;
+  --deck-skills: #816dd2;
+  --deck-mcp: #0cb0d4;
+  --deck-memory: #c25485;
+  --deck-agents: #c9690c;
   border-color: var(--rule);
 }
 .context-header {
@@ -1611,6 +1613,17 @@ h2 {
 .setup-docs {
   margin: 17px 0 0 45px;
   font-size: 12px;
+}
+.after-install code,
+.faq-list code {
+  overflow-wrap: anywhere;
+}
+.faq-list code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: #e9ebdf;
+  padding: 1px 3px;
+  border-radius: 2px;
 }
 
 .faq-section {
