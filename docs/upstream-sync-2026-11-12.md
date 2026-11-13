@@ -126,3 +126,16 @@ Synced the renderer to app `main` at `e1399c465299e020b12084076c1522cdc377e7b4` 
 - PR #24 (merge `e1399c4`) gives History and Tokens the staggered chart entrance: Tokens trend bars rise from the baseline, contribution days pop in on a diagonal sweep (delays capped at 0.4s), and timeline fills sweep to their data shade, including chat rows revealed by the group chevron. Each skips animation under reduced motion, and the original-renderer comparison finishes finite animations before capturing.
 
 These changes ship in v0.2.1 (tag `75e8faa`; its renderer is unchanged since `e1399c4`). The landing page describes them once v0.2.1 is published: Cost and its FAQ say resumed, rewound, and forked conversations count once and note the estimate caveat, and Activity says folderless Claude app chats share one row. The install panel moves to v0.2.1 at the same time: label, both links, and sizes of 126 MB (DMG, 132,393,212 bytes) and 107 MB (Windows installer, 112,235,465 bytes), in the panel's binary-megabyte rounding.
+
+## Pinned to the v0.2.1 release (`75e8faa`)
+
+Reviewed app `main` through `63e1a2f` (PRs #25–#28) on November 13. None of
+it touches `src/renderer/src`, `src/shared`, `src/preload`, or
+`src/renderer/index.html`. The renderer was re-pinned from `e1399c4` to the
+`v0.2.1` tag so provenance names a published release and version 0.2.1; every
+imported file kept its hash, so only `provenance.json` changed and the earlier
+QA, sweep, and 86-capture comparison at `e1399c4` apply unchanged. The release
+notes' verified update paths (a Homebrew install launches without the
+Gatekeeper step; Windows updated itself 0.1.0 → 0.2.0 on Windows 11) confirm
+the install panel's existing wording. The Homebrew smoke workflow, release
+checklist, tap-token note, and visual-verify fixture fix are app-internal.

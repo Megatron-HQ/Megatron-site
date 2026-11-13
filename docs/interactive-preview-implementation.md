@@ -4,7 +4,7 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `e1399c465299e020b12084076c1522cdc377e7b4` (app `main`: `v0.2.0` plus exact fork-lineage cost, folded Claude app chats, and History/Tokens entrance animations, all unreleased), version `0.2.0`; exact source hashes pin the imported files.
+- App revision: `75e8faa8230c39ee505c2cf0ed64fe885463422e` (tag `v0.2.1`: `v0.2.0` plus exact fork-lineage cost, folded Claude app chats, and History/Tokens entrance animations; renderer files unchanged since `e1399c4`), version `0.2.1`; exact source hashes pin the imported files.
 - Snapshot: 121 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
 - Five recorded integration patches: scoped Tailwind discovery, trusted host navigation, inactive-frame autofocus guards in the two inventories (hooked after `focusShownRows`' active-element check since 0.2.0, so a pending Back focus restore stays pending), and an explicit `.ts` import in the shared Usage grouping helper for Node's adapter tests. App tokens, layouts, labels, icons, and motion rules are preserved.
 - `src/preview/runtime.ts` installs `window.api` before any app module evaluates, as the desktop preload does. Since 0.2.0 the onboarding dialog reads `window.api.platform` at import time.

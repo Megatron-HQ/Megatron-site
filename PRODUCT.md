@@ -64,7 +64,7 @@ The website follows the same rule. It sends no analytics or remote requests and 
 
 ## Evidence on Hand
 
-- **The interactive preview:** Megatron's real renderer (app `main` at `e1399c4`, shipped as v0.2.1: v0.2.0 plus exact fork-lineage cost, Claude app chat grouping, and History/Tokens entrance animations) running on illustrative sample data. This is the strongest proof the site has.
+- **The interactive preview:** Megatron's real renderer (the v0.2.1 release, `75e8faa`: v0.2.0 plus exact fork-lineage cost, Claude app chat grouping, and History/Tokens entrance animations) running on illustrative sample data. This is the strongest proof the site has.
 - **Open source:** [github.com/Megatron-HQ/Megatron](https://github.com/Megatron-HQ/Megatron) under the MIT license.
 - **App icon:** `public/megatron-icon.png`.
 - **Absent, and must not be invented:** testimonials, customer or company logos, ratings, user or download counts, star counts, benchmarks, savings or performance claims, and press. Figures in the preview and illustrations are samples, not measurements.

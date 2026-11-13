@@ -1,7 +1,7 @@
 {
   "upstream": "Megatron-HQ/Megatron",
-  "revision": "e1399c465299e020b12084076c1522cdc377e7b4",
-  "version": "0.2.0",
+  "revision": "75e8faa8230c39ee505c2cf0ed64fe885463422e",
+  "version": "0.2.1",
   "upstreamHashes": {
     "src/renderer/src/App.tsx": "9659967d931fedb335f99a9f8f3549acecfb2cf43703f557bde6a04ba0375760",
     "src/renderer/src/assets/main.css": "cd792e2620fd3f610468881f4d2901bb97e44f0921937386c95b6e9e6672d3d4",

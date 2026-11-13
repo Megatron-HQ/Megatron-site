@@ -1,8 +1,8 @@
 # Megatron product fidelity audit
 
-Reviewed on October 18, 2026 and updated on November 12, 2026 against the
-desktop app at `c86e8af605b3fc7224a6892aeb4fe450469bcb7a`
-(Megatron 0.2.0). The renderer provenance records the exact source-file hashes.
+Reviewed on October 18, 2026 and updated on November 13, 2026 against the
+desktop app at `75e8faa8230c39ee505c2cf0ed64fe885463422e`
+(Megatron 0.2.1). The renderer provenance records the exact source-file hashes.
 The 0.2.0 additions (stale skills, plugin contents, non-overlapping grants,
 first-run welcome, updates, palette and motion) are reviewed in
 `docs/upstream-sync-2026-11-12.md`.
