@@ -205,36 +205,31 @@ const SAMPLE_PLUGIN_COMPONENTS: Record<string, SampleComponent[]> = {
   ]
 }
 
-function compareVersions(a: string, b: string): number {
-  const parts = (version: string) => version.split('.').map(Number)
-  const [left, right] = [parts(a), parts(b)]
-  for (let index = 0; index < Math.max(left.length, right.length); index++) {
-    const difference = (left[index] ?? 0) - (right[index] ?? 0)
-    if (difference !== 0) return difference
-  }
-  return 0
-}
-
 /**
- * The desktop lists components per install path, so two installs at different
- * versions repeat each name and collide on the detail view's React keys. The
- * sample shows each component once, from the newest installed version.
+ * Mirrors getPluginDetail: one row per install path that declares a component,
+ * ordered by kind, name, then install path. The renderer's scopePluginDetail
+ * keeps the installs in view and lists each kind and name once, so a plugin
+ * installed at two versions shows each shared component a single time.
  */
 export function samplePluginComponents(plugin: PluginRow): PluginComponent[] {
   const declared =
     SAMPLE_PLUGIN_COMPONENTS[`${plugin.name}@${plugin.marketplace}`] ?? []
-  const [newest] = plugin.installs.toSorted((a, b) =>
-    compareVersions(b.installed_version, a.installed_version)
-  )
-  if (!newest) return []
-  return declared
-    .map(({ file, ...component }) => ({
-      ...component,
-      install_path: newest.install_path,
-      source_path: windowsPath(newest.install_path, ...file)
-    }))
+  const installPaths = [
+    ...new Set(plugin.installs.map((install) => install.install_path))
+  ]
+  return installPaths
+    .flatMap((installPath) =>
+      declared.map(({ file, ...component }) => ({
+        ...component,
+        install_path: installPath,
+        source_path: windowsPath(installPath, ...file)
+      }))
+    )
     .toSorted(
-      (a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name)
+      (a, b) =>
+        a.kind.localeCompare(b.kind) ||
+        a.name.localeCompare(b.name) ||
+        a.install_path.localeCompare(b.install_path)
     )
 }
 

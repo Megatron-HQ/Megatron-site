@@ -111,9 +111,30 @@ async function verifyPluginContents(app, directory) {
   ])
     await app.getByText(caption, { exact: true }).waitFor()
   await app.getByText('http · mcp.figma.com', { exact: true }).waitFor()
+  // The sample returns figma once per install (1.4.0 and 1.2.0), as the
+  // desktop query does; the renderer's scopePluginDetail lists it once.
+  assert.equal(await app.getByText('figma', { exact: true }).count(), 1)
   await app.locator('main').screenshot({
     path: join(directory, 'plugin-contents.png')
   })
+
+  // A project view keeps only that project's install, so its components come
+  // from the 1.2.0 project install alone.
+  await app.getByRole('button', { name: 'Plugins', exact: true }).click()
+  const expandDev = app.getByRole('button', {
+    name: 'Expand Dev repositories',
+    exact: true
+  })
+  if (await expandDev.isVisible()) await expandDev.click()
+  await app.getByRole('button', { name: /^web-app/ }).click()
+  await app
+    .locator('tbody tr')
+    .filter({ hasText: 'frontend' })
+    .filter({ hasText: 'team-tools' })
+    .first()
+    .click()
+  await app.getByText('MCP servers · 2', { exact: true }).waitFor()
+  assert.equal(await app.getByText('figma', { exact: true }).count(), 1)
 }
 
 async function verifyFolderNarrowing(app) {

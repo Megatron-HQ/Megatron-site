@@ -786,15 +786,17 @@ test('updates are unsupported in the browser while the automatic-check preferenc
   assert.equal((await api.getUpdateState()).autoCheck, true)
 })
 
-test('plugin details list the contents of their own installs without credentials', async () => {
+test('plugin details carry one component row per declaring install, in the desktop query order', async () => {
   const { api } = await createDemo()
   for (const plugin of await api.listPlugins()) {
     const detail = (await api.getPluginDetail(plugin.name, plugin.marketplace))!
     const installPaths = plugin.installs.map((install) => install.install_path)
-    const identities = detail.components.map(
-      (component) => `${component.kind}:${component.name}`
+    const rows = detail.components.map(
+      (component) =>
+        `${component.kind}\0${component.name}\0${component.install_path}`
     )
-    assert.equal(new Set(identities).size, identities.length)
+    assert.equal(new Set(rows).size, rows.length)
+    assert.deepEqual(rows, rows.toSorted())
     for (const component of detail.components) {
       assert.ok(installPaths.includes(component.install_path))
       if (component.kind === 'hook') assert.equal(component.detail, null)
@@ -806,6 +808,13 @@ test('plugin details list the contents of their own installs without credentials
   assert.deepEqual(
     [...new Set(frontend.components.map((component) => component.kind))],
     ['agent', 'command', 'lsp', 'mcp']
+  )
+  // Two installs at different versions each carry the shared components; the
+  // renderer's scopePluginDetail keeps the installs in view and lists each once.
+  assert.equal(
+    new Set(frontend.components.map((component) => component.install_path))
+      .size,
+    2
   )
   const empty = (await api.getPluginDetail('frontend', 'community'))!
   assert.deepEqual(empty.components, [])
@@ -819,13 +828,12 @@ test('plugin contents follow an install to its updated version', async () => {
     scope: 'user',
     projectPath: null
   })
-  const detail = (await api.getPluginDetail('frontend', 'team-tools'))!
-  assert.ok(
-    detail.components.length > 0 &&
-      detail.components.every((component) =>
-        component.install_path.endsWith('\\1.5.0')
-      )
+  const paths = new Set(
+    (await api.getPluginDetail('frontend', 'team-tools'))!.components.map(
+      (component) => component.install_path.split('\\').at(-1)
+    )
   )
+  assert.deepEqual([...paths].sort(), ['1.2.0', '1.5.0'])
 })
 
 test('a pick inside a granted parent is skipped and reports the covering grant', async () => {

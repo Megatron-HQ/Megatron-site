@@ -13,7 +13,7 @@ not read or modified.
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `e7345fa`, `16560b6`, `4356f1a`, `6ad5c3b`               | Warm Paper neutrals, a darker frame around a white sheet, five status tones, entity identity colors and glyph steps, screen/title/data/dialog motion (`tw-animate-css`), entity glyph tiles in ⌘K, SkillDetail, and PluginDetail. | Imported. Added `tw-animate-css@1.4.0`. The landing deck's Resident tax colors now use the base entity hues in both themes; QA asserts the new computed colors.                                                                                                              |
 | `2d5b849`                                                | Stale skills: a dormant Clock in the inventory tray for skills unused for 30 days of covered history while they existed and their scope was active. `SkillsListResult.skills` became `InventorySkillRow[]`.                       | `src/preview/stale-skills.ts` mirrors the desktop rule over the sample: incomplete coverage, recent installs, idle scopes, disabled and shadowed skills give no signal. Four sample skills derive as stale.                                                                  |
-| `6ad5c3b`                                                | PluginDetail lists each install's MCP servers, agents, commands, hooks, and LSP servers. `PluginDetailResult.components`.                                                                                                         | Sample components per plugin, resolved to the newest install's path, with MCP details limited to transport and host or command name. See the duplicate-key note below.                                                                                                       |
+| `6ad5c3b`                                                | PluginDetail lists each install's MCP servers, agents, commands, hooks, and LSP servers. `PluginDetailResult.components`.                                                                                                         | Sample components per plugin, one row per declaring install path in the desktop query's order, with MCP details limited to transport and host or command name. The renderer's `scopePluginDetail` keeps the installs in view and lists each kind and name once.              |
 | `ffa6b1f`, `be7cae4`                                     | Non-overlapping folder grants, narrowing (`narrowAllowedPath`), skipped picks (`GrantChangeResult`), home-path IPC, a project tree that mirrors folder structure, name-first labels, and a two-step revoke.                       | `src/preview/folder-grants.ts` mirrors the grant rule. Add Folder grants `docs-site`, then `Clients` (absorbing it), then reports `docs-site` as already included. Keep some folders… keeps the first sample repository. QA follows the new labels and empty-project groups. |
 | `323f971`                                                | First-run welcome: brief, live overview, and guided folder access; replay from Settings.                                                                                                                                          | Closed on load (`getInitialOnboarding` is false unless `?scenario=onboarding`); Settings → Show welcome opens it with sample data.                                                                                                                                           |
 | `ddda97a`, `137bf14`, `cfb5d97`, `077b595`, `c86e8af`    | Update checks against GitHub with a Settings section and gear dot; tag-driven draft releases, unsigned builds, a Homebrew tap; v0.1.0 and v0.2.0 published.                                                                       | Preview reports the `unsupported` update state, so Check now is disabled while the automatic-check switch works for the session. The install panel's release block moves to v0.2.0; the privacy section and FAQ disclose the update check.                                   |
@@ -64,12 +64,19 @@ panel's release block (label, both links, and the Windows size).
 | Only the target platform's SQLite runtime ships                        | Not released. The next release's Windows installer drops from 114.6 MB to about 107 MB: update the install panel's rounded size with the links. |
 | Retry cleanup of a locked CLI test fixture on Windows (PR #22)         | Tests only.                                                                                                                                     |
 
-## Upstream issue
+## Plugin components across installs (correction)
 
-`getPluginDetail` returns components for every install path, and PluginDetail
-keys rows by name. A plugin installed at two versions lists each component
-twice and repeats React keys. The sample shows each component once, from the
-newest installed version; the app should deduplicate by kind and name.
+An earlier version of this record reported a duplicate-component bug in
+PluginDetail. There is none: `getPluginDetail` returns one row per install path,
+but PluginDetail renders it through `scopePluginDetail`
+(`src/renderer/src/lib/plugin-filter.ts`), which keeps only the installs in
+view and lists each kind and name once (covered by the app's
+`plugin-filter.test.ts`). The sample's workaround, listing components only
+from the newest install, has been removed: it left a project view, which keeps
+only that project's install, with no components. The sample now mirrors the
+query, and QA checks that `figma` appears once in both the all-installs and the
+web-app project views. In the all-installs view the first row in query order
+is kept, so an older version's description can win; the app may change that.
 
 ## Preserved behavior
 
