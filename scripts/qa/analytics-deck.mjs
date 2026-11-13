@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { waitForFocus } from './interactions.mjs'
+import { dismissWithEscape } from './preview.mjs'
 
 // Must match INLINE_MINIMUM_WIDTH in src/analytics-deck.js.
 const INLINE_MINIMUM_WIDTH = 440
@@ -528,8 +529,7 @@ export async function verifyResidentTaxRecovery(page) {
       .getByRole('dialog')
       .getByText('Block 1', { exact: true })
       .waitFor()
-    await recoveryPage.keyboard.press('Escape')
-    await sample.getByRole('dialog').waitFor({ state: 'hidden' })
+    await dismissWithEscape(recoveryPage, sample.getByRole('dialog'))
     assert.ok(
       errors.length > 0,
       'The malformed measurement reaches the error boundary.'

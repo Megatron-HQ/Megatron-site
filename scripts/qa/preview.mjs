@@ -146,8 +146,7 @@ async function verifyResidentContext(page, app) {
       await dialog.locator('details[open] pre').waitFor()
     }
     await dialog.getByRole('button', { name: 'Close', exact: true }).focus()
-    await page.keyboard.press('Escape')
-    await dialog.waitFor({ state: 'hidden' })
+    await dismissWithEscape(page, dialog)
     await waitForFocus(trigger)
   }
 }
@@ -429,8 +428,7 @@ export async function verifyUsageHistory(page, app) {
     .getByRole('dialog')
     .getByText(/estimated tokens processed/)
     .waitFor()
-  await page.keyboard.press('Escape')
-  await app.getByRole('dialog').waitFor({ state: 'hidden' })
+  await dismissWithEscape(page, app.getByRole('dialog'))
   await waitForFocus(day)
   await selectPanel(app, 'Activity')
   assert.equal(
@@ -487,8 +485,7 @@ async function verifyHistoryYearReview(page, app, year) {
     .getByRole('dialog')
     .getByText(/Activity details/)
     .waitFor()
-  await page.keyboard.press('Escape')
-  await app.getByRole('dialog').waitFor({ state: 'hidden' })
+  await dismissWithEscape(page, app.getByRole('dialog'))
   await waitForFocus(busiest)
 
   const timeline = app.getByRole('region', {
