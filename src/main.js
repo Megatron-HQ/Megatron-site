@@ -56,45 +56,59 @@ function selectCommands(code) {
 }
 
 function initializeInstallationCopy() {
-  const button = requireElement('[data-copy-install]')
-  const label = requireElement('[data-copy-label]')
+  const buttons = [...document.querySelectorAll('[data-copy-install]')]
+  if (!buttons.length)
+    throw new Error('Required page element is missing: [data-copy-install]')
+  const labels = buttons.map((button) =>
+    button.querySelector('[data-copy-label]')
+  )
   const status = requireElement('[data-copy-status]')
-  const code = requireElement('#install-commands')
   let feedbackTimer
   let copying = false
-  button.addEventListener('click', async () => {
-    if (copying) return
-    copying = true
-    window.clearTimeout(feedbackTimer)
-    try {
-      if (!navigator.clipboard?.writeText)
-        throw new DOMException('Clipboard is unavailable', 'NotSupportedError')
-      // Collapse whitespace as the browser renders it: a formatter line break inside
-      // the code would otherwise paste as a newline and run a truncated command.
-      await navigator.clipboard.writeText(
-        code.textContent.replace(/\s+/g, ' ').trim()
-      )
-      label.textContent = 'Copied'
-      status.textContent = 'Install command copied.'
-    } catch (error) {
-      if (!(error instanceof DOMException)) {
-        label.textContent = 'Copy failed'
-        status.textContent =
-          'The command could not be copied. Select it to copy it manually.'
-        console.error('Installation copy failed:', error)
-      } else {
-        selectCommands(code)
-        label.textContent = 'Selected'
-        status.textContent = 'Command selected. Press Ctrl+C or Cmd+C to copy.'
+  for (const [index, button] of buttons.entries()) {
+    const code = button.closest('.install-command').querySelector('code')
+    const label = labels[index]
+    button.addEventListener('click', async () => {
+      if (copying) return
+      copying = true
+      // The live region and timer are shared, so reset every label first: only
+      // one feedback shows, and an older timer can't blank a newer message.
+      window.clearTimeout(feedbackTimer)
+      for (const other of labels) other.textContent = 'Copy'
+      try {
+        if (!navigator.clipboard?.writeText)
+          throw new DOMException(
+            'Clipboard is unavailable',
+            'NotSupportedError'
+          )
+        // Collapse whitespace as the browser renders it: a formatter line break inside
+        // the code would otherwise paste as a newline and run a truncated command.
+        await navigator.clipboard.writeText(
+          code.textContent.replace(/\s+/g, ' ').trim()
+        )
+        label.textContent = 'Copied'
+        status.textContent = 'Install command copied.'
+      } catch (error) {
+        if (!(error instanceof DOMException)) {
+          label.textContent = 'Copy failed'
+          status.textContent =
+            'The command could not be copied. Select it to copy it manually.'
+          console.error('Installation copy failed:', error)
+        } else {
+          selectCommands(code)
+          label.textContent = 'Selected'
+          status.textContent =
+            'Command selected. Press Ctrl+C or Cmd+C to copy.'
+        }
+      } finally {
+        copying = false
+        feedbackTimer = window.setTimeout(() => {
+          label.textContent = 'Copy'
+          status.textContent = ''
+        }, COPY_FEEDBACK_DURATION_MS)
       }
-    } finally {
-      copying = false
-      feedbackTimer = window.setTimeout(() => {
-        label.textContent = 'Copy'
-        status.textContent = ''
-      }, COPY_FEEDBACK_DURATION_MS)
-    }
-  })
+    })
+  }
 }
 
 // The markup ships both platforms visible and the tabs hidden, so visitors without

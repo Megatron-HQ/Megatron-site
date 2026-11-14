@@ -1519,6 +1519,21 @@ h2 {
 .install-command code > span {
   white-space: nowrap;
 }
+/* The curl line is too long to wrap readably, so it scrolls inside the box. As a
+   scroll container its automatic min-width is 0, which keeps Copy on its row.
+   nowrap, not pre: the formatter splits the markup, and pre would render those breaks. */
+.install-command-scroll code {
+  padding-left: 0;
+  text-indent: 0;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #515449 transparent;
+}
+.install-command-scroll code:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 3px;
+}
 .copy-button {
   display: flex;
   align-items: center;
@@ -1540,6 +1555,11 @@ h2 {
 }
 .copy-button:focus-visible {
   outline-offset: 3px;
+}
+/* The host-button colors, so lime stays on the brew Copy: one lime CTA per view. */
+.copy-button-quiet {
+  border-color: #515449;
+  color: #eceee0;
 }
 .install-note {
   margin-top: 12px;

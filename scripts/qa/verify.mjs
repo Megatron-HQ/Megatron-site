@@ -122,20 +122,29 @@ try {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
     origin: new URL(baseUrl).origin
   })
-  await page.locator('[data-copy-install]').click()
-  await page.waitForFunction(
-    () =>
-      /copied|selected/i.test(
-        document.querySelector('[data-copy-status]').textContent
-      ),
-    null,
-    { timeout: 5000 }
-  )
-  if (/copied/i.test(await page.locator('[data-copy-status]').textContent()))
-    assert.equal(
-      await page.evaluate(() => navigator.clipboard.readText()),
-      'brew install --cask megatron-hq/tap/megatron'
+  const installCommands = [
+    'brew install --cask megatron-hq/tap/megatron',
+    'curl -fsSL https://github.com/Megatron-HQ/Megatron/releases/latest/download/install.sh | bash'
+  ]
+  for (const [index, command] of installCommands.entries()) {
+    await page.locator('[data-copy-status]').evaluate((status) => {
+      status.textContent = ''
+    })
+    await page.locator('[data-copy-install]').nth(index).click()
+    await page.waitForFunction(
+      () =>
+        /copied|selected/i.test(
+          document.querySelector('[data-copy-status]').textContent
+        ),
+      null,
+      { timeout: 5000 }
     )
+    if (/copied/i.test(await page.locator('[data-copy-status]').textContent()))
+      assert.equal(
+        await page.evaluate(() => navigator.clipboard.readText()),
+        command
+      )
+  }
   await page.locator('.faq-list summary').first().focus()
   await page.keyboard.press('Space')
   assert.equal(
@@ -148,7 +157,7 @@ try {
       .count()
   )
   results.push(
-    'Host arrow-key tabs, Cost navigation, platform tabs, exact install-command copy and keyboard FAQ disclosure passed.'
+    'Host arrow-key tabs, Cost navigation, platform tabs, both install-command copies and keyboard FAQ disclosure passed.'
   )
   await page.goto(baseUrl)
   await verifyPreviewStates(page, baseUrl)
