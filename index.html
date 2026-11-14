@@ -632,9 +632,11 @@
             >
               <p class="install-label">INSTALL WITH HOMEBREW · APPLE SILICON</p>
               <div class="install-command">
-                <code id="install-commands"
-                  >brew install --cask
-                  <span>megatron-hq/tap/megatron</span></code
+                <code
+                  id="install-commands"
+                  tabindex="0"
+                  aria-label="Homebrew install command"
+                  >brew install --cask megatron-hq/tap/megatron</code
                 ><button
                   type="button"
                   class="copy-button"
@@ -648,7 +650,7 @@
               <p class="install-note">Megatron updates itself after install.</p>
               <div class="install-alternative">
                 <p class="install-label">WITHOUT HOMEBREW · TERMINAL</p>
-                <div class="install-command install-command-scroll">
+                <div class="install-command">
                   <code tabindex="0" aria-label="Terminal install command"
                     >curl -fsSL
                     https://github.com/Megatron-HQ/Megatron/releases/latest/download/install.sh

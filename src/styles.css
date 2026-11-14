@@ -1487,11 +1487,10 @@ h2 {
   letter-spacing: 0.065em;
   color: #b4b6aa;
 }
-/* Copy wraps below the command only once the tap name can no longer fit beside it. */
+/* Copy never leaves the command's row: the command scrolls instead of wrapping. */
 .install-command {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px 20px;
+  gap: 20px;
   align-items: center;
   justify-content: space-between;
   padding: 17px 18px 17px 20px;
@@ -1499,12 +1498,16 @@ h2 {
   border: 1px solid #33352e;
   border-radius: 6px;
 }
-/* A narrow panel wraps after --cask and indents the tap name under the command.
-   The prompt is generated content, so copying and selecting never include it. */
+/* As a scroll container the code's automatic min-width is 0, so it shrinks and
+   Copy keeps its row. nowrap, not pre: the formatter splits the markup, and pre
+   would render those breaks. The prompt is generated content, so copying and
+   selecting never include it. */
 .install-command code {
-  flex: 1 1 16ch;
-  padding-left: 4ch;
-  text-indent: -4ch;
+  flex: 1;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #515449 transparent;
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.8;
@@ -1513,24 +1516,9 @@ h2 {
   content: '$';
   display: inline-block;
   width: 2ch;
-  text-indent: 0;
   color: #b4b6aa;
 }
-.install-command code > span {
-  white-space: nowrap;
-}
-/* The curl line is too long to wrap readably, so it scrolls inside the box. As a
-   scroll container its automatic min-width is 0, which keeps Copy on its row.
-   nowrap, not pre: the formatter splits the markup, and pre would render those breaks. */
-.install-command-scroll code {
-  padding-left: 0;
-  text-indent: 0;
-  white-space: nowrap;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #515449 transparent;
-}
-.install-command-scroll code:focus-visible {
+.install-command code:focus-visible {
   outline: 2px solid var(--color-lime);
   outline-offset: 3px;
 }
