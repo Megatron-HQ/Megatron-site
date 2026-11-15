@@ -151,7 +151,7 @@
   "files": {
     "LICENSE": "4e7bf461e01efe4d6d1a50d116c91216660f7e78898290de362f345fd6a169d6",
     "src/preload/index.d.ts": "0c32738941f29735bba3557d7c1ee91491b82d79beb5a0523972a36a16253964",
-    "src/renderer/src/App.tsx": "75eef083e28cc9fd4666f875855391d54e2def32d4802c0b342e23cc285829eb",
+    "src/renderer/src/App.tsx": "5832c998d05dc5bff828489e945873996cde32133cb1d785698bbbafada3bef3",
     "src/renderer/src/assets/main.css": "a0c80acee398433a3782c0f8ea2bfc25d996d06fafb56fd5a381397e1c0f4887",
     "src/renderer/src/components/AppRail.tsx": "8e02e8ed6f3d34a2b3abd3618a9ca94cb1c7e2f02bfe5f65a5f111c0c61e29e4",
     "src/renderer/src/components/ClaudeIcon.tsx": "cbc2239d10762ffddb519e97fc4a1ab4bd6ed383f46ae71034dd56025b834679",

@@ -1,5 +1,8 @@
 import { refreshIcons } from './icons.js'
-import { parsePreviewThemeMessage } from './preview/protocol.ts'
+import {
+  parsePreviewCommand,
+  parsePreviewThemeMessage
+} from './preview/protocol.ts'
 export { refreshIcons } from './icons.js'
 
 const SECTIONS = [
@@ -8,6 +11,7 @@ const SECTIONS = [
   { id: 'usage', label: 'Usage', icon: 'chart-no-axes-combined' }
 ]
 const LOAD_TIMEOUT_MS = 15000
+const DESTINATION_FEEDBACK_MS = 1400
 // The vendored renderer's minimum layout width. Narrower viewports scale the
 // frame down to it rather than reflowing an app the site must not edit.
 const APP_WIDTH = 860
@@ -47,6 +51,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
   let ready = false
   let pendingCommand = null
   let previousOverflow = ''
+  let destinationTimer
   const loadTimeout = window.setTimeout(() => {
     if (!ready)
       notice.textContent =
@@ -78,12 +83,13 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     }
     frame.contentWindow.postMessage(command, previewUrl.origin)
   }
-  function navigate(section, panel) {
+  function navigate(section, panel, target) {
     selectSection(section)
     send({
       type: 'megatron-preview:navigate',
       section,
-      ...(panel ? { panel } : {})
+      ...(panel ? { panel } : {}),
+      ...(target ? { target } : {})
     })
   }
   function setExpanded(expanded) {
@@ -183,4 +189,29 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     navigate(tabs[next].dataset.previewSection)
     tabs[next].focus({ preventScroll: true })
   })
+  return {
+    navigateTo(section, target) {
+      const command = parsePreviewCommand({
+        type: 'megatron-preview:navigate',
+        section,
+        target
+      })
+      if (!command) throw new RangeError('Unknown preview destination.')
+      navigate(section, undefined, target)
+      root
+        .querySelector(`[data-preview-section="${section}"]`)
+        .focus({ preventScroll: true })
+      root.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+        block: 'start'
+      })
+      window.clearTimeout(destinationTimer)
+      viewport.dataset.linked = 'true'
+      destinationTimer = window.setTimeout(() => {
+        delete viewport.dataset.linked
+      }, DESTINATION_FEEDBACK_MS)
+    }
+  }
 }

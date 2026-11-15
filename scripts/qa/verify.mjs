@@ -14,6 +14,7 @@ import { verifyUsageProjects } from './usage-projects.mjs'
 import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
 import { verifyReleaseFeatures } from './release-features.mjs'
+import { verifyFeatureLinks } from './feature-links.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -72,6 +73,7 @@ try {
     fullPage: true
   })
   await verifyPreview(page)
+  await verifyFeatureLinks(page)
   const desktopDeck = await verifyAnalyticsDeck(page)
   assert.ok(desktopDeck.checkedInline, 'Desktop opens analytics in place.')
   await verifyPreviewSettings(page)
@@ -177,6 +179,7 @@ try {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto(baseUrl)
     const frame = await preparePreview(page)
+    await verifyFeatureLinks(page)
     await verifyAnalyticsDeck(page)
     await checkOverflow(page, width)
     for (const panel of [
@@ -312,6 +315,7 @@ try {
   await prepare(normalPage)
   await normalPage.locator('[data-preview-frame]').scrollIntoViewIfNeeded()
   const normalApp = previewFrame(normalPage)
+  await verifyFeatureLinks(normalPage)
   await normalApp.locator('tbody tr').last().scrollIntoViewIfNeeded()
   await normalApp.locator('tbody tr').last().hover()
   const scrollBeforeWheel = await normalPage.evaluate(() => scrollY)

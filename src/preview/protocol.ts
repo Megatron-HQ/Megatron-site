@@ -11,6 +11,13 @@ export const USAGE_PANELS = [
 
 export type PreviewSection = (typeof PREVIEW_SECTIONS)[number]
 export type PreviewPanel = (typeof USAGE_PANELS)[number]
+export type PreviewTarget = 'global' | 'project' | 'plugin' | 'user'
+
+const SECTION_TARGETS: Record<PreviewSection, readonly PreviewTarget[]> = {
+  skills: ['global', 'project', 'plugin'],
+  plugins: ['user', 'project'],
+  usage: []
+}
 
 export function parseSamplePanel(value: string): PreviewPanel {
   if (!USAGE_PANELS.includes(value as PreviewPanel))
@@ -52,6 +59,7 @@ export type PreviewCommand =
       type: 'megatron-preview:navigate'
       section: PreviewSection
       panel?: PreviewPanel
+      target?: PreviewTarget
     }
   | { type: 'megatron-preview:reset' }
   | { type: 'megatron-preview:inventory-change'; action: InventoryChange }
@@ -67,6 +75,13 @@ export function parsePreviewCommand(value: unknown): PreviewCommand | null {
   if (message.type !== 'megatron-preview:navigate') return null
   if (!PREVIEW_SECTIONS.includes(message.section as PreviewSection)) return null
   if (
+    message.target !== undefined &&
+    !SECTION_TARGETS[message.section as PreviewSection].includes(
+      message.target as PreviewTarget
+    )
+  )
+    return null
+  if (
     message.panel !== undefined &&
     (message.section !== 'usage' ||
       !USAGE_PANELS.includes(message.panel as PreviewPanel))
@@ -75,6 +90,9 @@ export function parsePreviewCommand(value: unknown): PreviewCommand | null {
   return {
     type: message.type,
     section: message.section as PreviewSection,
+    ...(message.target !== undefined
+      ? { target: message.target as PreviewTarget }
+      : {}),
     ...(message.panel !== undefined
       ? { panel: message.panel as PreviewPanel }
       : {})

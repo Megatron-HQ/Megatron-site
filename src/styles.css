@@ -629,9 +629,56 @@ h2 {
   height: 17px;
 }
 .source-map strong {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-weight: 500;
+}
+.source-link {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: inherit;
+  min-width: 0;
+  padding: 10px 8px;
+  margin: -10px -8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.source-link strong svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.55;
+  transition: opacity 200ms ease-out;
+}
+.source-link .source-icon {
+  transition:
+    background-color 200ms ease-out,
+    border-color 200ms ease-out;
+}
+.source-link:hover,
+.source-link:focus-visible,
+.scope-pill:hover,
+.scope-pill:focus-visible {
+  color: #657100;
+  background-color: #eaece1;
+}
+.source-link:hover .source-icon,
+.source-link:focus-visible .source-icon,
+.scope-pill:hover,
+.scope-pill:focus-visible {
+  border-color: #a3ab76;
+}
+.source-link:hover strong svg,
+.source-link:focus-visible strong svg {
+  opacity: 1;
+}
+.preview-viewport {
+  transition: border-color 250ms ease-out;
+}
+.preview-viewport[data-linked='true'] {
+  border-color: var(--color-lime);
 }
 .source-map code {
   display: block;

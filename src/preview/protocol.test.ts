@@ -1,6 +1,42 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+test('feature links retain their source or scope when crossing the preview boundary', async () => {
+  const { parsePreviewCommand } = await protocol()
+  for (const [section, target] of [
+    ['skills', 'global'],
+    ['skills', 'project'],
+    ['skills', 'plugin'],
+    ['plugins', 'user'],
+    ['plugins', 'project']
+  ]) {
+    const command = { type: 'megatron-preview:navigate', section, target }
+    assert.deepEqual(parsePreviewCommand(command), command)
+  }
+})
+
+test('feature navigation rejects targets that do not belong to its section', async () => {
+  const { parsePreviewCommand } = await protocol()
+  for (const [section, target] of [
+    ['skills', 'user'],
+    ['plugins', 'global'],
+    ['plugins', 'plugin'],
+    ['plugins', 'local'],
+    ['usage', 'project'],
+    ['skills', null],
+    ['skills', '__proto__'],
+    ['skills', 1]
+  ])
+    assert.equal(
+      parsePreviewCommand({
+        type: 'megatron-preview:navigate',
+        section,
+        target
+      }),
+      null
+    )
+})
+
 test('theme messages accept resolved boolean themes and reject malformed payloads', async () => {
   const module = await protocol()
   assert.equal(typeof module.parsePreviewThemeMessage, 'function')

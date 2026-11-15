@@ -226,9 +226,23 @@ function initializeAnalyticsDeck() {
 
 refreshIcons()
 const analyticsDeck = initializeAnalyticsDeck()
-mountProductDemo(requireElement('#product-demo'), {
+const productDemo = mountProductDemo(requireElement('#product-demo'), {
   onSampleTheme: analyticsDeck.setTheme
 })
+for (const link of document.querySelectorAll('[data-preview-link]')) {
+  link.addEventListener('click', (event) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return
+    event.preventDefault()
+    productDemo.navigateTo(link.dataset.previewLink, link.dataset.previewTarget)
+  })
+}
 initializeNavigation()
 initializePlatformTabs()
 initializeInstallationCopy()

@@ -112,7 +112,10 @@ function App(): React.JSX.Element {
   const [treeWidth, setTreeWidth] = useState(TREE_WIDTH_DEFAULT)
   const [pluginActionToasts, setPluginActionToasts] = useState<PluginActionToast[]>([])
   const nextToastId = useRef(0)
-  usePreviewNavigation(setSection, setUsagePanel)
+  usePreviewNavigation(setSection, setUsagePanel, {
+    selectSkillSource: handleFilterChange,
+    selectPluginScope: handlePluginFilterChange
+  })
   const [pluginUpdateProgress, setPluginUpdateProgress] = useState<
     Record<string, PluginUpdateProgress>
   >({})

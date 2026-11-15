@@ -106,7 +106,7 @@ export function applyBrowserPatch(path, contents) {
     )
     replace(
       '  const nextToastId = useRef(0)',
-      '  const nextToastId = useRef(0)\n  usePreviewNavigation(setSection, setUsagePanel)'
+      '  const nextToastId = useRef(0)\n  usePreviewNavigation(setSection, setUsagePanel, {\n    selectSkillSource: handleFilterChange,\n    selectPluginScope: handlePluginFilterChange\n  })'
     )
   } else
     // The guard sits after the active-element check so a pending Back focus

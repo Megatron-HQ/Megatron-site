@@ -1,4 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useEffectEvent } from 'react'
+import type { SourceFilter } from '../../vendor/megatron/src/renderer/src/lib/source-filter'
+import type { PluginFilter } from '../../vendor/megatron/src/renderer/src/lib/plugin-filter'
 import {
   parsePreviewCommand,
   type PreviewPanel,
@@ -29,8 +31,28 @@ export function forwardUnhandledEscape(): () => void {
 
 export function usePreviewNavigation(
   setSection: (section: PreviewSection) => void,
-  setPanel: (panel: PreviewPanel) => void
+  setPanel: (panel: PreviewPanel) => void,
+  filters: {
+    selectSkillSource: (filter: SourceFilter) => void
+    selectPluginScope: (filter: PluginFilter) => void
+  }
 ): void {
+  const selectTarget = useEffectEvent(
+    (section: PreviewSection, target: string) => {
+      if (
+        section === 'skills' &&
+        (target === 'global' || target === 'project' || target === 'plugin')
+      )
+        filters.selectSkillSource({ kind: target })
+      else if (
+        section === 'plugins' &&
+        (target === 'user' || target === 'project')
+      )
+        filters.selectPluginScope({
+          kind: target === 'project' ? 'projects' : 'user'
+        })
+    }
+  )
   useEffect(() => {
     function receive(event: MessageEvent): void {
       if (
@@ -54,6 +76,7 @@ export function usePreviewNavigation(
       }
       setSection(command.section)
       if (command.panel) setPanel(command.panel)
+      if (command.target) selectTarget(command.section, command.target)
       void window.api.setLastSection(command.section)
     }
     window.addEventListener('message', receive)
