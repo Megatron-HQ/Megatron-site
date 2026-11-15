@@ -392,6 +392,8 @@ A Graphite Raised panel with a 77px/400 headline number and a smaller unit. A pr
 
 Native `details`/`summary` with Hairline top rules and a closing bottom rule. Summaries are 13px/500 and turn Signal Olive on hover. Answers are Body (14px/1.75, Muted Ink) held to a 450px measure at every width. The plus icon rotates 45° when open.
 
+The first five questions cover Claude Code fit, file safety, supported platforms, price, and updates. A quiet 13px/500 “More questions” control reveals every remaining question inline, changing to “Fewer questions” with an upward arrow. It uses Muted Ink, Signal Olive on hover, the standard focus ring, and a minimum 44px hit target. Revealing focuses the first additional question; collapsing keeps focus on the control. Open answers retain their state. The labels contain no count, and the control is absent when there are five or fewer questions. Without JavaScript every question stays available.
+
 ### Footer Mark
 
 MEGATRON at Footer Mark size in #292d21, left-aligned with no trailing glyph. It is decorative and hidden from assistive technology.

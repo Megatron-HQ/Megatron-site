@@ -15,6 +15,11 @@ import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
 import { verifyReleaseFeatures } from './release-features.mjs'
 import { verifyFeatureLinks } from './feature-links.mjs'
+import {
+  verifyFaq,
+  verifyFaqWithoutJavaScript,
+  verifyFaqQuestionCounts
+} from './faq.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
@@ -147,12 +152,6 @@ try {
         command
       )
   }
-  await page.locator('.faq-list summary').first().focus()
-  await page.keyboard.press('Space')
-  assert.equal(
-    await page.locator('.faq-list details').first().getAttribute('open'),
-    ''
-  )
   assert.ok(
     await page
       .locator('a[href="https://github.com/Megatron-HQ/Megatron#install"]')
@@ -178,6 +177,7 @@ try {
   for (const width of [375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto(baseUrl)
+    await verifyFaq(page, directory)
     const frame = await preparePreview(page)
     await verifyFeatureLinks(page)
     await verifyAnalyticsDeck(page)
@@ -274,6 +274,7 @@ try {
   })
   const noScriptPage = await noScriptContext.newPage()
   await noScriptPage.goto(baseUrl)
+  await verifyFaqWithoutJavaScript(noScriptPage)
   assert.ok(await noScriptPage.locator('#install-commands').isVisible())
   assert.ok(
     await noScriptPage
@@ -303,6 +304,10 @@ try {
     false
   )
   await windowsContext.close()
+  await verifyFaqQuestionCounts(browser, baseUrl)
+  results.push(
+    'FAQ: five initial questions, generic reveal/collapse, keyboard focus, retained open answers, future question counts and no-JavaScript access passed at every responsive width.'
+  )
   results.push(
     'Reduced motion, both install paths readable without JavaScript, and Windows visitors starting on the Windows tab passed.'
   )

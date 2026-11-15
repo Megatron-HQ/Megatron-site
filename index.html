@@ -792,201 +792,221 @@
           <h2 id="faq-heading">Before you<br />get started.</h2>
         </div>
         <div class="faq-list">
-          <details>
-            <summary>
-              Is this a replacement for Claude Code?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Megatron runs alongside your existing Claude Code workflow. It
-              gives you visibility into skills, plugins, and local session
-              usage. Claude Code remains where you do the work.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Will it change my skill files?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Skill inspection does not edit definitions or execute skill
-              scripts. Resident tax runs Claude Code’s local /context command,
-              which can start configured SessionStart hooks and MCP servers.
-              Plugin management uses Claude Code’s own CLI commands, which may
-              access the network. Inventory and usage analysis run locally.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Will my activity history stay available?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Megatron keeps a local usage archive across scans and cache
-              rebuilds, without storing prompt text in that archive. It retains
-              activity already observed when Claude Code removes older source
-              files. History deleted before Megatron saw it cannot be recovered.
-              Activity and History use the same retained prompt records for
-              matching time intervals. The History panel shows annual summaries,
-              a yearly calendar, and a monthly project timeline. Coverage notes
-              separate missing history from days with no activity; streaks count
-              consecutive observed days with prompts. A day can still show token
-              details when its prompt history is unavailable. Incomplete source
-              scans preserve the previously archived history. Recorded paths and
-              existing location links stay intact; similar names do not
-              automatically merge projects.
-            </p>
-          </details>
-          <details>
-            <summary>
-              What do the token totals include?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Total tokens processed includes input, output, cache reads, and
-              cache writes. Thinking is included in output. Figures for a time
-              period are estimated allocations of recorded session totals;
-              missing and undated token data are identified separately. Compact
-              values show their exact counts on hover or keyboard focus; those
-              counts retain the same estimation limits.
-            </p>
-          </details>
-          <details>
-            <summary>
-              How is resident context measured?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Resident tax runs Claude Code’s /context from an empty folder to
-              measure your global baseline, excluding project instructions,
-              skills, and MCP servers. It measures on first open each launch and
-              again when you choose Refresh. Deferred tools and the autocompact
-              buffer are shown separately. On context windows larger than 200K
-              tokens, the bar is drawn against a 200K reference so small
-              categories stay visible; totals and percentages still use the full
-              window. Category tables come from /context; other details read the
-              first request of your newest interactive Claude Code 2.1.300+
-              session on demand, without storing it. Those session details can
-              include project configuration. The website preview uses synthetic
-              examples throughout.
-            </p>
-          </details>
-          <details>
-            <summary>
-              How accurate are the cost figures?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Megatron uses cost information recorded by Claude Code. Time and
-              skill breakdowns are approximate allocations. They represent
-              estimated API-equivalent usage, not subscription charges or
-              invoices. Resumed, rewound, and forked conversations are counted
-              once; when Claude Code has cleaned up part of a branched
-              conversation, its cost is marked as an estimate. Missing data is
-              shown as a coverage gap.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Which platforms and tools are supported?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              The desktop app runs on Apple silicon Macs and 64-bit Windows.
-              Install it with Homebrew or the install command on a Mac, or with
-              the installer on Windows. A zip downloaded from Releases in a
-              browser is blocked on first launch: open System Settings → Privacy
-              &amp; Security and choose Open Anyway. It is specifically built
-              for Claude Code. Skills from other tools and Linux distribution
-              are outside the current scope.
-            </p>
-          </details>
-          <details>
-            <summary>
-              How do updates work?<i data-lucide="plus" aria-hidden="true"></i>
-            </summary>
-            <p>
-              Megatron checks GitHub for a newer release 10 seconds after launch
-              and every 6 hours. Each check is one request to github.com, which
-              sees your IP address and platform; no skills, usage data, or paths
-              are sent. Turn checks off in Settings → Updates; Check now works
-              either way. On both platforms Megatron downloads updates in the
-              background: choose Restart to update, or quit and it installs
-              then. Homebrew leaves Megatron to update itself. Mac copies on
-              0.2.1 or older need one manual update first:
-              <code>brew upgrade --cask megatron</code>, or the install command.
-              The website preview never checks for updates.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Is Megatron free?<i data-lucide="plus" aria-hidden="true"></i>
-            </summary>
-            <p>
-              Megatron is currently free and open source under the MIT license.
-              You can inspect the code, run it locally, and contribute on
-              GitHub.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Does the inventory update automatically?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Yes. Megatron watches global skills, plugin stores, user
-              configuration, and approved project folders. It updates after file
-              changes settle and periodically checks for missed changes. Live
-              inventory updates leave Usage views and historical activity alone.
-              If a discovered project is deleted, its inventory entries are
-              removed and a selected project returns to the nearest available
-              parent. Missing folders granted directly and unreadable folders
-              retain cached data. Warnings stay with the affected folder, and
-              unreadable sources retry automatically. Settings keeps the result
-              of your manual rescan through later background updates. The
-              website demonstrates these behaviors with sample files only.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Why isn’t my project showing up?<i
-                data-lucide="plus"
-                aria-hidden="true"
-              ></i>
-            </summary>
-            <p>
-              Project folders require an explicit grant. The first-run welcome
-              suggests folders Claude Code has run in; later, open Settings →
-              Project folders → Manage…, add your repository or parent folder
-              containing multiple projects, and rescan if needed. Grants never
-              overlap: adding a parent folds in repositories granted inside it,
-              a repository already inside a granted parent is skipped, and you
-              can narrow a parent to just the folders you choose. A newly
-              granted folder stays quiet until discovery confirms its
-              availability; a known failure remains visible during retry. Usage
-              keeps historical project identities independently of current
-              folder access. Linking Usage locations does not grant access to
-              folders. Automatic discovery skips temporary and build
-              directories; explicitly granting a repository inside one still
-              includes it.
-            </p>
-          </details>
+          <div class="faq-questions" data-faq-questions>
+            <details>
+              <summary>
+                Is this a replacement for Claude Code?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Megatron runs alongside your existing Claude Code workflow. It
+                gives you visibility into skills, plugins, and local session
+                usage. Claude Code remains where you do the work.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Will it change my skill files?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Skill inspection does not edit definitions or execute skill
+                scripts. Resident tax runs Claude Code’s local /context command,
+                which can start configured SessionStart hooks and MCP servers.
+                Plugin management uses Claude Code’s own CLI commands, which may
+                access the network. Inventory and usage analysis run locally.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Which platforms and tools are supported?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                The desktop app runs on Apple silicon Macs and 64-bit Windows.
+                Install it with Homebrew or the install command on a Mac, or
+                with the installer on Windows. A zip downloaded from Releases in
+                a browser is blocked on first launch: open System Settings →
+                Privacy &amp; Security and choose Open Anyway. It is
+                specifically built for Claude Code. Skills from other tools and
+                Linux distribution are outside the current scope.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Is Megatron free?<i data-lucide="plus" aria-hidden="true"></i>
+              </summary>
+              <p>
+                Megatron is currently free and open source under the MIT
+                license. You can inspect the code, run it locally, and
+                contribute on GitHub.
+              </p>
+            </details>
+            <details>
+              <summary>
+                How do updates work?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Megatron checks GitHub for a newer release 10 seconds after
+                launch and every 6 hours. Each check is one request to
+                github.com, which sees your IP address and platform; no skills,
+                usage data, or paths are sent. Turn checks off in Settings →
+                Updates; Check now works either way. On both platforms Megatron
+                downloads updates in the background: choose Restart to update,
+                or quit and it installs then. Homebrew leaves Megatron to update
+                itself. Mac copies on 0.2.1 or older need one manual update
+                first:
+                <code>brew upgrade --cask megatron</code>, or the install
+                command. The website preview never checks for updates.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Will my activity history stay available?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Megatron keeps a local usage archive across scans and cache
+                rebuilds, without storing prompt text in that archive. It
+                retains activity already observed when Claude Code removes older
+                source files. History deleted before Megatron saw it cannot be
+                recovered. Activity and History use the same retained prompt
+                records for matching time intervals. The History panel shows
+                annual summaries, a yearly calendar, and a monthly project
+                timeline. Coverage notes separate missing history from days with
+                no activity; streaks count consecutive observed days with
+                prompts. A day can still show token details when its prompt
+                history is unavailable. Incomplete source scans preserve the
+                previously archived history. Recorded paths and existing
+                location links stay intact; similar names do not automatically
+                merge projects.
+              </p>
+            </details>
+            <details>
+              <summary>
+                What do the token totals include?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Total tokens processed includes input, output, cache reads, and
+                cache writes. Thinking is included in output. Figures for a time
+                period are estimated allocations of recorded session totals;
+                missing and undated token data are identified separately.
+                Compact values show their exact counts on hover or keyboard
+                focus; those counts retain the same estimation limits.
+              </p>
+            </details>
+            <details>
+              <summary>
+                How is resident context measured?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Resident tax runs Claude Code’s /context from an empty folder to
+                measure your global baseline, excluding project instructions,
+                skills, and MCP servers. It measures on first open each launch
+                and again when you choose Refresh. Deferred tools and the
+                autocompact buffer are shown separately. On context windows
+                larger than 200K tokens, the bar is drawn against a 200K
+                reference so small categories stay visible; totals and
+                percentages still use the full window. Category tables come from
+                /context; other details read the first request of your newest
+                interactive Claude Code 2.1.300+ session on demand, without
+                storing it. Those session details can include project
+                configuration. The website preview uses synthetic examples
+                throughout.
+              </p>
+            </details>
+            <details>
+              <summary>
+                How accurate are the cost figures?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Megatron uses cost information recorded by Claude Code. Time and
+                skill breakdowns are approximate allocations. They represent
+                estimated API-equivalent usage, not subscription charges or
+                invoices. Resumed, rewound, and forked conversations are counted
+                once; when Claude Code has cleaned up part of a branched
+                conversation, its cost is marked as an estimate. Missing data is
+                shown as a coverage gap.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Does the inventory update automatically?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Yes. Megatron watches global skills, plugin stores, user
+                configuration, and approved project folders. It updates after
+                file changes settle and periodically checks for missed changes.
+                Live inventory updates leave Usage views and historical activity
+                alone. If a discovered project is deleted, its inventory entries
+                are removed and a selected project returns to the nearest
+                available parent. Missing folders granted directly and
+                unreadable folders retain cached data. Warnings stay with the
+                affected folder, and unreadable sources retry automatically.
+                Settings keeps the result of your manual rescan through later
+                background updates. The website demonstrates these behaviors
+                with sample files only.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Why isn’t my project showing up?<i
+                  data-lucide="plus"
+                  aria-hidden="true"
+                ></i>
+              </summary>
+              <p>
+                Project folders require an explicit grant. The first-run welcome
+                suggests folders Claude Code has run in; later, open Settings →
+                Project folders → Manage…, add your repository or parent folder
+                containing multiple projects, and rescan if needed. Grants never
+                overlap: adding a parent folds in repositories granted inside
+                it, a repository already inside a granted parent is skipped, and
+                you can narrow a parent to just the folders you choose. A newly
+                granted folder stays quiet until discovery confirms its
+                availability; a known failure remains visible during retry.
+                Usage keeps historical project identities independently of
+                current folder access. Linking Usage locations does not grant
+                access to folders. Automatic discovery skips temporary and build
+                directories; explicitly granting a repository inside one still
+                includes it.
+              </p>
+            </details>
+          </div>
+          <button
+            type="button"
+            class="faq-toggle"
+            data-faq-toggle
+            aria-expanded="false"
+            aria-controls="faq-additional-questions"
+            hidden
+          >
+            <span data-faq-toggle-label>More questions</span>
+            <i data-lucide="arrow-down" aria-hidden="true"></i>
+          </button>
         </div>
       </section>
     </main>

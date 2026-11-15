@@ -9,6 +9,9 @@ import { mountAnalyticsDeck } from './analytics-deck.js'
 const COPY_FEEDBACK_DURATION_MS = 2500
 const HEADER_SCROLLED_THRESHOLD = 20
 const DESKTOP_NAVIGATION_WIDTH = '(min-width: 768px)'
+const INITIAL_FAQ_QUESTION_COUNT = 5
+const FAQ_MORE_LABEL = 'More questions'
+const FAQ_FEWER_LABEL = 'Fewer questions'
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
 
 function requireElement(selector) {
@@ -173,6 +176,32 @@ function initializeHeaderElevation() {
   updateHeader()
 }
 
+function initializeFaq() {
+  const list = requireElement('[data-faq-questions]')
+  const toggle = requireElement('[data-faq-toggle]')
+  const label = requireElement('[data-faq-toggle-label]')
+  const additionalQuestions = [...list.querySelectorAll('details')].slice(
+    INITIAL_FAQ_QUESTION_COUNT
+  )
+  if (!additionalQuestions.length) return
+
+  const additional = document.createElement('div')
+  additional.id = toggle.getAttribute('aria-controls')
+  additional.append(...additionalQuestions)
+  additional.hidden = true
+  list.append(additional)
+  toggle.hidden = false
+  toggle.addEventListener('click', () => {
+    const expanded = additional.hidden
+    additional.hidden = !expanded
+    toggle.setAttribute('aria-expanded', String(expanded))
+    label.textContent = expanded ? FAQ_FEWER_LABEL : FAQ_MORE_LABEL
+    const focusTarget = expanded ? additional.querySelector('summary') : toggle
+    focusTarget.focus({ preventScroll: true })
+    focusTarget.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+  })
+}
+
 function initializeSectionReveals() {
   if (reducedMotion.matches || !('IntersectionObserver' in window)) return
   const observer = new IntersectionObserver(
@@ -246,5 +275,6 @@ for (const link of document.querySelectorAll('[data-preview-link]')) {
 initializeNavigation()
 initializePlatformTabs()
 initializeInstallationCopy()
+initializeFaq()
 initializeHeaderElevation()
 initializeSectionReveals()

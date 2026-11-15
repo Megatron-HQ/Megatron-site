@@ -1696,8 +1696,31 @@ h2 {
 .faq-list details {
   border-top: 1px solid var(--rule);
 }
-.faq-list details:last-child {
+.faq-questions {
   border-bottom: 1px solid var(--rule);
+}
+.faq-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 12px;
+  padding-block: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.faq-toggle:hover {
+  color: #657100;
+}
+.faq-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 180ms;
+}
+.faq-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 .faq-list summary {
   list-style: none;
