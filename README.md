@@ -1,6 +1,6 @@
 # Megatron website
 
-The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static web application.
+The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [www.getmegatron.app](https://www.getmegatron.app/) as a static web application.
 
 The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all seven Usage panels, settings, the command palette, file views, and dialogs. Tokens includes four token categories, independent 24-hour/7-day/30-day periods, trends, and model/project breakdowns. History has annual activity metrics, a yearly contribution calendar, an expandable monthly project timeline, shared year selection, and full-day details with available token data; Activity has recent prompts and sessions. Compact token values expose exact counts on hover and keyboard focus. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
 
@@ -8,7 +8,7 @@ The marketing page uses vanilla JavaScript; the embedded preview uses React and 
 
 ## Deployment
 
-The website is deployed to Vercel at [megatron-site.vercel.app](https://megatron-site.vercel.app/) as a static site with continuous deployment connected to the GitHub repository. Pushes to `main` deploy directly to production, and pull requests generate preview deployments.
+The website is deployed to Vercel at [www.getmegatron.app](https://www.getmegatron.app/) as a static site with continuous deployment connected to the GitHub repository. Pushes to `main` deploy directly to production, and pull requests generate preview deployments.
 
 ### Vercel configuration
 
