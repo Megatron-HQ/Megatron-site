@@ -77,7 +77,17 @@ The production site is emitted to `dist/`. The local production preview serves a
 - `public/megatron-icon.png`: the desktop application's existing icon.
 - `DESIGN.md`: visual design system and rules.
 
-Geist fonts and Lucide icons are bundled with the site. The static website makes no analytics requests and has no account, form submission, backend server, or visitor local-file integration.
+Geist fonts and Lucide icons are bundled with the site. The production marketing page uses the free tiers of Vercel Web Analytics and Speed Insights. The website has no account, form submission, backend server, or visitor local-file integration. Website measurement is separate from Megatron's desktop app and never reads local skills, sessions, files, or paths.
+
+### Website analytics and performance
+
+`src/site-observability.js` initializes the official `@vercel/analytics` and `@vercel/speed-insights` SDKs only in a Vercel production build, on the top-level HTTPS marketing page at `getmegatron.app`, `www.getmegatron.app`, or `megatron-site.vercel.app`. Development, local production previews, deployment previews, other hosts, and every embedded sample remain untracked. URL query strings and fragments are removed before pageview or performance events are sent. Download clicks, command copying, and GitHub star-link clicks are not tracked on Hobby.
+
+Web Analytics supplies visitor/pageview totals and the available referrer, country, device, OS, and browser breakdowns. Speed Insights' free dashboard supplies the Real Experience Score. Performance sampling is 100% so the available allowance captures as much traffic as possible. The current free allowances are shared across the Vercel team: 50,000 Web Analytics events per month with a one-month reporting window, and 10,000 Speed Insights events over the last 30 days with 24-hour/7-day views. Collection may pause at Vercel's limits; the site keeps working and there are no paid overages or Plus upgrades. Check [Web Analytics pricing](https://vercel.com/docs/analytics/limits-and-pricing) and [Speed Insights pricing](https://vercel.com/docs/speed-insights/limits-and-pricing) before changing plans or sampling.
+
+Enable Web Analytics for the existing `megatron-site` Vercel project and deploy the updated source. The Speed Insights free tier starts collecting after its SDK is deployed; do not enable Speed Insights Plus. `vite.config.js` exposes only the public deployment environment and `VERCEL_OBSERVABILITY_CLIENT_CONFIG` to the client, allowing Vercel's build-time first-party intake paths without credentials. Do not substitute `NODE_ENV=production` for `VERCEL_ENV=production`: local and preview builds also use production assets.
+
+`npm test` includes `scripts/qa/site-observability.test.mjs`, which builds all three deployment variants, proxies the real production bundle through a local browser fixture, and checks SDK loading, URL redaction, first-party intake paths, and local/iframe exclusions. Collection scripts are intercepted so tests never submit analytics. The existing production QA continues to assert zero external requests when running locally.
 
 Usage retains recorded project locations and existing confirmed links. Project rankings and History's timeline search all rows and recorded paths beyond the collapsed eight. Activity and History share retained prompt records for matching intervals, with partial/unavailable coverage kept distinct from zero. Manual project linking is deferred; the Usage header has no Manage projects entry point.
 

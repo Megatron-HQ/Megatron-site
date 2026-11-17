@@ -26,7 +26,7 @@ The product website and landing page for Megatron, a local-first desktop control
 Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v4 (`@tailwindcss/vite`), Geist fonts, and Lucide icons. App and marketing styles use separate Tailwind discovery scopes.
 
 - Node pinned to `>=22.13.0` in `package.json` for the supported ESLint toolchain.
-- Single-product landing site, zero runtime tracking or external analytics.
+- Single-product landing site with free Vercel Web Analytics and Speed Insights on the production marketing page only.
 - Local-first delivery; production assets emitted to `dist/`.
 
 ## Layout
@@ -34,6 +34,7 @@ Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v
 - `index.html`: Semantic landing page markup and structured metadata.
 - `src/styles.css`: Tailwind theme, tokens, responsive rules, and reduced motion.
 - `src/main.js`: Navigation, installation command copying, and scroll effects.
+- `src/site-observability.js`: Production-only Vercel visitor/performance collection, with URL redaction and no custom events or sample-app tracking.
 - `src/product-preview-host.js`: Same-origin iframe navigation, reset, native modal expansion, and scale-to-fit below the app's 860px width.
 - `src/analytics-deck.js`: Follow-the-work card stack; opens each Usage view in place or full screen, with card figures from `src/preview/card-stats.ts` and transitions from `src/analytics-deck-motion.js`.
 - `src/icons.js`: Marketing icon registry.
@@ -50,12 +51,12 @@ Vite + Vanilla JS marketing page + React/TypeScript app preview + Tailwind CSS v
 
 ## Locked decisions
 
-| Area                | Decision                                                                                                       | Why                                                                                                                                                                                                                                    |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Generated mirrors   | `AGENTS.md` (from `CLAUDE.md`) and `.agents/skills/` (from `.claude/skills/`) — never hand-edited, no symlinks | Git symlinks need Developer Mode **and** `core.symlinks=true` on Windows. Instead `.githooks/pre-commit` regenerates and re-stages both every commit; `npm run pre-commit:check` acts as the backstop.                                 |
-| Privacy             | No remote telemetry, forms, or analytics requests                                                              | Aligns with Megatron's local-first core philosophy.                                                                                                                                                                                    |
-| Verification        | Tracked browser checks in `scripts/qa/` and `.claude/skills/visual-verify/`; reports remain ignored            | Exercises responsive viewports (375px, 768px, 1024px, 1440px), keyboard controls, and ensures zero horizontal page overflow.                                                                                                           |
-| Interactive preview | Actual app renderer in an isolated iframe; typed sample API in `src/preview/`                                  | Preserves app visuals and controls; never accesses visitor local files or runs native commands. Lays out at 860px minimum and scales down to fit narrower viewports instead of reflowing or panning; expansion reuses the same iframe. |
+| Area                | Decision                                                                                                                                  | Why                                                                                                                                                                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generated mirrors   | `AGENTS.md` (from `CLAUDE.md`) and `.agents/skills/` (from `.claude/skills/`) — never hand-edited, no symlinks                            | Git symlinks need Developer Mode **and** `core.symlinks=true` on Windows. Instead `.githooks/pre-commit` regenerates and re-stages both every commit; `npm run pre-commit:check` acts as the backstop.                                 |
+| Privacy             | Free Vercel Web Analytics and Speed Insights on the top-level production marketing page; no custom events, forms, or sample-app telemetry | Website measurement is separate from desktop app data. Strip URL queries/fragments before sending; local builds, deployment previews, and iframe samples never initialize collection.                                                  |
+| Verification        | Tracked browser checks in `scripts/qa/` and `.claude/skills/visual-verify/`; reports remain ignored                                       | Exercises responsive viewports (375px, 768px, 1024px, 1440px), keyboard controls, and ensures zero horizontal page overflow.                                                                                                           |
+| Interactive preview | Actual app renderer in an isolated iframe; typed sample API in `src/preview/`                                                             | Preserves app visuals and controls; never accesses visitor local files or runs native commands. Lays out at 860px minimum and scales down to fit narrower viewports instead of reflowing or panning; expansion reuses the same iframe. |
 
 ## Testing & Verification
 
@@ -64,6 +65,8 @@ Run `npm ci` to install the declared Playwright and image-diff dependencies. Bro
 `node scripts/qa/compare-app.mjs <app-checkout>` separately captures the original pinned renderer in hidden Electron and compares it with the production preview at 1200×720 and 860×600. It uses synthetic fixtures and does not run app scanners. Evidence remains in `.qa/app-reference/`. Only this reference-refresh command requires the app checkout and Electron.
 
 Site verification is performed with Playwright in `scripts/qa/verify.mjs` and `.claude/skills/visual-verify/`:
+
+`scripts/qa/site-observability.test.mjs` separately builds production, preview, and local variants and verifies the real SDK initialization, first-party intake configuration, URL redaction, and exclusion of local/sample/embedded pages. These checks intercept collection scripts and never send test traffic to Vercel. Ordinary local QA retains its zero-external-request assertion.
 
 - Responsive viewports: 375px (mobile), 768px (tablet), 1024px (laptop), 1440px (desktop).
 - Zero horizontal overflow check on all screen sizes.

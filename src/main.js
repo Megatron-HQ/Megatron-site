@@ -5,6 +5,7 @@ import '@fontsource/geist-sans/latin-700.css'
 import '@fontsource/geist-mono/latin-400.css'
 import { mountProductDemo, refreshIcons } from './product-preview-host.js'
 import { mountAnalyticsDeck } from './analytics-deck.js'
+import { initializeSiteObservability } from './site-observability.js'
 
 const COPY_FEEDBACK_DURATION_MS = 2500
 const HEADER_SCROLLED_THRESHOLD = 20
@@ -278,3 +279,4 @@ initializeInstallationCopy()
 initializeFaq()
 initializeHeaderElevation()
 initializeSectionReveals()
+initializeSiteObservability()

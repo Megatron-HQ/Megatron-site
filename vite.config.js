@@ -8,6 +8,12 @@ const PRODUCTION_PREVIEW_PORT = 4173
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    'import.meta.env.VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV ?? ''),
+    'import.meta.env.VERCEL_OBSERVABILITY_CLIENT_CONFIG': JSON.stringify(
+      process.env.VERCEL_OBSERVABILITY_CLIENT_CONFIG ?? ''
+    )
+  },
   resolve: {
     alias: {
       '@preview': resolve('src/preview'),
