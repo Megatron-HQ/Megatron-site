@@ -109,6 +109,7 @@ import {
 const STARTUP_SCAN_SCENARIOS = [
   'scan-failed',
   'scan-partial',
+  'linked-skills',
   'projects-missing',
   'projects-missing-warning'
 ]

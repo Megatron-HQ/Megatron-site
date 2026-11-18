@@ -10,6 +10,12 @@ import { PNG } from 'pngjs'
 import pixelmatch from 'pixelmatch'
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
 import { openSkill, openResidentCategory, selectPanel } from './preview.mjs'
+import {
+  openClaudeFolderSettings,
+  openLinkedSkill,
+  openTokenDetails,
+  openWhatsNew
+} from './preview-v030.mjs'
 
 const root = resolve(import.meta.dirname, '../..')
 const appRoot = process.argv[2] && resolve(process.argv[2])
@@ -160,6 +166,11 @@ const scenes = [
     }
   ],
   ['detail', (page) => openSkill(page, 'design-system')],
+  ['linked-skill', openLinkedSkill],
+  ['claude-code-folder', openClaudeFolderSettings],
+  ['whats-new', openWhatsNew],
+  ['token-details-day', (page) => openTokenDetails(page, '7 days')],
+  ['token-details-hour', (page) => openTokenDetails(page, '24 hours')],
   [
     'files',
     async (page) => {
@@ -372,7 +383,10 @@ const scenes = [
     async (page) => {
       await selectPanel(page, 'Cost')
       await page.getByRole('radio', { name: '24 hours', exact: true }).click()
-      await page.locator('button[aria-haspopup="dialog"]').first().click()
+      await page
+        .locator('button[aria-haspopup="dialog"]:visible')
+        .first()
+        .click()
       await page.getByRole('dialog').waitFor()
     }
   ],
@@ -380,7 +394,10 @@ const scenes = [
     'activity-dialog',
     async (page) => {
       await selectPanel(page, 'Activity')
-      await page.locator('button[aria-haspopup="dialog"]').last().click()
+      await page
+        .locator('button[aria-haspopup="dialog"]:visible')
+        .last()
+        .click()
       await page.getByRole('dialog').waitFor()
     }
   ],

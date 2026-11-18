@@ -14,6 +14,7 @@ import { verifyUsageProjects } from './usage-projects.mjs'
 import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
 import { verifyReleaseFeatures } from './release-features.mjs'
+import { verifyMegatron030 } from './preview-v030.mjs'
 import { verifyFeatureLinks } from './feature-links.mjs'
 import {
   verifyFaq,
@@ -84,7 +85,11 @@ try {
   await verifyPreviewSettings(page)
   await checkOverflow(page, 1440)
   await verifyReleaseFeatures(page, baseUrl, join(directory, 'release'))
+  await verifyMegatron030(page, baseUrl)
   await checkOverflow(page, 1440)
+  results.push(
+    'Megatron 0.3.0: daily and hourly token details, keyboard focus, What’s New actions, Claude Code Folder switching and recovery, linked skills and scan warnings passed.'
+  )
   results.push(
     'Megatron 0.2.0: unsupported update state and automatic-check switch, welcome replay by keyboard, stale-skill markers and tooltip, plugin contents, Resident tax 200K scale caption, Claude app chats folded and opened by keyboard in Cost and History without scratch paths, the estimated-lineage cost caveat, and folder narrowing passed.'
   )

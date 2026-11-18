@@ -6,6 +6,12 @@ import {
   preparePreview,
   selectPanel
 } from '../../../scripts/qa/preview.mjs'
+import {
+  openClaudeFolderSettings,
+  openLinkedSkill,
+  openTokenDetails,
+  openWhatsNew
+} from '../../../scripts/qa/preview-v030.mjs'
 
 async function product(page, action = async () => {}) {
   const app = await preparePreview(page)
@@ -74,6 +80,13 @@ export const scenarios = [
   sample('product-demo-skill-detail', 'demo-skills', (app) =>
     openSkill(app, 'design-system')
   ),
+  sample('product-demo-linked-skill', 'demo-skills', openLinkedSkill),
+  sample(
+    'product-demo-claude-code-folder',
+    'demo-skills',
+    openClaudeFolderSettings
+  ),
+  sample('product-demo-whats-new', 'demo-skills', openWhatsNew),
   sample('product-demo-skill-manual', 'demo-skills', (app) =>
     openSkill(app, 'manual-plan')
   ),
@@ -365,6 +378,12 @@ export const scenarios = [
       .getByText(/Cost details/)
       .waitFor()
   }),
+  sample('product-demo-token-details-day', 'demo-usage', (app) =>
+    openTokenDetails(app, '7 days')
+  ),
+  sample('product-demo-token-details-hour', 'demo-usage', (app) =>
+    openTokenDetails(app, '24 hours')
+  ),
   sample('product-demo-usage-invocations', 'demo-usage', async (app) => {
     await selectPanel(app, 'Skills')
     await app
