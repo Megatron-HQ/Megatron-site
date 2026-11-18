@@ -122,7 +122,22 @@ try {
       .getAttribute('aria-selected'),
     'true'
   )
-  assert.ok(await page.locator('#install-panel-windows').isVisible())
+  const windowsPanel = page.locator('#install-panel-windows')
+  assert.ok(await windowsPanel.isVisible())
+  assert.equal(
+    await page.locator('.release-status strong').textContent(),
+    'Megatron 0.3.0'
+  )
+  assert.equal(
+    await windowsPanel
+      .getByRole('link', { name: 'Download for Windows' })
+      .getAttribute('href'),
+    'https://github.com/Megatron-HQ/Megatron/releases/download/v0.3.0/megatron-0.3.0-setup.exe'
+  )
+  assert.equal(
+    await windowsPanel.locator('.install-size').textContent(),
+    '107 MB'
+  )
   assert.equal(await page.locator('#install-panel-mac').isVisible(), false)
   await page.keyboard.press('Home')
   assert.equal(await macTab.getAttribute('aria-selected'), 'true')
