@@ -191,8 +191,8 @@
               <h3>Every skill. One inventory.</h3>
               <p>
                 Global, project, and plugin skills, brought into the same view.
-                Search, inspect definitions, and explore bundled files without
-                editing a thing. Skills unused for 30 days get a quiet marker.
+                Search definitions, explore bundled files, and see where linked
+                skills point. Skills unused for 30 days get a quiet marker.
                 Skills and plugins stay in sync as files change.
               </p>
             </div>
@@ -377,10 +377,9 @@
                     <h3>Every kind of token, accounted for.</h3>
                     <p>
                       Input, output, cache reads, and cache writes across 24
-                      hours, 7 days, or 30 days. Follow hourly and daily trends,
-                      with breakdowns by model and project. Time-based figures
-                      are estimated from recorded session totals. Hover or focus
-                      a compact token value to see its exact count.
+                      hours, 7 days, or 30 days. Open any recorded hour or day
+                      to see its estimated tokens by model and project. Hover or
+                      focus a compact value to see its full count.
                     </p>
                     <button
                       type="button"
@@ -577,10 +576,9 @@
                 <div>
                   <h3>On your device.</h3>
                   <p>
-                    Skill inventory and usage analysis run locally. Your session
-                    data stays with you. The only request Megatron makes itself
-                    is an update check to github.com, which you can turn off in
-                    Settings.
+                    Skill inventory and usage analysis run locally. Megatron
+                    contacts GitHub to check for and download updates. Turn
+                    automatic checks off in Settings.
                   </p>
                 </div>
               </article>
@@ -599,9 +597,10 @@
                 <div>
                   <h3>Your folders. Your choice.</h3>
                   <p>
-                    Project repositories and parent directories are included
-                    only when you explicitly grant access. A parent covers
-                    everything inside it, and grants never overlap.
+                    Megatron reads one Claude Code folder at a time. Choose it
+                    in Settings or set <code>CLAUDE_CONFIG_DIR</code>. Project
+                    repositories require a folder grant, and a parent grant
+                    covers the folders inside it.
                   </p>
                 </div>
               </article>
@@ -771,8 +770,10 @@
               <h3>Bring your projects into view.</h3>
               <p>
                 On first launch, a short welcome shows what Megatron found and
-                helps you grant project folders. Change them later under
-                <strong>Settings → Project folders → Manage…</strong>.
+                helps you grant project folders. Change those grants under
+                <strong>Settings → Project folders → Manage…</strong>, or switch
+                the folder Megatron reads under
+                <strong>Settings → Claude Code folder</strong>.
               </p>
               <p>
                 Plugin actions and Resident tax also need the
@@ -844,8 +845,8 @@
                 with the installer on Windows. A zip downloaded from Releases in
                 a browser is blocked on first launch: open System Settings →
                 Privacy &amp; Security and choose Open Anyway. It is
-                specifically built for Claude Code. Skills from other tools and
-                Linux distribution are outside the current scope.
+                specifically built for Claude Code. Use the native Claude Code
+                installation on Windows.
               </p>
             </details>
             <details>
@@ -876,7 +877,10 @@
                 itself. Mac copies on 0.2.1 or older need one manual update
                 first:
                 <code>brew upgrade --cask megatron</code>, or the install
-                command. The website preview never checks for updates.
+                command. For macOS installs that need a manual update, Settings
+                shows the install command. Update checks run in installed
+                builds. Select <strong>What’s new</strong> in Settings to
+                revisit the latest release highlights.
               </p>
             </details>
             <details>
@@ -887,20 +891,19 @@
                 ></i>
               </summary>
               <p>
-                Megatron keeps a local usage archive across scans and cache
-                rebuilds, without storing prompt text in that archive. It
-                retains activity already observed when Claude Code removes older
-                source files. History deleted before Megatron saw it cannot be
-                recovered. Activity and History use the same retained prompt
-                records for matching time intervals. The History panel shows
-                annual summaries, a yearly calendar, and a monthly project
-                timeline. Coverage notes separate missing history from days with
-                no activity; streaks count consecutive observed days with
-                prompts. A day can still show token details when its prompt
+                Megatron keeps a local usage archive for each Claude Code folder
+                across scans and cache rebuilds, without storing prompt text in
+                that archive. It retains activity already observed when Claude
+                Code removes older source files. History deleted before Megatron
+                saw it cannot be recovered. Activity and History use the same
+                retained prompt records for matching time intervals. The History
+                panel shows annual summaries, a yearly calendar, and a monthly
+                project timeline. Coverage notes separate missing history from
+                days with no activity; streaks count consecutive observed days
+                with prompts. A day can still show token details when its prompt
                 history is unavailable. Incomplete source scans preserve the
-                previously archived history. Recorded paths and existing
-                location links stay intact; similar names do not automatically
-                merge projects.
+                previously archived history, including recorded project paths
+                and existing location links.
               </p>
             </details>
             <details>
@@ -913,10 +916,10 @@
               <p>
                 Total tokens processed includes input, output, cache reads, and
                 cache writes. Thinking is included in output. Figures for a time
-                period are estimated allocations of recorded session totals;
-                missing and undated token data are identified separately.
-                Compact values show their exact counts on hover or keyboard
-                focus; those counts retain the same estimation limits.
+                period are estimated allocations of recorded session totals.
+                Select a bar in Usage → Tokens for that hour or day’s counts by
+                model and project. The detail marks partial days, and the Tokens
+                view identifies missing and undated records.
               </p>
             </details>
             <details>
@@ -1001,8 +1004,9 @@
                 Usage keeps historical project identities independently of
                 current folder access. Linking Usage locations does not grant
                 access to folders. Automatic discovery skips temporary and build
-                directories; explicitly granting a repository inside one still
-                includes it.
+                directories. A grant can include a repository inside one.
+                Megatron lists project skills under the Canonical Checkout and
+                counts worktree sessions toward that checkout’s Usage.
               </p>
             </details>
           </div>

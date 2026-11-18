@@ -1,11 +1,9 @@
 # Megatron product fidelity audit
 
-Reviewed on October 18, 2026 and updated on November 13, 2026 against the
-desktop app at `75e8faa8230c39ee505c2cf0ed64fe885463422e`
-(Megatron 0.2.1). The renderer provenance records the exact source-file hashes.
-The 0.2.0 additions (stale skills, plugin contents, non-overlapping grants,
-first-run welcome, updates, palette and motion) are reviewed in
-`docs/upstream-sync-2026-11-12.md`.
+Reviewed against Megatron v0.3.0 at `5d9c9c11b4514569f9dc7703b62ba778fae192c0`
+on November 18, 2026. The renderer provenance records the exact source-file hashes.
+The [November 18 sync review](upstream-sync-2026-11-18.md) covers the changes from
+v0.2.1 and the follow-up commits on app `staging`.
 
 ## Product and website architecture
 
@@ -22,12 +20,11 @@ The website has two separate entries:
   API supplies synthetic skills, installs, folders, and session events. It has no
   visitor filesystem, database, terminal, or account integration.
 
-The app's components and styles are imported through `preview:sync`; the snapshot
-contains 109 source/license files and a provenance manifest. Five integration
-patches scope Tailwind discovery, support trusted host navigation, and prevent
-the two inventories from taking focus from an inactive iframe, and make the
-shared Usage helper import explicit for Node adapter tests. Renderer files
-are never manually edited.
+The app's components, styles, shared contracts, release catalog, and sidebar icon
+are imported through `preview:sync`. The manifest hashes 140 files. Six
+integration patches scope Tailwind discovery, support trusted host navigation,
+protect inventory focus in inactive frames, and enable Node tests to load the
+shared Usage and What's New modules.
 
 ## Tokens and History
 
@@ -43,9 +40,13 @@ from prompt counts. Partial and unavailable prompt history are disclosed rather
 than presented as complete zero activity. Website records are synthetic and reset
 with the session. The native private preferences and archive are not accessed.
 
-Tokens shows input, output (including thinking), cache reads, and cache writes; independent 24-hour, 7-day, and 30-day windows; hourly/daily trends; and model/project breakdowns. Time-based figures are estimated shares of recorded session totals. Missing and undated usage are disclosed separately.
+Tokens shows input, output (including thinking), cache reads, and cache writes in independent 24-hour, 7-day, and 30-day windows. Hourly and daily bars open model and project breakdowns for the selected interval. Time-based figures are estimated shares of recorded session totals. The renderer marks clipped daily intervals and identifies missing and undated usage.
 
-History has a prompt-based yearly contribution calendar with year selection, one intensity scale across years, neutral light/dark shading, hover/focus summaries, keyboard navigation, and full-day details including available token figures. Activity retains its recent rolling windows. The desktop app keeps a separate local usage archive without prompt text across rescans, cache rebuilds, and source pruning. Already-deleted activity cannot be recovered. Browser data remains illustrative and session-only. Landing-page analytics, Tokens/Activity/History links, and FAQs reflect these features.
+History has a prompt-based yearly contribution calendar with year selection, one intensity scale across years, neutral light/dark shading, hover and focus summaries, keyboard navigation, and day details including available token figures. Activity has its own rolling windows. The desktop app keeps a local usage archive for each Claude Code Folder across rescans, cache rebuilds, and source pruning. These archives store counts and session metadata without prompt text. Git worktree activity contributes to its Canonical Checkout. Browser data is illustrative and session-only.
+
+## Claude Code Folder and linked skills
+
+The desktop reads one Claude Code Folder at a time. `CLAUDE_CONFIG_DIR` can set it at launch, and Settings can select a different folder. Project grants govern repository access separately. Skill details show the destination of a linked skill. A repository link that points outside approved folders appears in Scan details. Settings also replays What's New from the release catalog bundled with the renderer.
 
 ## What the product displays
 
@@ -178,19 +179,15 @@ sorting and keyboard rows, command palette, lint/file navigation, tree resizing,
 charts, time windows, tooltips, dialogs, theme controls, and reduced motion.
 The host retains synchronized section tabs, Cost navigation, sample reset,
 state-preserving expansion, focus return, and Escape ordering. Mobile retains
-the actual desktop layout at a minimum 860px client width with contained panning
-and focus reveal. Marketing navigation, copying, disclosures, and scroll effects
-remain in place.
+the actual desktop layout at a minimum 860px client width and scales it to fit.
+The marketing page supports navigation, copying, disclosures, and scroll effects.
 
 ## Distribution and evidence limits
 
-The official GitHub CLI release query returned no published releases on October
-18, 2026. On November 12, 2026 it listed v0.2.0 as the latest release, after
-v0.1.0, and the `Megatron-HQ/homebrew-tap` cask was at 0.2.0. The install
-panel's macOS tab leads with the Homebrew cask and offers the v0.2.0 DMG; the
-Windows tab offers the v0.2.0 per-user installer. Both state that builds are
-unsigned. The project is currently MIT-licensed; the site makes no promise
-about future pricing.
+GitHub published [v0.3.0](https://github.com/Megatron-HQ/Megatron/releases/tag/v0.3.0)
+on November 18, 2026. The macOS tab offers the Apple silicon Homebrew cask and
+the curl installer. The release contains an ad-hoc signed macOS zip without
+notarization. The Windows tab points to the unsigned 64-bit per-user installer.
 
 Every preview metric and definition is illustrative. Browser controls simulate
 native actions and do not prove that a visitor's Claude installation, folders,
@@ -200,10 +197,8 @@ captures do not establish native macOS packaging or window-chrome parity.
 
 ## Previous verification results (November 3)
 
-The current [November 5 verification](upstream-sync-2026-11-05.md#verification)
-records 102 passing tests, 241 responsive captures without overflow or browser
-errors, passing full production QA, and 82 exact native renderer comparisons.
-The historical results below describe the earlier integration.
+The [November 18 sync review](upstream-sync-2026-11-18.md#verification) records
+current results. The historical results below describe the earlier integration.
 
 | Check                      | Result                                                                                                                                                                                                                                                                      |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

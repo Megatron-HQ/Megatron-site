@@ -24,22 +24,23 @@ This website explains Megatron to the people who need it and gets them running i
 
 Local and deterministic. Megatron runs entirely on the user's machine: no account, no API key, no LLM calls, no telemetry. The core analysis is deterministic. Skill inspection and analytics are read-only, and project folders are included only when the user explicitly grants access. The app is MIT-licensed open source, so anyone can check the claim by reading the source.
 
-The website follows the same rule. It sends no analytics or remote requests and has no forms. The interactive preview runs on session-only sample data and never touches the visitor's files.
+The interactive preview runs on session-only sample data in the browser. The public marketing page uses Vercel Web Analytics and Speed Insights with query strings and fragments removed. Collection runs only on the top-level production marketing page.
 
 ## Operating Context
 
-- Visitors evaluate in a browser. The site embeds Megatron's actual renderer (pinned in `vendor/megatron/`) in an isolated iframe, with a typed sample API in `src/preview/`. Visitors can use Skills, Plugins, all five Usage panels, the command palette, settings, and dialogs. Native actions are simulated, and sample data is labeled as sample data.
+- Visitors evaluate in a browser. The site embeds Megatron's actual renderer (pinned in `vendor/megatron/`) in an isolated iframe, with a typed sample API in `src/preview/`. Visitors can use Skills, Plugins, all seven Usage panels, the command palette, Settings, and dialogs. Native actions are simulated and data is labeled as sample data.
 - The primary install path is the packaged release. On Apple silicon Macs, Homebrew (`megatron-hq/tap/megatron`) comes first. The curl installer (`install.sh`, served only as the `releases/latest/download` asset) installs to `/Applications` or `~/Applications` and updates an existing copy when run again. A browser-downloaded zip requires Open Anyway on first launch because the build is ad-hoc signed and distributed without notarization. 64-bit Windows uses an unsigned per-user installer, so SmartScreen may warn. Running from source (`git clone`, `npm ci`, `npm run dev`) requires macOS or Windows, Node.js 22.x, npm, and Git. Plugin actions also need the `claude` CLI on PATH.
 - On first launch, a short welcome shows what Megatron reads, what it found, and which folders Claude Code has used, and offers folder grants; it can be replayed from Settings. Users change grants under Settings → Project folders → Manage. Grants never overlap: a parent absorbs repositories granted inside it, and a parent can be narrowed.
-- Installed builds check github.com for a newer release 10 seconds after launch and every 6 hours; it is on by default and turned off in Settings → Updates. Both platforms download updates in the background and install them on Restart to update or quit; Homebrew leaves Megatron to update itself. Mac copies on 0.2.1 or older need one manual update first (`brew upgrade --cask megatron` or the curl command). This is the only request the app makes itself.
-- Analytics depend on the local history and transcripts that Claude Code keeps.
-- The site is currently delivered locally only. No hosting service or public deployment is configured.
+- Installed builds check GitHub for a newer release 10 seconds after launch and every 6 hours. Turn automatic checks off in Settings → Updates. Both platforms download updates from GitHub in the background and install them on Restart to update or quit. Mac copies on 0.2.1 or older need one manual update with `brew upgrade --cask megatron` or the curl command.
+- Megatron reads one Claude Code Folder at a time. It follows `CLAUDE_CONFIG_DIR` or the folder selected in Settings. Each folder has its own index and local usage archive. Project access is granted separately.
+- Analytics depend on local history and transcripts. Worktree sessions and skill invocations contribute to their Canonical Checkout, which owns the project's skills.
+- The marketing site is hosted on Vercel. The `staging` branch has a separately authenticated preview.
 
 ## Capabilities and Constraints
 
 **Capabilities:** a unified skill inventory with definition and bundled-file inspection; five deterministic lint checks (for example broken references, missing configuration, and shadowed names); per-scope plugin enable, disable, update, and uninstall through Claude Code's CLI with completion feedback; usage analytics over 24-hour, 7-day, and 30-day windows covering activity, models and reasoning effort, skill invocations with estimated cost attribution, and context footprint.
 
-**Terminology:** Skills (global / project / plugin sources), Plugins (user / project / local scopes), Usage, lint findings, estimated API-equivalent usage, resident context, coverage gap.
+**Terminology:** Skills (global / project / plugin sources), Plugins (user / project / local scopes), Usage, Claude Code Folder, Canonical Checkout, lint findings, estimated API-equivalent usage, resident context, coverage gap.
 
 **Constraints:**
 
@@ -47,13 +48,13 @@ The website follows the same rule. It sends no analytics or remote requests and 
 - Context figures combine listing-token estimates with a qualifying cold session's measured first-turn cache write. Category breakdowns are estimates.
 - Megatron runs alongside Claude Code and does not replace it. It does not edit skill definitions or run skill scripts. Plugin management is a separate capability that goes through Claude Code's own CLI.
 - Megatron is free and open source under MIT today. Future pricing is undecided: make no commitments either way.
-- Platforms are macOS and Windows only. Linux distribution and skills from other tools are out of scope.
+- Platforms are Apple silicon macOS and 64-bit Windows. On Windows, use a Claude Code installation on Windows itself.
 - Distribution: v0.3.0 was published on November 18, 2026, with an Apple silicon zip and a 64-bit Windows installer. The `Megatron-HQ/homebrew-tap` cask tracks each published release through the app's release workflow. Check GitHub Releases and the tap before changing version, platform, or signing claims.
 - Never describe the app as making no network requests: it checks github.com for updates, and plugin actions and Resident tax run Claude Code's CLI, which may use the network.
 - The vendored renderer is never edited by hand. Updates go through `npm run preview:sync` with recorded provenance.
-- The site has no telemetry, analytics, forms, or remote requests.
+- Website measurement is limited to production marketing visits and performance. It collects redacted URLs through Vercel, with browser preview activity excluded from collection.
 
-**Undecided:** code signing and notarization, future pricing, and public hosting or domain for the site.
+**Undecided:** trusted code signing and notarization, and future pricing.
 
 ## Brand Commitments
 
@@ -64,7 +65,7 @@ The website follows the same rule. It sends no analytics or remote requests and 
 
 ## Evidence on Hand
 
-- **The interactive preview:** Megatron's real renderer (the v0.2.1 release, `75e8faa`: v0.2.0 plus exact fork-lineage cost, Claude app chat grouping, and History/Tokens entrance animations) running on illustrative sample data. This is the strongest proof the site has.
+- **The interactive preview:** Megatron's v0.3.0 renderer (`5d9c9c1`) runs on illustrative sample data, with token drilldowns, Claude Code Folder controls, linked-skill targets, and What's New.
 - **Open source:** [github.com/Megatron-HQ/Megatron](https://github.com/Megatron-HQ/Megatron) under the MIT license.
 - **App icon:** `public/megatron-icon.png`.
 - **Absent, and must not be invented:** testimonials, customer or company logos, ratings, user or download counts, star counts, benchmarks, savings or performance claims, and press. Figures in the preview and illustrations are samples, not measurements.
@@ -72,7 +73,7 @@ The website follows the same rule. It sends no analytics or remote requests and 
 ## Product Principles
 
 1. **Prove, don't promise.** Lead with the real app and the real source. Every claim should be checkable.
-2. **Local is the product.** Nothing the app or the site does should need the cloud. Never add tracking, accounts, or forms.
+2. **Local is the product.** The desktop app's core analysis and browser preview work locally. Keep website performance and visitor measurement separate from application data.
 3. **Honest numbers.** Label estimates as estimates and samples as samples. Show gaps instead of hiding them.
 4. **Beside Claude Code, not instead of it.** Megatron gives visibility. Claude Code remains where the work happens.
 5. **Say only what ships.** Availability, platforms, and pricing reflect the current release state.

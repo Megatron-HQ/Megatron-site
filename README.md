@@ -2,13 +2,13 @@
 
 The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [www.getmegatron.app](https://www.getmegatron.app/) as a static web application.
 
-The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins (user, project, and local scopes), hierarchical project navigation and scoping, actionable scan diagnostics, missing-project explanations, all seven Usage panels, settings, the command palette, file views, and dialogs. Tokens includes four token categories, independent 24-hour/7-day/30-day periods, trends, and model/project breakdowns. History has annual activity metrics, a yearly contribution calendar, an expandable monthly project timeline, shared year selection, and full-day details with available token data; Activity has recent prompts and sessions. Compact token values expose exact counts on hover and keyboard focus. A typed browser adapter supplies session-only sample data and simulates native actions, including parent-folder grants and cascading project discovery.
+The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins, all seven Usage panels, Settings, the command palette, and file views. Open a Tokens chart bar for estimated usage and model and project breakdowns by hour or day. History includes annual activity metrics, a yearly contribution calendar, a monthly project timeline, and full-day details. Skills shows where linked skills point. Settings can switch between sample Claude Code Folders or replay What's New. A typed browser adapter supplies session-only sample data and simulates native actions such as folder grants and plugin commands.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
 ## Deployment
 
-The website is deployed to Vercel at [www.getmegatron.app](https://www.getmegatron.app/) as a static site with continuous deployment connected to the GitHub repository. Pushes to `main` deploy directly to production, and pull requests generate preview deployments.
+Vercel deploys `main` to [www.getmegatron.app](https://www.getmegatron.app/). Pushes to `staging` update the team's authenticated Vercel branch preview. Use the `CI` workflow's manual dispatch to run the platform matrix on `staging`.
 
 ### Vercel configuration
 
@@ -16,7 +16,7 @@ The website is deployed to Vercel at [www.getmegatron.app](https://www.getmegatr
 - **Build Command:** `npm run build` (typechecks, checks renderer snapshot integrity, and builds static assets)
 - **Output Directory:** `dist`
 - **Install Command:** `npm ci`
-- **Node.js Version:** `22.x` (matches `"engines": { "node": ">=22.13.0" }` in `package.json`)
+- **Node.js Version:** `24.x` on Vercel. Local development requires `22.13.0` or newer.
 
 All interactive preview features—including the typed browser adapter, sample state, simulated project/folder grants, and the pinned React renderer snapshot—execute entirely client-side in the visitor's browser. The deployment requires no server-side runtime, backend database, or external API keys.
 
@@ -101,9 +101,9 @@ Megatron is presented as currently free and MIT-licensed, with no commitments ab
 
 ## Verification
 
-The current snapshot is the Megatron `v0.2.1` release (`75e8faa`; renderer unchanged since `e1399c4`): v0.2.0 plus three Usage changes: exact fork-lineage cost (with an estimate caveat), Claude app chats folded into one project row, and staggered entrance animations for History and Tokens. The 0.2.0 release added the warm Paper palette with its frame and sheet shell, screen and dialog motion, entity glyphs, stale-skill markers, plugin contents, non-overlapping folder grants with narrowing and two-step revoke, the first-run welcome, the Settings Updates section, and the Resident tax 200K bar scale. These sit alongside independent Usage project identities, project search, retained Activity prompt counts, pending folder discovery, live inventory reconciliation, History's annual summary, the `/context` Resident tax panel, exact-token tooltips, and scan progress. Its source revision, exact source hashes, and five integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). The fifth patch makes a shared TypeScript import explicit for browser-adapter tests. App styling, components, and motion rules remain owned by the imported renderer.
+The current snapshot is Megatron `v0.3.0` (`5d9c9c1`). It includes the faster History calendar, hourly and daily Token details, Claude Code Folder switching, What's New, linked-skill targets, and the Megatron mark in the sidebar. Sample worktree sessions contribute to the Canonical Checkout's Usage. The source revision, file hashes, and six integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules come from the imported renderer.
 
-The [November 12 review](docs/upstream-sync-2026-11-12.md) covers the 35 commits from `61084a2` to v0.2.0. The [latest November 5 review](docs/upstream-sync-2026-11-05-usage-projects.md) details the next two commits and all 45 changed app files. The [earlier November 5 review](docs/upstream-sync-2026-11-05.md) details the previous 31 changed app files. The [November 4 review](docs/upstream-sync-2026-11-04.md) records the earlier `/context` integration. Rerun the checks below when changing the implementation.
+The [November 18 sync review](docs/upstream-sync-2026-11-18.md) records the upstream range, implementation tickets, and verification for this release. The [November 12 review](docs/upstream-sync-2026-11-12.md) covers the earlier v0.2.0 import.
 
 See the [product fidelity audit](docs/product-fidelity-audit.md) for the current capability review and corrections, [implementation notes](docs/interactive-preview-implementation.md) for verification conditions and limitations, and the [parity plan](docs/interactive-preview-parity-plan.md) for the original approach.
 
@@ -111,7 +111,7 @@ The preview uses the actual app renderer in a same-origin iframe. Marketing CSS 
 
 Resident tax's `/context` baseline and recorded requests are independent synthetic examples in `src/preview/context.ts`. The sample shows used, deferred, reserved, and free categories, category tables, system blocks/tools/cache breakpoints, hook output, and MCP instructions. It simulates measurement failures and unavailable recordings. The desktop measurement runs Claude Code from an empty folder and can start configured SessionStart hooks and MCP servers; the browser never runs the CLI or reads transcripts. The landing-page illustration groups system prompt and system tools and agrees with the preview's 32k used / 1M window, 33k reserve, 935k free, and 24.3k deferred sample.
 
-At narrow website widths the app retains its 860px minimum client width inside a horizontally pannable viewport. Keyboard focus reveals the relevant control. Expand preview opens the same iframe in a native modal dialog and preserves its state; Escape dismisses app controls before closing expansion. This preserves the desktop layout instead of introducing a separate mobile app design.
+At narrow website widths the app retains its 860px minimum client width and scales to fit. Expand preview opens the same iframe in a native modal dialog and preserves its state. Escape dismisses app controls before closing expansion.
 
 The preview toolbar contains section tabs, Reset sample, and expansion controls. Inventory change simulations remain in the local QA harness to verify recovery and refresh behavior. They never watch or change visitor files. The Resident Tax sample under Follow the work immediately follows the main preview's Light, Dark, or System appearance, including system preference changes and Reset, without reloading its data or closing its category dialog.
 
@@ -139,7 +139,7 @@ The visual sweep builds the site and starts a temporary production preview when 
 
 ## Updating the app renderer
 
-The authoritative revision and five integration patches are recorded in `vendor/megatron/provenance.json`. Never edit the snapshot manually. To import a reviewed app checkout:
+The authoritative revision and six integration patches are recorded in `vendor/megatron/provenance.json`. Import a reviewed app checkout with the sync tool:
 
 ```powershell
 npm run preview:sync -- C:\Megatron

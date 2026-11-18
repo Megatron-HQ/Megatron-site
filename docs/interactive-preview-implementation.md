@@ -4,9 +4,8 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 ## Renderer authority
 
-- App revision: `75e8faa8230c39ee505c2cf0ed64fe885463422e` (tag `v0.2.1`: `v0.2.0` plus exact fork-lineage cost, folded Claude app chats, and History/Tokens entrance animations; renderer files unchanged since `e1399c4`), version `0.2.1`; exact source hashes pin the imported files.
-- Snapshot: 121 files in `vendor/megatron/`, including shared API types, MIT license, and existing third-party attribution.
-- Five recorded integration patches: scoped Tailwind discovery, trusted host navigation, inactive-frame autofocus guards in the two inventories (hooked after `focusShownRows`' active-element check since 0.2.0, so a pending Back focus restore stays pending), and an explicit `.ts` import in the shared Usage grouping helper for Node's adapter tests. App tokens, layouts, labels, icons, and motion rules are preserved.
+- The v0.3.0 snapshot pins app revision `5d9c9c11b4514569f9dc7703b62ba778fae192c0`. The manifest records hashes for 140 files, including the shared API, release catalog, sidebar icon, license, and source files.
+- The six recorded integration patches scope Tailwind discovery, connect trusted host navigation, protect focus in the Skills and Plugins inventories, and add explicit TypeScript imports for the shared Usage and What's New helpers in Node tests.
 - `src/preview/runtime.ts` installs `window.api` before any app module evaluates, as the desktop preload does. Since 0.2.0 the onboarding dialog reads `window.api.platform` at import time.
 - 0.2.0 sample behavior: the updater reports `unsupported`, so Check now stays disabled while the automatic-check switch works for the session; the first-run welcome stays closed on load and opens from Settings → Show welcome (or `?scenario=onboarding`); the sample home is `C:\Users\demo`, outside every sample project, so folder suggestions appear; stale-skill markers, plugin contents, and non-overlapping grants follow the desktop rules over sample data.
 - `npm run build` checks TypeScript and snapshot hashes before building the marketing and preview entries. Normal builds and CI require no sibling app checkout.
@@ -16,9 +15,11 @@ The website embeds Megatron's actual React renderer. Skills, Plugins, all seven 
 
 `src/product-preview-host.js` owns the external section tabs, Tokens/Activity/History/Cost navigation, loading announcements, Reset sample, and native modal expansion. It retains the same iframe and state during expansion, restores focus on close, and validates message origin and source. Escape retains the app's dialog, tooltip, effort-selection, and file/detail behavior before closing expansion.
 
-The preview retains an 860px minimum client width. At narrower website widths, visitors pan the contained desktop viewport; keyboard focus reveals controls. The landing page itself has no horizontal overflow. Marketing navigation, mobile menu/Escape, installation copying, FAQ, scroll effects, and reduced motion remain intact.
+The preview retains an 860px minimum client width and scales the desktop layout at narrower website widths. The expanded view uses the same session and supports keyboard focus and Escape. The verification suite checks horizontal overflow, navigation, installation copying, FAQ controls, and reduced motion.
 
 `src/preview/api.ts` provides the complete typed browser API over session-only sample state. Folder grants, native plugin commands, rescans, external app links, and data-folder reveal are simulated. No visitor filesystem, CLI, database, backend, or telemetry access is introduced. Reset cancels stale pending actions and restores the original state.
+
+The v0.3.0 sample groups model and project tokens in each chart interval. A partial daily bucket uses its clipped time boundaries, while an empty interval stays unavailable. The browser shows the bundled What's New card from Settings and includes a linked skill with its target. Claude Code Folder choices switch between synthetic inventories and usage histories. Reset restores the default folder. The `worktree` sample credits a recorded worktree session to the Canonical Checkout and retains the recorded worktree path in the skill's history. The [November 18 sync review](upstream-sync-2026-11-18.md) records the upstream range and verification.
 
 The first November 5 snapshot imported `da368fe` through the existing sync tool. The
 actual renderer handles inventory-only query invalidation, deleted-selection
