@@ -7,11 +7,18 @@ export const SNAPSHOT_ROOT = resolve(
   import.meta.dirname,
   '../../vendor/megatron'
 )
+const APP_BRAND_COMPONENT = 'components/AppBrand.tsx'
+const APP_BRAND_ASSET = 'build/icon-source/icon.svg'
 const PATCHES = [
   {
     path: 'src/shared/usage-projects.ts',
     description:
       'Use an explicit TypeScript import extension so the browser adapter and Node regression tests share the upstream project grouping helpers.'
+  },
+  {
+    path: 'src/shared/whats-new.ts',
+    description:
+      'Use explicit TypeScript import extensions so the sample can use the app’s release catalog in Node regression tests.'
   },
   {
     path: 'src/renderer/src/assets/main.css',
@@ -94,6 +101,9 @@ export function applyBrowserPatch(path, contents) {
   }
   if (path === 'src/shared/usage-projects.ts') {
     replace("from './project-path'", "from './project-path.ts'")
+  } else if (path === 'src/shared/whats-new.ts') {
+    replace("from './ipc'", "from './ipc.ts'")
+    replace("from './version'", "from './version.ts'")
   } else if (path.endsWith('/main.css')) {
     replace(
       "@import 'tailwindcss';",
@@ -134,6 +144,7 @@ export async function syncRenderer(sourceRoot, destination = SNAPSHOT_ROOT) {
     ...shared
       .filter((path) => !/\.test\./.test(path))
       .map((path) => `src/shared/${path}`),
+    ...(renderer.includes(APP_BRAND_COMPONENT) ? [APP_BRAND_ASSET] : []),
     'src/preload/index.d.ts',
     'LICENSE'
   ]

@@ -11,7 +11,8 @@ import type {
   TokenCounts,
   UsageDayDetails,
   HistoryCoverage,
-  TriggerType
+  TriggerType,
+  WorktreeLink
 } from '../../vendor/megatron/src/shared/ipc'
 
 // The app shows native Windows paths, so the sample uses backslash separators.
@@ -36,6 +37,14 @@ export const EMPTY_PROJECT = windowsPath(SAMPLE_PARENT, 'empty-lab')
 export const ADDITIONAL_PARENT = windowsPath('C:', 'Clients')
 export const ADDITIONAL_PROJECT = windowsPath(ADDITIONAL_PARENT, 'docs-site')
 export const SAMPLE_HOME = windowsPath('C:', 'Users', 'demo')
+export const SAMPLE_WORKTREE: WorktreeLink = {
+  path: windowsPath(SAMPLE_PARENT, 'web-app-review'),
+  canonical: SAMPLE_PROJECT
+}
+export const SAMPLE_LINKED_SKILL = {
+  name: 'synced-brief',
+  target: windowsPath(SAMPLE_HOME, '.agents', 'skills', 'synced-brief')
+}
 // A folderless Claude desktop chat runs in
 // <Claude app data>/scratch-workspaces/<id>/<id>/scratch-YYYY-MM-DD-<hex>.
 // The app folds these into one "Claude app chats" row and names each by its
@@ -261,6 +270,7 @@ export interface SampleState {
   history: UsageDayDetails[]
   prompts?: SamplePrompt[]
   promptCoverage?: HistoryCoverage
+  worktrees?: WorktreeLink[]
 }
 
 export interface SamplePrompt {

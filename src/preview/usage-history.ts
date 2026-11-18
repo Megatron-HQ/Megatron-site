@@ -99,15 +99,17 @@ function tokenWindow(state: SampleState, days: number): TokenWindow {
     const bucketEnd = new Date(
       Math.min(next.getTime(), end.getTime())
     ).toISOString()
+    const bucketEvents = events.filter(
+      (event) => event.at >= bucketStart && event.at < bucketEnd
+    )
     trend.push({
       key: days === 1 ? cursor.toISOString() : dateKey(cursor),
       startAt: bucketStart,
       endAt: bucketEnd,
-      tokens: eventTokens(
-        events.filter(
-          (event) => event.at >= bucketStart && event.at < bucketEnd
-        )
-      )
+      partial: days !== 1 && (cursor < start || next > end),
+      tokens: eventTokens(bucketEvents),
+      byModel: tokenBreakdown(bucketEvents, 'model'),
+      byProject: tokenBreakdown(bucketEvents, 'project')
     })
     cursor.setTime(next.getTime())
   }

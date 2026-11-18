@@ -4,14 +4,13 @@ import { Check, Circle, CircleAlert, FolderPlus, Info, LoaderCircle } from 'luci
 import { Button } from '@/components/ui/button'
 import { getFolderBasename } from '@/lib/source-name'
 import { useUsageProjects } from '@/lib/use-usage-projects'
+import { LIME_BUTTON } from '@/lib/lime-button'
 import { cn } from '@/lib/utils'
 import { isSuggestableFolder } from '../../../../shared/grant-suggestions'
 import { isWithinProjectPath, normalizeProjectPath } from '../../../../shared/project-path'
 import type { AllowedPathRow, SkillRow, SkippedGrant } from '../../../../shared/ipc'
 import { CountUp } from './CountUp'
 import { StepHeading } from './StepHeading'
-
-export const LIME_BUTTON = 'bg-accent-lime text-accent-lime-foreground hover:bg-accent-lime/90'
 
 interface OnboardingFolderStepProps {
   folders: AllowedPathRow[]
@@ -35,7 +34,8 @@ export function OnboardingFolderStep({
 
   // Every recorded location, not only ungranted ones, so a row stays put and ticks over when a
   // grant covers it. A folder nested inside another listed one (Claude Code run from a repo's
-  // subfolder) folds into its parent.
+  // subfolder) folds into its parent. A worktree's row is its repository's, so it is dropped only
+  // after folding, which keeps folders recorded inside it from surfacing as rows of their own.
   const rows = useMemo(() => {
     const candidates = (catalog?.locations ?? []).filter((location) =>
       isSuggestableFolder(location.path, home)
@@ -49,6 +49,7 @@ export function OnboardingFolderStep({
               isWithinProjectPath(location.path, other.path)
           )
       )
+      .filter((location) => !location.worktree)
       .map((location) => ({ path: location.path, label: resolveProjectLabel(location.path) }))
       .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
   }, [catalog, home, resolveProjectLabel])

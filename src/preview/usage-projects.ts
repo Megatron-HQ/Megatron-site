@@ -50,6 +50,23 @@ export function reconcileSampleUsageProjects(
     } else
       locations.push({ ...project, id: `sample-location:${locations.length}` })
   }
+  for (const worktree of state.worktrees ?? []) {
+    const checkout = usageProjectOwner(worktree.canonical, locations)
+    if (
+      !checkout ||
+      locations.some((location) => location.path === worktree.path)
+    )
+      continue
+    locations.push({
+      id: `sample-location:${locations.length}`,
+      path: worktree.path,
+      kind: 'repository',
+      status: 'available',
+      linkedTo: checkout.id,
+      worktree: true,
+      worktreeEvidence: 'git'
+    })
+  }
   const paths = [
     ...state.events.map((event) => event.project),
     ...(state.prompts ?? []).map((prompt) => prompt.project),
@@ -75,7 +92,9 @@ export function reconcileSampleUsageProjects(
         normalizeProjectPath(project.path) ===
         normalizeProjectPath(location.path)
     )
-    location.status = !granted ? 'needs_access' : (known?.status ?? 'missing')
+    location.status = !granted
+      ? 'needs_access'
+      : (known?.status ?? (location.worktree ? 'available' : 'missing'))
     if (
       location.kind === 'repository' ||
       (location.linkedTo && !location.inferredOwner)
@@ -274,6 +293,10 @@ export function groupSampleUsageOverview(
       grouped.tokens[key].byProject,
       locations
     )
+    grouped.tokens[key].trend = grouped.tokens[key].trend.map((bucket) => ({
+      ...bucket,
+      byProject: groupProjectTokens(bucket.byProject, locations)
+    }))
     if (grouped.cost)
       grouped.cost[key] = groupCost(grouped.cost[key], locations)
   }

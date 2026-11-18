@@ -236,7 +236,7 @@ export async function verifyPreview(page) {
 
   await verifyUsageHistory(page, app)
   await selectPanel(app, 'Activity')
-  const activeDay = app.locator('button[aria-haspopup="dialog"]').last()
+  const activeDay = app.locator('button[aria-haspopup="dialog"]:visible').last()
   await activeDay.click()
   await app
     .getByRole('dialog')
@@ -253,7 +253,9 @@ export async function verifyPreview(page) {
     'true'
   )
   await app.getByRole('radio', { name: '24 hours', exact: true }).click()
-  const pricedHour = app.locator('button[aria-haspopup="dialog"]').first()
+  const pricedHour = app
+    .locator('button[aria-haspopup="dialog"]:visible')
+    .first()
   await pricedHour.click()
   await app
     .getByRole('dialog')
@@ -325,10 +327,11 @@ export async function verifyPreview(page) {
 
 export async function verifyUsageHistory(page, app) {
   await selectPanel(app, 'Tokens')
-  await app
-    .getByText('Total tokens processed · estimated', { exact: true })
-    .waitFor()
-  const total = app.locator('.text-usage-stat').first()
+  const tokenTotalLabel = app.getByText('Total tokens processed · estimated', {
+    exact: true
+  })
+  await tokenTotalLabel.waitFor()
+  const total = tokenTotalLabel.locator('..').locator('.text-usage-stat')
   const tokenValue = total.locator('[tabindex="0"][aria-label$=" tokens"]')
   const exactLabel = await tokenValue.getAttribute('aria-label')
   assert.match(exactLabel, /^[\d,]+ tokens$/)

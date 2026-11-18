@@ -3,7 +3,10 @@ import type {
   PluginRow,
   SkillRow
 } from '../../vendor/megatron/src/shared/ipc'
-import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import {
+  canonicalProjectPath,
+  isWithinProjectPath
+} from '../../vendor/megatron/src/shared/project-path.ts'
 import { DAY_MS, type SampleState } from './fixtures.ts'
 
 // Mirrors the desktop's stale-skill rule (src/main/db/stale-skills.ts,
@@ -119,7 +122,10 @@ export function sampleStaleEvidence(state: SampleState): StaleSkillEvidence {
       state.promptCoverage === undefined || state.promptCoverage === 'future'
         ? 'available'
         : state.promptCoverage,
-    observations: [...archivedDays, ...recentPrompts],
+    observations: [...archivedDays, ...recentPrompts].map((row) => ({
+      ...row,
+      project: canonicalProjectPath(row.project, state.worktrees ?? [])
+    })),
     plugins: state.plugins,
     localSkillsExistedSince: state.history[0]?.startAt ?? null
   }

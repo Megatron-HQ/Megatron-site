@@ -118,6 +118,27 @@ function exampleState() {
   return state
 }
 
+test('token details use the records inside each clipped interval', async () => {
+  const { buildTokenStats } = await history()
+  const stats = buildTokenStats(exampleState())
+  const hourly = stats.last24h.trend[0]
+  assert.ok(hourly.byModel, 'Hourly buckets supply their model breakdown.')
+  assert.deepEqual(
+    hourly.byModel.map(({ key, tokens }) => [key, tokens.total]),
+    [['claude-sonnet-5', 1000]]
+  )
+  assert.equal(hourly.partial, false)
+  const currentDay = stats.last7d.trend.at(-1)!
+  assert.equal(currentDay.partial, true)
+  assert.deepEqual(
+    currentDay.byProject.map(({ key, tokens }) => [key, tokens.total]),
+    [[API_PROJECT, 100]]
+  )
+  const empty = stats.last24h.trend[1]
+  assert.equal(empty.tokens, null)
+  assert.deepEqual(empty.byProject, [])
+})
+
 test('token windows include cutoff and current-time records and reconcile every breakdown', async () => {
   const { buildTokenStats } = await history()
   const state = exampleState()

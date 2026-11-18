@@ -43,6 +43,14 @@ test('a renderer snapshot detects changed and unexpected files without a sibling
   )
 })
 
+test('the imported renderer includes the SVG AppBrand loads', async () => {
+  const { verifySnapshot } = await tooling()
+  const manifest = await verifySnapshot()
+  const asset = 'build/icon-source/icon.svg'
+  assert.ok(manifest.files[asset], 'The snapshot is missing the AppBrand SVG.')
+  assert.equal(manifest.files[asset], manifest.upstreamHashes[asset])
+})
+
 const INVENTORY_FOCUS_SOURCE = `  const focusShownRows = useEffectEvent(() => {
     if (containerRef.current?.contains(document.activeElement)) return
     focusRow(0)

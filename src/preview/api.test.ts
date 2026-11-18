@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import provenance from '../../vendor/megatron/provenance.json' with { type: 'json' }
 import {
   ADDITIONAL_PARENT,
   ADDITIONAL_PROJECT,
@@ -734,9 +735,9 @@ test('cost windows flag an estimated lineage only where its session contributes'
   assert.equal(window.totalCostUsd, exact.cost!.last30d.totalCostUsd)
 })
 
-test('the preview reports version 0.2.1 and a sample home outside the sample projects', async () => {
+test('the preview reports the pinned version and a sample home outside the sample projects', async () => {
   const { api } = await createDemo()
-  assert.equal(api.getVersion(), '0.2.1')
+  assert.equal(api.getVersion(), provenance.version)
   const home = api.getHomePath()
   assert.equal(home, SAMPLE_HOME)
   assert.ok(!isWithinProjectPath(SAMPLE_PARENT, home))
@@ -765,6 +766,7 @@ test('updates are unsupported in the browser while the automatic-check preferenc
   assert.deepEqual(await api.getUpdateState(), {
     status: 'unsupported',
     version: null,
+    detail: null,
     autoCheck: true
   })
   const pushed: boolean[] = []
@@ -784,6 +786,90 @@ test('updates are unsupported in the browser while the automatic-check preferenc
   await api.setAutoUpdateCheck(false)
   sample.reset()
   assert.equal((await api.getUpdateState()).autoCheck, true)
+})
+
+test('switching a Claude Code folder isolates sample usage and Reset restores the default', async () => {
+  const sample = await createDemo()
+  const { api } = sample
+  assert.equal(typeof api.getClaudeFolder, 'function')
+  const initial = await api.getClaudeFolder()
+  const originalTokens = (await api.getUsageOverview()).tokens.last30d.tokens
+    ?.total
+  const alternate = initial.options.find(
+    (option) => option.id === 'home:.claude-work'
+  )!
+  const states: string[] = []
+  const unsubscribe = api.onClaudeFolderState(({ state }) => states.push(state))
+  assert.equal((await api.chooseClaudeFolder(alternate.id)).outcome, 'chosen')
+  assert.equal((await api.getClaudeFolder()).path, alternate.path)
+  assert.deepEqual(states, ['switching', 'ok'])
+  assert.notEqual(
+    (await api.getUsageOverview()).tokens.last30d.tokens?.total,
+    originalTokens
+  )
+  sample.reset()
+  assert.deepEqual(await api.getClaudeFolder(), initial)
+  assert.equal(
+    (await api.getUsageOverview()).tokens.last30d.tokens?.total,
+    originalTokens
+  )
+  unsubscribe()
+})
+
+test('What’s New replays the shipped release without opening over the sample by default', async () => {
+  const { api } = await createDemo()
+  assert.equal(typeof api.getInitialWhatsNew, 'function')
+  assert.deepEqual(api.getInitialWhatsNew().unseen, [])
+  assert.equal(api.getInitialWhatsNew().latest?.version, '0.3.0')
+  assert.deepEqual(
+    api.getInitialWhatsNew().latest?.highlights.map(({ action }) => action),
+    [{ kind: 'section', section: 'usage' }, { kind: 'settings' }]
+  )
+})
+
+test('a linked sample skill reports its target and regular skills have no link', async () => {
+  const { api } = await createDemo()
+  const { skills } = await api.listSkills()
+  const linked = skills.find(({ name }) => name === 'synced-brief')!
+  assert.equal(
+    (await api.openSkillMeta(linked.id))?.linkTarget,
+    'C:\\Users\\demo\\.agents\\skills\\synced-brief'
+  )
+  assert.equal(
+    (
+      await api.openSkillMeta(
+        skills.find(({ name }) => name === 'code-review')!.id
+      )
+    )?.linkTarget,
+    null
+  )
+})
+
+test('worktree usage rolls into its Canonical Checkout and leaves inventory at the checkout', async () => {
+  const { api } = await createDemo({ scenario: 'worktree' })
+  const worktreePath = 'C:\\Dev\\web-app-review'
+  const { locations, projects } = await api.getUsageProjects()
+  const checkout = projects.find((project) => project.path === SAMPLE_PROJECT)
+  const worktree = locations.find((location) => location.path === worktreePath)
+  assert.equal(worktree?.worktree, true)
+  assert.equal(worktree?.linkedTo, checkout?.id)
+  assert.ok(
+    (await api.listProjects()).every((project) => project.path !== worktreePath)
+  )
+  const skill = (await api.listSkills()).skills.find(
+    (row) => row.name === 'design-system' && row.project_root === SAMPLE_PROJECT
+  )!
+  assert.ok(
+    (await api.openSkillHistory(skill.id)).some(
+      (record) => record.cwd === worktreePath
+    ),
+    'The checkout skill retains the worktree invocation.'
+  )
+  assert.ok(
+    (await api.getUsageOverview()).tokens.last30d.byProject.every(
+      (entry) => entry.key !== worktreePath
+    )
+  )
 })
 
 test('plugin details carry one component row per declaring install, in the desktop query order', async () => {

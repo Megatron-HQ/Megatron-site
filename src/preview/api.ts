@@ -1,5 +1,7 @@
 import type {
   AppSection,
+  ClaudeFolderChoice,
+  ClaudeFolderStatus,
   PluginActionInput,
   PluginActionResult,
   PluginInstall,
@@ -7,6 +9,7 @@ import type {
   PluginUpdateProgress,
   ScanActivity,
   ScanFinished,
+  ScanIssue,
   ScanProgress,
   ScanSummary,
   SkillInvocationSliceInput,
@@ -14,16 +17,28 @@ import type {
   ThemePreference,
   UpdateState
 } from '../../vendor/megatron/src/shared/ipc'
-import type { Api } from '../../vendor/megatron/src/preload/index.d.ts'
-import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import type { Api } from '../../vendor/megatron/src/shared/api'
+import {
+  canonicalProjectPath,
+  isWithinProjectPath
+} from '../../vendor/megatron/src/shared/project-path.ts'
 import { missingProjectInstallMessage } from '../../vendor/megatron/src/shared/missing-project.ts'
 import { SCAN_BANNER_REVEAL_MS } from '../../vendor/megatron/src/shared/scan-banner.ts'
+import whatsNewCatalog from '../../vendor/megatron/src/shared/whats-new.json' with { type: 'json' }
+import {
+  anchorsOf,
+  latestReleaseUpTo,
+  parseWhatsNewCatalog,
+  selectUnseenReleases,
+  type WhatsNewAnchorId
+} from '../../vendor/megatron/src/shared/whats-new.ts'
 import {
   ADDITIONAL_PARENT,
   ADDITIONAL_PROJECT,
-  SAMPLE_HOME,
+  SAMPLE_LINKED_SKILL,
   SAMPLE_PARENT,
   SAMPLE_PROJECT,
+  SAMPLE_WORKTREE,
   CONTEXT_LIMIT,
   DAY_MS,
   createSampleState,
@@ -48,13 +63,20 @@ import {
   resolveSampleGrantChange,
   type SampleGrantChange
 } from './folder-grants.ts'
+import {
+  createAlternateSample,
+  SAMPLE_PICKED_PROFILE,
+  sampleClaudeFolders
+} from './claude-folder.ts'
 
-export const PREVIEW_APP_VERSION = '0.2.1'
+export const PREVIEW_APP_VERSION = '0.3.0'
+const { releases } = parseWhatsNewCatalog(whatsNewCatalog)
 // The desktop's updater never runs in a browser, so the preview shows the
 // state an uninstalled build reports.
 const INITIAL_UPDATE_STATE: UpdateState = {
   status: 'unsupported',
   version: null,
+  detail: null,
   autoCheck: true
 }
 const UPDATES_UNAVAILABLE_NOTICE =
@@ -105,6 +127,19 @@ export interface DemoOptions {
 export function createDemoApi(options: DemoOptions = {}) {
   const now = options.now ?? new Date()
   const initial = createSampleState(now)
+  if (options.scenario === 'worktree') {
+    initial.worktrees = [SAMPLE_WORKTREE]
+    const event = initial.events.find(
+      (record) =>
+        record.project === SAMPLE_PROJECT &&
+        record.skillName === 'design-system' &&
+        record.tokens !== null
+    )
+    if (!event) throw new RangeError('The sample has no design-system session.')
+    for (const record of initial.events)
+      if (record.sessionId === event.sessionId)
+        record.project = SAMPLE_WORKTREE.path
+  }
   initial.prompts = initial.events.map((event) => ({
     at: event.at,
     project: event.project,
@@ -134,6 +169,26 @@ export function createDemoApi(options: DemoOptions = {}) {
   let inventorySource = structuredClone(initial)
   let inventoryOnly = false
   let usageLocations = reconcileSampleUsageProjects([], initial)
+  const platform = options.platform ?? 'win32'
+  const folders = sampleClaudeFolders(platform, options.scenario)
+  let activeFolderId = folders.defaultId
+  let claudeFolder = folders.initial()
+  const folderSubscriptions = new Set<(status: ClaudeFolderStatus) => void>()
+  const profiles = new Map<
+    string,
+    {
+      state: SampleState
+      inventorySource: SampleState
+      usageLocations: typeof usageLocations
+    }
+  >()
+  const latestRelease = latestReleaseUpTo(releases, PREVIEW_APP_VERSION)
+  const unseenReleases =
+    options.scenario === 'whats-new'
+      ? selectUnseenReleases(releases, PREVIEW_APP_VERSION, null)
+      : []
+  let unseen = unseenReleases
+  let whatsNewDots: WhatsNewAnchorId[] = []
   let section = options.initialSection ?? 'skills'
   let theme = options.initialTheme ?? 'light'
   let pendingAction = false
@@ -176,6 +231,51 @@ export function createDemoApi(options: DemoOptions = {}) {
     )
   }
   const copy = <T>(value: T): T => structuredClone(value)
+  function publishClaudeFolder(status: ClaudeFolderStatus): void {
+    claudeFolder = status
+    for (const subscriber of folderSubscriptions) subscriber(copy(status))
+  }
+
+  async function switchClaudeFolder(id: string): Promise<ClaudeFolderChoice> {
+    if (pendingAction || claudeFolder.state === 'switching')
+      return { outcome: 'canceled' }
+    if (id === activeFolderId)
+      return { outcome: 'chosen', status: copy(claudeFolder) }
+    if (
+      id !== SAMPLE_PICKED_PROFILE &&
+      !claudeFolder.options.some((option) => option.id === id)
+    )
+      return { outcome: 'rejected', path: '', reason: 'invalid' }
+
+    const revision = ++sessionRevision
+    scanActivity = null
+    publishClaudeFolder(folders.status(id, 'switching'))
+    if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+    if (revision !== sessionRevision) return { outcome: 'canceled' }
+
+    profiles.set(activeFolderId, { state, inventorySource, usageLocations })
+    const saved = profiles.get(id)
+    state =
+      saved?.state ??
+      (id === 'default' ? copy(initial) : createAlternateSample(initial))
+    inventorySource = saved?.inventorySource ?? copy(state)
+    usageLocations =
+      saved?.usageLocations ?? reconcileSampleUsageProjects([], state)
+    activeFolderId = id
+    inventoryOnly = false
+    pendingProjectPath = null
+    discoveryPending = false
+    lastScanWasStartup = false
+    publishClaudeFolder(folders.status(id))
+    notify()
+    options.onNotice?.(
+      'Switched sample Claude Code folders. Your local folders are never accessed.'
+    )
+    return { outcome: 'chosen', status: copy(claudeFolder) }
+  }
+
+  const projectForSkill = (path: string) =>
+    canonicalProjectPath(path, state.worktrees ?? [])
   function startSampleDiscovery(): void {
     scanActivity = {
       id: ++nextScanId,
@@ -217,12 +317,27 @@ export function createDemoApi(options: DemoOptions = {}) {
     const unavailableProjects = state.projects.filter(
       (project) => project.status === 'unavailable'
     )
+    const skillIssues: ScanIssue[] = unavailableProjects.map((project) => ({
+      code: 'source_unavailable',
+      path: project.path
+    }))
+    if (missingProjects)
+      skillIssues.push({ code: 'project_missing', path: SAMPLE_PROJECT })
+    if (options.scenario === 'linked-skills')
+      skillIssues.push({
+        code: 'link_unapproved',
+        path: windowsPath(
+          SAMPLE_PROJECT,
+          '.claude',
+          'skills',
+          'external-review'
+        ),
+        target: windowsPath('C:', 'Outside', 'external-review')
+      })
     const outcome =
       options.scenario === 'scan-failed'
         ? 'failed'
-        : hasPermissionWarning ||
-            missingProjects ||
-            unavailableProjects.length > 0
+        : hasPermissionWarning || skillIssues.length > 0
           ? 'partial'
           : 'complete'
     return {
@@ -230,32 +345,15 @@ export function createDemoApi(options: DemoOptions = {}) {
       completedAt,
       isStartup: lastScanWasStartup,
       sources: [
-        ...(inventoryOnly || unavailableProjects.length > 0 || missingProjects
+        ...(inventoryOnly || skillIssues.length > 0
           ? [
               {
                 name: 'scanSkills',
                 status:
-                  unavailableProjects.length > 0 || missingProjects
+                  skillIssues.length > 0
                     ? ('partial' as const)
                     : ('complete' as const),
-                ...(unavailableProjects.length > 0 || missingProjects
-                  ? {
-                      issues: [
-                        ...unavailableProjects.map((project) => ({
-                          code: 'source_unavailable' as const,
-                          path: project.path
-                        })),
-                        ...(missingProjects
-                          ? [
-                              {
-                                code: 'project_missing' as const,
-                                path: SAMPLE_PROJECT
-                              }
-                            ]
-                          : [])
-                      ]
-                    }
-                  : {})
+                ...(skillIssues.length > 0 ? { issues: skillIssues } : {})
               },
               { name: 'scanPluginRegistry', status: 'complete' as const },
               { name: 'runLinter', status: 'complete' as const }
@@ -309,7 +407,8 @@ export function createDemoApi(options: DemoOptions = {}) {
         outcome === 'complete'
           ? state.now
           : new Date(now.getTime() - DAY_MS).toISOString(),
-      projects: state.projects
+      projects: state.projects,
+      ...(state.worktrees ? { worktrees: state.worktrees } : {})
     }
   }
 
@@ -330,8 +429,11 @@ export function createDemoApi(options: DemoOptions = {}) {
           : state.events.filter(
               (event) =>
                 event.skillName === skill.name &&
-                resolveSampleSkill(state.skills, skill.name, event.project)
-                  ?.id === skill.id
+                resolveSampleSkill(
+                  state.skills,
+                  skill.name,
+                  projectForSkill(event.project)
+                )?.id === skill.id
             )
       return {
         ...skill,
@@ -370,7 +472,11 @@ export function createDemoApi(options: DemoOptions = {}) {
       .filter(
         (event) =>
           event.skillName === skill.name &&
-          resolveSampleSkill(state.skills, skill.name, event.project)?.id === id
+          resolveSampleSkill(
+            state.skills,
+            skill.name,
+            projectForSkill(event.project)
+          )?.id === id
       )
       .toReversed()
       .map((event) => sampleInvocation(state, event))
@@ -386,8 +492,11 @@ export function createDemoApi(options: DemoOptions = {}) {
         state.events.filter(
           (event) =>
             event.skillName !== null &&
-            resolveSampleSkill(state.skills, event.skillName, event.project)
-              ?.id === id
+            resolveSampleSkill(
+              state.skills,
+              event.skillName,
+              projectForSkill(event.project)
+            )?.id === id
         )
       ),
       byProject: [...projects]
@@ -569,6 +678,11 @@ export function createDemoApi(options: DemoOptions = {}) {
     verb: 'enable' | 'disable' | 'update' | 'uninstall',
     input: PluginActionInput
   ): Promise<PluginActionResult> {
+    if (claudeFolder.state !== 'ok')
+      return {
+        ok: false,
+        stderr: 'Choose an available sample Claude Code folder first.'
+      }
     refreshPlugins()
     const plugin = state.plugins.find(
       (row) => row.name === input.name && row.marketplace === input.marketplace
@@ -657,7 +771,7 @@ export function createDemoApi(options: DemoOptions = {}) {
   }
 
   const api: Api = {
-    platform: options.platform ?? 'win32',
+    platform,
     async listSkills() {
       checkScenario('skills')
       const skills = currentSkills()
@@ -686,7 +800,11 @@ export function createDemoApi(options: DemoOptions = {}) {
             skill,
             usage: usage(id),
             skillMdContent: sampleFiles(skill)[0].content,
-            findings: sampleFindings(skill)
+            findings: sampleFindings(skill),
+            linkTarget:
+              skill.name === SAMPLE_LINKED_SKILL.name
+                ? SAMPLE_LINKED_SKILL.target
+                : null
           })
         : null
     },
@@ -917,6 +1035,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       options.onSectionChange?.(value)
     },
     async rescan() {
+      if (claudeFolder.state !== 'ok') return scanSummary()
       inventoryOnly = false
       lastScanWasStartup = false
       const activity: ScanActivity = {
@@ -951,11 +1070,38 @@ export function createDemoApi(options: DemoOptions = {}) {
       )
     },
     getVersion: () => PREVIEW_APP_VERSION,
-    getHomePath: () => SAMPLE_HOME,
+    getHomePath: () => folders.home,
     // An embedded welcome would cover the landing page; Settings → Show
     // welcome opens it on request.
     getInitialOnboarding: () => options.scenario === 'onboarding',
     async setOnboardingDone() {},
+    getInitialWhatsNew: () =>
+      copy({ unseen, latest: latestRelease, dots: whatsNewDots }),
+    async markWhatsNewSeen() {
+      if (unseen.length > 0) whatsNewDots = anchorsOf(unseen)
+      unseen = []
+      return copy(whatsNewDots)
+    },
+    async clearWhatsNewDot(anchor) {
+      whatsNewDots = whatsNewDots.filter((dot) => dot !== anchor)
+    },
+    async getClaudeFolder() {
+      return copy(claudeFolder)
+    },
+    chooseClaudeFolder: switchClaudeFolder,
+    async pickClaudeFolder() {
+      if (options.scenario === 'claude-folder-rejected')
+        return {
+          outcome: 'rejected',
+          path: folders.pickedPath,
+          reason: 'no-marker'
+        }
+      return switchClaudeFolder(SAMPLE_PICKED_PROFILE)
+    },
+    onClaudeFolderState(callback) {
+      folderSubscriptions.add(callback)
+      return () => folderSubscriptions.delete(callback)
+    },
     async getUpdateState() {
       return copy(updateState)
     },
@@ -971,11 +1117,6 @@ export function createDemoApi(options: DemoOptions = {}) {
     },
     async installUpdate() {
       options.onNotice?.(UPDATES_UNAVAILABLE_NOTICE)
-    },
-    async openUpdateDownload() {
-      options.onNotice?.(
-        'External links are shown as sample content in this preview.'
-      )
     },
     onUpdateState(callback) {
       updateSubscriptions.add(callback)
@@ -1096,6 +1237,11 @@ export function createDemoApi(options: DemoOptions = {}) {
       section = options.initialSection ?? 'skills'
       theme = options.initialTheme ?? 'light'
       updateState = { ...INITIAL_UPDATE_STATE }
+      activeFolderId = folders.defaultId
+      profiles.clear()
+      publishClaudeFolder(folders.initial())
+      unseen = unseenReleases
+      whatsNewDots = []
       for (const subscriber of updateSubscriptions)
         subscriber(copy(updateState))
       notify()

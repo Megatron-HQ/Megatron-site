@@ -359,7 +359,7 @@ export const scenarios = [
   sample('product-demo-usage-cost-details', 'demo-usage', async (app) => {
     await selectPanel(app, 'Cost')
     await app.getByRole('radio', { name: '24 hours', exact: true }).click()
-    await app.locator('button[aria-haspopup="dialog"]').first().click()
+    await app.locator('button[aria-haspopup="dialog"]:visible').first().click()
     await app
       .getByRole('dialog')
       .getByText(/Cost details/)
