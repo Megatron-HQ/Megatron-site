@@ -58,12 +58,12 @@ export function previewFrame(page) {
 }
 
 export async function preparePreview(page) {
+  await page.locator('[data-preview-host][data-ready="true"]').waitFor()
   assert.equal(
     await page.locator('[data-preview-frame]').count(),
     1,
     'The product stage must embed the actual app renderer.'
   )
-  await page.locator('[data-preview-host][data-ready="true"]').waitFor()
   const app = previewFrame(page)
   await app
     .getByRole('button', { name: 'Search skills', exact: false })
@@ -154,6 +154,8 @@ async function verifyResidentContext(page, app) {
 }
 
 export async function verifyPreview(page) {
+  // Exercise startup from navigation commit while the preview can still be mounting.
+  await page.reload({ waitUntil: 'commit' })
   const app = await preparePreview(page)
   await expectRowCount(app.locator('tbody tr'), 20)
   const geometry = await app.locator('body').evaluate(() => {
