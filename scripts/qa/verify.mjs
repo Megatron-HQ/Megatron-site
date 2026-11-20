@@ -24,6 +24,10 @@ import {
 } from './preview-mcp.mjs'
 import { verifyFeatureLinks } from './feature-links.mjs'
 import {
+  verifyReducedMotionWalkthrough,
+  verifyWalkthrough
+} from './walkthrough.mjs'
+import {
   verifyFaq,
   verifyFaqWithoutJavaScript,
   verifyFaqQuestionCounts
@@ -218,6 +222,19 @@ try {
     await verifyFeatureLinks(page)
     await verifyAnalyticsDeck(page)
     await checkOverflow(page, width)
+    const [walkthrough, reset] = await Promise.all([
+      page
+        .getByRole('button', { name: 'Play walkthrough', exact: true })
+        .boundingBox(),
+      page
+        .getByRole('button', { name: 'Reset sample', exact: true })
+        .boundingBox()
+    ])
+    assert.equal(
+      walkthrough.y,
+      reset.y,
+      `Walkthrough and reset share a row at ${width}px.`
+    )
     await verifyMcpLayout(page, frame)
     for (const panel of [
       'Activity',
@@ -306,6 +323,9 @@ try {
   assert.ok(
     motion.transitions.split(',').every((value) => value.trim() === '0s')
   )
+  await motionPage.setViewportSize({ width: 375, height: 900 })
+  await verifyReducedMotionWalkthrough(motionPage)
+  await checkOverflow(motionPage, 375)
   const noScriptContext = await browser.newContext({
     viewport: { width: 375, height: 900 },
     javaScriptEnabled: false
@@ -356,6 +376,12 @@ try {
   })
   const normalPage = await normalContext.newPage()
   await prepare(normalPage)
+  await verifyWalkthrough(normalPage)
+  results.push(
+    'Preview walkthrough autoplay, all four sections, visibility pause, pointer takeover, replay, reset and reduced motion passed.'
+  )
+  await normalPage.goto(baseUrl)
+  await preparePreview(normalPage)
   await normalPage.locator('[data-preview-frame]').scrollIntoViewIfNeeded()
   const normalApp = previewFrame(normalPage)
   await verifyFeatureLinks(normalPage)

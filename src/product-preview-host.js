@@ -1,4 +1,5 @@
 import { refreshIcons } from './icons.js'
+import { mountPreviewTour } from './product-preview-tour.js'
 import {
   parsePreviewCommand,
   parsePreviewThemeMessage
@@ -38,9 +39,9 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
   root.innerHTML = `<dialog open role="region" aria-label="Interactive Megatron preview" class="preview-host" data-preview-host data-ready="false" data-expanded="false">
     <div class="preview-toolbar">
       <div class="preview-switcher" role="tablist" aria-label="Product preview sections">${SECTIONS.map((section) => `<button type="button" id="preview-${section.id}" role="tab" aria-selected="${section.id === 'skills'}" aria-controls="preview-screen" tabindex="${section.id === 'skills' ? 0 : -1}" class="preview-tab" data-preview-section="${section.id}"><i data-lucide="${section.icon}" aria-hidden="true"></i>${section.label}</button>`).join('')}</div>
-      <div class="preview-host-actions"><span class="preview-sample-label">INTERACTIVE / SAMPLE DATA</span><button type="button" class="preview-host-button" data-preview-reset>Reset sample</button><button type="button" class="preview-host-button" data-preview-expand aria-expanded="false">Expand preview</button></div>
+      <div class="preview-host-actions"><span class="preview-sample-label">INTERACTIVE / SAMPLE DATA</span><div class="preview-host-controls"><button type="button" class="preview-host-button" data-preview-tour disabled>Play walkthrough</button><button type="button" class="preview-host-button" data-preview-reset>Reset sample</button><button type="button" class="preview-host-button" data-preview-expand aria-expanded="false">Expand preview</button></div></div>
     </div>
-    <div class="preview-viewport" id="preview-screen" role="tabpanel" aria-labelledby="preview-skills"><iframe class="preview-frame" data-preview-frame src="${previewUrl.href}" title="Megatron app preview with sample data" referrerpolicy="no-referrer"></iframe></div>
+    <div class="preview-viewport" id="preview-screen" role="tabpanel" aria-labelledby="preview-skills"><iframe class="preview-frame" data-preview-frame src="${previewUrl.href}" title="Megatron app preview with sample data" referrerpolicy="no-referrer"></iframe><div class="preview-tour-indicator" data-preview-tour-indicator aria-hidden="true" hidden><span class="preview-tour-cursor" data-preview-tour-cursor><i data-lucide="mouse-pointer-2"></i></span></div></div>
     <p class="preview-host-notice" data-preview-notice role="status" aria-live="polite">Loading the Megatron preview…</p>
   </dialog>`
   refreshIcons(root)
@@ -49,6 +50,12 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
   const viewport = root.querySelector('.preview-viewport')
   const notice = root.querySelector('[data-preview-notice]')
   const expandButton = root.querySelector('[data-preview-expand]')
+  const tour = mountPreviewTour({
+    frame,
+    viewport,
+    button: root.querySelector('[data-preview-tour]'),
+    indicator: root.querySelector('[data-preview-tour-indicator]')
+  })
   let ready = false
   let pendingCommand = null
   let previousOverflow = ''
@@ -85,6 +92,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     frame.contentWindow.postMessage(command, previewUrl.origin)
   }
   function navigate(section, panel, target) {
+    tour.stop()
     selectSection(section)
     send({
       type: 'megatron-preview:navigate',
@@ -142,6 +150,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
         pendingCommand = null
         send(command)
       }
+      tour.ready()
     } else if (message.type === 'megatron-preview:section')
       selectSection(message.section)
     else if (
@@ -149,10 +158,11 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       typeof message.message === 'string'
     )
       notice.textContent = message.message
-    else if (message.type === 'megatron-preview:error')
+    else if (message.type === 'megatron-preview:error') {
+      tour.unavailable()
       notice.textContent =
         'The sample preview could not load. Use Reset sample to try again.'
-    else if (
+    } else if (
       message.type === 'megatron-preview:escape' &&
       host.dataset.expanded === 'true'
     )
@@ -163,6 +173,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     if (!button || !root.contains(button)) return
     if (button.dataset.previewSection) navigate(button.dataset.previewSection)
     else if (button.hasAttribute('data-preview-reset')) {
+      tour.stop()
       if (ready) send({ type: 'megatron-preview:reset' })
       else frame.src = previewUrl.href
     } else if (button.hasAttribute('data-preview-expand'))
@@ -224,6 +235,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
         serverId
       })
       if (!command?.serverId) throw new RangeError('Unknown sample MCP server.')
+      tour.stop()
       send(command)
       revealDestination('mcp')
     }
