@@ -2,6 +2,7 @@ import type {
   AppSection,
   ClaudeFolderChoice,
   ClaudeFolderStatus,
+  McpActionResult,
   PluginActionInput,
   PluginActionResult,
   PluginInstall,
@@ -18,10 +19,8 @@ import type {
   UpdateState
 } from '../../vendor/megatron/src/shared/ipc'
 import type { Api } from '../../vendor/megatron/src/shared/api'
-import {
-  canonicalProjectPath,
-  isWithinProjectPath
-} from '../../vendor/megatron/src/shared/project-path.ts'
+import { readProjectIdentity } from '../../vendor/megatron/src/shared/project-identity.ts'
+import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
 import { missingProjectInstallMessage } from '../../vendor/megatron/src/shared/missing-project.ts'
 import { SCAN_BANNER_REVEAL_MS } from '../../vendor/megatron/src/shared/scan-banner.ts'
 import whatsNewCatalog from '../../vendor/megatron/src/shared/whats-new.json' with { type: 'json' }
@@ -58,6 +57,17 @@ import {
 import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
 import { sampleContextBaseline, sampleRecordedRequest } from './context.ts'
 import { applyInventoryChange } from './inventory.ts'
+import {
+  changeSampleMcpDeclaration,
+  createSampleMcpState,
+  recordSampleMcpCheck,
+  resetSampleMcpChoices,
+  sampleMcpDetail,
+  sampleMcpList,
+  sampleMcpUsage,
+  sampleProjectGranted,
+  type SampleMcpState
+} from './mcp.ts'
 import { findStaleSkillIds, sampleStaleEvidence } from './stale-skills.ts'
 import {
   resolveSampleGrantChange,
@@ -69,7 +79,7 @@ import {
   sampleClaudeFolders
 } from './claude-folder.ts'
 
-export const PREVIEW_APP_VERSION = '0.3.0'
+export const PREVIEW_APP_VERSION = '0.4.0'
 const { releases } = parseWhatsNewCatalog(whatsNewCatalog)
 // The desktop's updater never runs in a browser, so the preview shows the
 // state an uninstalled build reports.
@@ -94,7 +104,11 @@ function markNewestPricedSessionEstimated(state: SampleState): void {
 function projectName(path: string): string {
   return path.split('\\').at(-1) ?? path
 }
-import { INVENTORY_CHANGES, type InventoryChange } from './protocol.ts'
+import {
+  INVENTORY_CHANGES,
+  PREVIEW_SECTIONS,
+  type InventoryChange
+} from './protocol.ts'
 import {
   groupSampleCalendar,
   groupSampleDay,
@@ -102,6 +116,7 @@ import {
   linkSampleUsageProjects,
   reconcileSampleUsageProjects,
   sampleClaudeAppChat,
+  sampleSkillProject,
   sampleUsageProjectCatalog,
   unlinkSampleUsageProject
 } from './usage-projects.ts'
@@ -168,6 +183,8 @@ export function createDemoApi(options: DemoOptions = {}) {
   }
   let state: SampleState = structuredClone(initial)
   let inventorySource = structuredClone(initial)
+  const emptyMcp = options.scenario === 'mcp-empty'
+  let mcp = createSampleMcpState(now, false, emptyMcp)
   let inventoryOnly = false
   let usageLocations = reconcileSampleUsageProjects([], initial)
   const platform = options.platform ?? 'win32'
@@ -181,6 +198,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       state: SampleState
       inventorySource: SampleState
       usageLocations: typeof usageLocations
+      mcp: SampleMcpState
     }
   >()
   const latestRelease = latestReleaseUpTo(releases, PREVIEW_APP_VERSION)
@@ -193,6 +211,7 @@ export function createDemoApi(options: DemoOptions = {}) {
   let section = options.initialSection ?? 'skills'
   let theme = options.initialTheme ?? 'light'
   let pendingAction = false
+  let mcpCheckConfirmed = false
   let sessionRevision = 0
   let scanActivity: ScanActivity | null = null
   let nextScanId = 0
@@ -216,6 +235,27 @@ export function createDemoApi(options: DemoOptions = {}) {
     usageLocations = reconcileSampleUsageProjects(usageLocations, state)
     return usageLocations
   }
+  function claudeCodeFolders() {
+    return [
+      ...new Set([
+        claudeFolder.path,
+        claudeFolder.options.find((option) => option.id === 'default')!.path
+      ])
+    ]
+  }
+  function currentUsageIdentity() {
+    return readProjectIdentity({
+      locations: currentUsageLocations(),
+      claudeCodeFolders: claudeCodeFolders()
+    })
+  }
+  function currentUsageCatalog() {
+    return sampleUsageProjectCatalog(
+      currentUsageLocations(),
+      claudeCodeFolders(),
+      (path) => sampleClaudeAppChat(state, path)
+    )
+  }
   async function changeUsageProjects(change: () => typeof usageLocations) {
     const revision = sessionRevision
     if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
@@ -227,9 +267,7 @@ export function createDemoApi(options: DemoOptions = {}) {
     options.onNotice?.(
       'Updated sample Usage project locations. Inventory ownership and folder access are unchanged.'
     )
-    return sampleUsageProjectCatalog(currentUsageLocations(), (path) =>
-      sampleClaudeAppChat(state, path)
-    )
+    return currentUsageCatalog()
   }
   const copy = <T>(value: T): T => structuredClone(value)
   function publishClaudeFolder(status: ClaudeFolderStatus): void {
@@ -254,7 +292,12 @@ export function createDemoApi(options: DemoOptions = {}) {
     if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
     if (revision !== sessionRevision) return { outcome: 'canceled' }
 
-    profiles.set(activeFolderId, { state, inventorySource, usageLocations })
+    profiles.set(activeFolderId, {
+      state,
+      inventorySource,
+      usageLocations,
+      mcp
+    })
     const saved = profiles.get(id)
     state =
       saved?.state ??
@@ -262,6 +305,7 @@ export function createDemoApi(options: DemoOptions = {}) {
     inventorySource = saved?.inventorySource ?? copy(state)
     usageLocations =
       saved?.usageLocations ?? reconcileSampleUsageProjects([], state)
+    mcp = saved?.mcp ?? createSampleMcpState(now, id !== 'default', emptyMcp)
     activeFolderId = id
     inventoryOnly = false
     pendingProjectPath = null
@@ -275,8 +319,7 @@ export function createDemoApi(options: DemoOptions = {}) {
     return { outcome: 'chosen', status: copy(claudeFolder) }
   }
 
-  const projectForSkill = (path: string) =>
-    canonicalProjectPath(path, state.worktrees ?? [])
+  const projectForSkill = (path: string) => sampleSkillProject(path, state)
   function startSampleDiscovery(): void {
     scanActivity = {
       id: ++nextScanId,
@@ -357,6 +400,7 @@ export function createDemoApi(options: DemoOptions = {}) {
                 ...(skillIssues.length > 0 ? { issues: skillIssues } : {})
               },
               { name: 'scanPluginRegistry', status: 'complete' as const },
+              { name: 'scanMcpDeclarations', status: 'complete' as const },
               { name: 'runLinter', status: 'complete' as const }
             ]
           : []),
@@ -407,15 +451,48 @@ export function createDemoApi(options: DemoOptions = {}) {
       lastSuccessfulAt:
         outcome === 'complete'
           ? state.now
-          : new Date(now.getTime() - DAY_MS).toISOString(),
-      projects: state.projects,
-      ...(state.worktrees ? { worktrees: state.worktrees } : {})
+          : new Date(now.getTime() - DAY_MS).toISOString()
     }
   }
 
   function checkScenario(name: string): void {
     if (options.scenario === `${name}-error`)
       throw new Error(`Could not load sample ${name}.`)
+  }
+
+  async function runSampleMcpWork<Result extends { ok: boolean }>(
+    work: () => Result
+  ): Promise<Result | { ok: false; error: string }> {
+    if (pendingAction)
+      return { ok: false, error: 'Another sample action is running.' }
+    if (claudeFolder.state === 'paused' || claudeFolder.state === 'switching')
+      return {
+        ok: false,
+        error: 'The sample Claude Code folder is unavailable.'
+      }
+    const revision = sessionRevision
+    pendingAction = true
+    try {
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+      if (revision !== sessionRevision)
+        return { ok: false, error: 'Reset sample canceled the pending action.' }
+      return work()
+    } finally {
+      if (revision === sessionRevision) pendingAction = false
+    }
+  }
+
+  function runSampleMcpAction(action: () => McpActionResult) {
+    return runSampleMcpWork((): McpActionResult => {
+      if (options.scenario === 'mcp-action-error')
+        return { ok: false, error: 'The sample MCP action failed. Try again.' }
+      if (options.scenario === 'mcp-action-unconfirmed')
+        return {
+          ok: true,
+          verificationError: 'The sample could not confirm the change.'
+        }
+      return action()
+    })
   }
 
   function currentSkills(): SkillRow[] {
@@ -897,6 +974,70 @@ export function createDemoApi(options: DemoOptions = {}) {
       checkScenario('plugins')
       return copy(state.plugins)
     },
+    async listMcpServers() {
+      checkScenario('mcp-servers')
+      return copy(sampleMcpList(mcp, state))
+    },
+    async getMcpServerDetail(id) {
+      checkScenario('mcp-detail')
+      return copy(sampleMcpDetail(mcp, state, id))
+    },
+    async revealMcpSource(id, path) {
+      const detail = sampleMcpDetail(mcp, state, id)
+      const source = detail?.declarations.find(
+        (entry) => entry.sourcePath === path
+      )
+      if (
+        !source ||
+        (source.scope === 'project' &&
+          source.projectPath &&
+          !sampleProjectGranted(state, source.projectPath))
+      )
+        return false
+      options.onNotice?.(
+        'Sample declaration: ' + path + '. Your local files are never opened.'
+      )
+      return true
+    },
+    getInitialMcpCheckConfirmed: () => mcpCheckConfirmed,
+    async confirmMcpCheck() {
+      mcpCheckConfirmed = true
+    },
+    checkMcpConnections: (projectPath) =>
+      runSampleMcpWork(() => {
+        if (!mcpCheckConfirmed)
+          return {
+            ok: false as const,
+            error: 'Confirm before checking sample connections.'
+          }
+        if (
+          projectPath !== undefined &&
+          !sampleProjectGranted(state, projectPath)
+        )
+          return {
+            ok: false as const,
+            error: 'Grant this sample project folder before checking it.'
+          }
+        if (options.scenario === 'mcp-check-error')
+          return {
+            ok: false as const,
+            error: 'The sample connection check failed. Try again.'
+          }
+        return {
+          ok: true as const,
+          check: copy(recordSampleMcpCheck(mcp, state, projectPath ?? null))
+        }
+      }),
+    removeMcpServer: (ref) =>
+      runSampleMcpAction(() =>
+        changeSampleMcpDeclaration(mcp, state, 'remove', ref)
+      ),
+    logoutMcpServer: (ref) =>
+      runSampleMcpAction(() =>
+        changeSampleMcpDeclaration(mcp, state, 'logout', ref)
+      ),
+    resetMcpProjectChoices: (projectPath) =>
+      runSampleMcpAction(() => resetSampleMcpChoices(mcp, state, projectPath)),
     async getPluginDetail(name, marketplace) {
       checkScenario('plugin')
       const plugin = state.plugins.find(
@@ -933,15 +1074,18 @@ export function createDemoApi(options: DemoOptions = {}) {
           prompts: [],
           history: []
         })
-      return copy(groupSampleUsageOverview(result, currentUsageLocations()))
+      return copy(groupSampleUsageOverview(result, currentUsageIdentity()))
     },
     async getUsageProjects() {
       checkScenario('usage-projects')
       if (options.scenario === 'usage-projects-loading')
         await new Promise(() => {})
-      return sampleUsageProjectCatalog(currentUsageLocations(), (path) =>
-        sampleClaudeAppChat(state, path)
-      )
+      return currentUsageCatalog()
+    },
+    async getUsageMcp() {
+      checkScenario('mcp-usage')
+      if (options.scenario === 'mcp-usage-loading') await new Promise(() => {})
+      return sampleMcpUsage(mcp, now, currentUsageIdentity())
     },
     linkUsageProjects: (input) =>
       changeUsageProjects(() =>
@@ -971,6 +1115,7 @@ export function createDemoApi(options: DemoOptions = {}) {
           error: "Megatron couldn't read Claude Code's /context output.",
           raw: '## Context Usage\n\nAn illustrative unrecognized output format.'
         }
+      if (revision === sessionRevision) mcp.measuredAt = state.now
       return sampleContextBaseline(state.now)
     },
     async getRecordedRequest() {
@@ -987,7 +1132,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       return copy(
         groupSampleCalendar(
           buildUsageCalendar(usageState, year),
-          currentUsageLocations()
+          currentUsageIdentity()
         )
       )
     },
@@ -998,7 +1143,7 @@ export function createDemoApi(options: DemoOptions = {}) {
           ? { ...state, events: [], prompts: [], history: [] }
           : state
       return copy(
-        groupSampleDay(buildUsageDay(usageState, date), currentUsageLocations())
+        groupSampleDay(buildUsageDay(usageState, date), currentUsageIdentity())
       )
     },
     async getUsageSkillInvocations(input: SkillInvocationSliceInput) {
@@ -1030,7 +1175,7 @@ export function createDemoApi(options: DemoOptions = {}) {
     },
     getInitialSection: () => section,
     async setLastSection(value) {
-      if (!['skills', 'plugins', 'usage'].includes(value))
+      if (!PREVIEW_SECTIONS.includes(value))
         throw new RangeError('Unknown app section.')
       section = value
       options.onSectionChange?.(value)
@@ -1224,11 +1369,13 @@ export function createDemoApi(options: DemoOptions = {}) {
     reset() {
       sessionRevision += 1
       pendingAction = false
+      mcpCheckConfirmed = false
       scanActivity = null
       lastScanWasStartup = STARTUP_SCAN_SCENARIOS.includes(
         options.scenario ?? ''
       )
       state = structuredClone(initial)
+      mcp = createSampleMcpState(now, false, emptyMcp)
       usageLocations = reconcileSampleUsageProjects([], initial)
       inventorySource = structuredClone(initial)
       inventoryOnly = false

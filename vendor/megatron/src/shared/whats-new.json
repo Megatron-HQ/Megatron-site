@@ -1,4 +1,34 @@
 {
+  "0.4.0": {
+    "title": "MCP servers",
+    "highlights": [
+      {
+        "title": "See every MCP server in one place",
+        "body": "A new MCP section lists every server Claude Code can use, from your config, plugins, and claude.ai, with its tool calls, failures, and config problems.",
+        "action": {
+          "kind": "section",
+          "section": "mcp"
+        }
+      },
+      {
+        "title": "Track MCP calls in Usage",
+        "body": "Usage has an MCP servers panel: calls over time, the busiest servers, how often each one fails, and how much its results add to your context.",
+        "action": {
+          "kind": "section",
+          "section": "usage",
+          "anchor": "usage-mcp"
+        }
+      },
+      {
+        "title": "Remove MCP servers and sign out",
+        "body": "From an MCP server's details, remove a declaration, log out of a remote server, or reset a project's .mcp.json approvals, all through Claude Code's CLI.",
+        "action": {
+          "kind": "section",
+          "section": "mcp"
+        }
+      }
+    ]
+  },
   "0.3.0": {
     "title": "Token details",
     "highlights": [

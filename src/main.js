@@ -245,7 +245,8 @@ function resolveSampleClock() {
 function initializeAnalyticsDeck() {
   const deck = mountAnalyticsDeck(requireElement('[data-analytics-deck]'), {
     sampleClock: resolveSampleClock(),
-    reducedMotion
+    reducedMotion,
+    onMcpServer: (serverId) => productDemo.navigateToMcpServer(serverId)
   })
   for (const button of document.querySelectorAll('[data-analytics-open]'))
     button.addEventListener('click', () =>

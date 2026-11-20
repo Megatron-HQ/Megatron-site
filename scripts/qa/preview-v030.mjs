@@ -86,30 +86,8 @@ async function verifyTokenDetails(page, app) {
   }
 }
 
-async function verifyReleaseReplay(page, app) {
-  await app
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('button', { name: 'Skills', exact: true })
-    .click()
-  const news = await openWhatsNew(app)
-  await news
-    .getByText('Explore token usage by hour or day', { exact: true })
-    .waitFor()
-  await news
-    .getByRole('button', { name: 'Show me', exact: true })
-    .press('Enter')
-  await news.waitFor({ state: 'hidden' })
-  await app.getByRole('navigation', { name: 'Usage panels' }).waitFor()
-
-  await openWhatsNew(app)
-  await news.getByRole('button', { name: 'Next', exact: true }).press('Enter')
-  await news
-    .getByText('Read Claude Code from any folder', { exact: true })
-    .waitFor()
-  await news
-    .getByRole('button', { name: 'Show me', exact: true })
-    .press('Enter')
-  const settings = app.getByRole('dialog', { name: 'Settings', exact: true })
+async function verifyFolderSwitch(page, app) {
+  const settings = await openClaudeFolderSettings(app)
   const folders = settings.getByRole('list', { name: 'Claude Code folders' })
   const work = folders.getByRole('listitem').filter({ hasText: '.claude-work' })
   await work.getByRole('button', { name: /Switch to/ }).press('Enter')
@@ -134,7 +112,7 @@ export async function verifyMegatron030(page, baseUrl) {
   await page.goto(sample.href)
   const app = await preparePreview(page)
   await verifyTokenDetails(page, app)
-  await verifyReleaseReplay(page, app)
+  await verifyFolderSwitch(page, app)
 
   sample.searchParams.set('scenario', 'linked-skills')
   await page.goto(sample.href)

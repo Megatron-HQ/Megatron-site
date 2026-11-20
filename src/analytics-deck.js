@@ -4,6 +4,7 @@ import {
   buildAnalyticsCardStats
 } from './preview/card-stats.ts'
 import { isFocusMessage, revealFocusedRange } from './preview-focus.js'
+import { parsePreviewCommand } from './preview/protocol.ts'
 import {
   frameAt,
   createDeckMotion,
@@ -43,6 +44,10 @@ const VIEW_DETAILS = Object.freeze({
   skills: {
     label: 'Skills',
     note: 'Open a trend bar for the invocations behind it.'
+  },
+  mcp: {
+    label: 'MCP servers',
+    note: 'Switch periods or open a server in the full preview.'
   },
   'resident-tax': {
     label: 'Resident tax',
@@ -160,11 +165,14 @@ function scheduleIdle(callback) {
 }
 
 /**
- * The Follow-the-work card stack: seven sample cards that each open the
+ * The Follow-the-work card stack: sample cards that each open the
  * matching live Megatron view in place, or full screen when the column is
  * too narrow for the app's layout.
  */
-export function mountAnalyticsDeck(root, { sampleClock, reducedMotion }) {
+export function mountAnalyticsDeck(
+  root,
+  { sampleClock, reducedMotion, onMcpServer }
+) {
   if (!(root instanceof HTMLElement))
     throw new TypeError('The analytics deck needs a root element.')
   if (!(sampleClock instanceof Date) || !Number.isFinite(sampleClock.getTime()))
@@ -548,7 +556,20 @@ export function mountAnalyticsDeck(root, { sampleClock, reducedMotion }) {
     )
       notice.textContent = message.message
     else if (message.type === 'megatron-preview:escape') handleEscape()
-    else if (isFocusMessage(message)) revealFocusedRange(viewport, message)
+    else if (
+      message.type === 'megatron-preview:open-mcp-server' &&
+      openView === 'mcp'
+    ) {
+      const command = parsePreviewCommand({
+        type: 'megatron-preview:navigate',
+        section: 'mcp',
+        serverId: message.serverId
+      })
+      if (!command?.serverId) return
+      close()
+      fastForward()
+      onMcpServer?.(command.serverId)
+    } else if (isFocusMessage(message)) revealFocusedRange(viewport, message)
   })
 
   scheduleIdle(() => {

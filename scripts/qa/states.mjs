@@ -18,7 +18,9 @@ async function openDevRepository(app, name) {
 
 async function selectSkill(app, name) {
   await app.getByRole('button', { name: /^Search/ }).click()
-  const search = app.getByPlaceholder('Search skills, plugins, projects...')
+  const search = app.getByPlaceholder(
+    'Search skills, plugins, MCP servers, projects...'
+  )
   await search.fill(name)
   await search.press('Enter')
 }

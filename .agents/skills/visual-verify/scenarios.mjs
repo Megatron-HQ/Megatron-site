@@ -1,6 +1,11 @@
 import { focusForTooltip } from '../../../scripts/qa/interactions.mjs'
 import { openAnalyticsView } from '../../../scripts/qa/analytics-deck.mjs'
 import {
+  openMcpCheckDialog,
+  openMcpInventory,
+  openMcpServer
+} from '../../../scripts/qa/preview-mcp.mjs'
+import {
   openSkill,
   openResidentCategory,
   preparePreview,
@@ -52,7 +57,7 @@ export const scenarios = [
       .getByRole('button', { name: 'Search skills', exact: false })
       .click()
     await app
-      .getByPlaceholder('Search skills, plugins, projects...')
+      .getByPlaceholder('Search skills, plugins, MCP servers, projects...')
       .fill('design')
     await app.getByRole('option').first().waitFor()
   }),
@@ -150,6 +155,18 @@ export const scenarios = [
     await plugin(app, 'commit', 'team-tools')
     await app.getByRole('button', { name: 'Uninstall', exact: true }).click()
     await app.getByRole('dialog').waitFor()
+  }),
+  sample('product-demo-mcp', 'demo-mcp', openMcpInventory),
+  sample('product-demo-mcp-detail', 'demo-mcp', openMcpServer),
+  sample('product-demo-mcp-check', 'demo-mcp', openMcpCheckDialog),
+  sample('product-demo-mcp-remove-confirm', 'demo-mcp', async (app) => {
+    await openMcpServer(app, 'build-preview')
+    await app.getByRole('button', { name: 'Remove', exact: true }).click()
+    await app.getByRole('dialog', { name: /Remove build-preview/ }).waitFor()
+  }),
+  sample('product-demo-usage-mcp', 'demo-usage', async (app) => {
+    await selectPanel(app, 'MCP servers')
+    await app.getByText('Calls over time', { exact: true }).waitFor()
   }),
   ...[
     'Activity',

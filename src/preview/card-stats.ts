@@ -1,11 +1,13 @@
 import type { ContextCategory } from '../../vendor/megatron/src/shared/ipc'
+import { readProjectIdentity } from '../../vendor/megatron/src/shared/project-identity.ts'
 import { formatTokenCount } from '../../vendor/megatron/src/shared/token-format.ts'
 import { buildUsageOverview } from './analytics.ts'
 import { sampleContextBaseline } from './context.ts'
 import { createSampleState } from './fixtures.ts'
+import { createSampleMcpState, sampleMcpUsage } from './mcp.ts'
 import { buildUsageCalendar } from './usage-history.ts'
 
-/** The seven analytics views, in the order the landing page lists them. */
+/** The analytics views, in the order the landing page lists them. */
 export const ANALYTICS_VIEWS = [
   'tokens',
   'cost',
@@ -13,6 +15,7 @@ export const ANALYTICS_VIEWS = [
   'history',
   'models',
   'skills',
+  'mcp',
   'resident-tax'
 ] as const
 export type AnalyticsView = (typeof ANALYTICS_VIEWS)[number]
@@ -133,6 +136,11 @@ export function buildAnalyticsCardStats(now: Date): AnalyticsCardStat[] {
   const activity = requireValue(overview.activity, 'activity').last30d
   const models = requireValue(overview.models, 'model').last30d
   const skills = requireValue(overview.skills, 'skill').last30d
+  const mcp = sampleMcpUsage(
+    createSampleMcpState(now),
+    now,
+    readProjectIdentity({ locations: [], claudeCodeFolders: [] })
+  ).last30d
   const baseline = sampleContextBaseline(now.toISOString())
   if (!baseline.ok) throw new RangeError('The sample context baseline failed.')
   const usage = baseline.usage
@@ -187,6 +195,12 @@ export function buildAnalyticsCardStats(now: Date): AnalyticsCardStat[] {
         kind: 'bars',
         values: skills.trend.map((bucket) => bucket.count)
       }
+    },
+    {
+      view: 'mcp',
+      figure: formatCount(mcp.calls),
+      caption: 'MCP tool calls · 30 days',
+      chart: { kind: 'bars', values: mcp.trend.map((bucket) => bucket.count) }
     },
     {
       view: 'resident-tax',

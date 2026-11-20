@@ -1,8 +1,8 @@
 # Megatron website
 
-The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, and usage. The website is deployed on Vercel at [www.getmegatron.app](https://www.getmegatron.app/) as a static web application.
+The product landing page for [Megatron](https://github.com/Megatron-HQ/Megatron), a local-first desktop control center for Claude Code skills, plugins, MCP servers, and usage. The website is deployed on Vercel at [www.getmegatron.app](https://www.getmegatron.app/) as a static web application.
 
-The interactive preview embeds Megatron's actual React renderer, including Skills, Plugins, all seven Usage panels, Settings, the command palette, and file views. Open a Tokens chart bar for estimated usage and model and project breakdowns by hour or day. History includes annual activity metrics, a yearly contribution calendar, a monthly project timeline, and full-day details. Skills shows where linked skills point. Settings can switch between sample Claude Code Folders or replay What's New. A typed browser adapter supplies session-only sample data and simulates native actions such as folder grants and plugin commands.
+The interactive preview embeds Megatron's React renderer, including Skills, Plugins, MCP servers, all eight Usage panels, Settings, and the command palette. Explore server declarations and findings, simulate a connection check or a management action, and follow MCP tool calls from Usage into server details. A typed browser adapter supplies session-only synthetic data. The preview can also switch Claude Code Folders, replay What's New, and open Token chart bars for hour or day breakdowns by model and project.
 
 The marketing page uses vanilla JavaScript; the embedded preview uses React and TypeScript. Both entries build with Vite and Tailwind CSS v4. Normal builds require no desktop app checkout.
 
@@ -95,13 +95,13 @@ Usage retains recorded project locations and existing confirmed links. Project r
 
 Copy was grounded in the app's README, PRODUCT.md, DESIGN.md, main/preload IPC contracts, permission-aware scanners, deterministic linter, scoped plugin CLI actions, database cost/context queries, parent-folder discovery, and renderer views. The desktop app is not modified by this website.
 
-Megatron v0.3.0 was published on November 18, 2026. The installation section links its 64-bit Windows installer (107 MB), the versionless Homebrew cask, and the versionless curl installer. The macOS build is ad-hoc signed and ships as a zip without notarization. The Windows installer is unsigned. `install.sh` is linked only as the `releases/latest/download` asset. At each release, update the version label, the Windows download link, and its displayed file size together, and recheck platform, signing, and update claims against the app's `docs/releases.md`.
+Megatron v0.4.0 was published on November 19, 2026. The installation section links its 64-bit Windows installer (107 MB), the versionless Homebrew cask, and the versionless curl installer. The macOS build is ad-hoc signed and ships as a zip without notarization. The Windows installer is unsigned. `install.sh` is linked only as the `releases/latest/download` asset. At each release, update the version label, the Windows download link, and its displayed file size together, and recheck platform, signing, and update claims against the app's `docs/releases.md`.
 
 Megatron is presented as currently free and MIT-licensed, with no commitments about future pricing. Preview metrics, skills, plugins, and definitions are illustrative, not user testimonials or product performance claims.
 
 ## Verification
 
-The current snapshot is Megatron `v0.3.0` (`5d9c9c1`). It includes the faster History calendar, hourly and daily Token details, Claude Code Folder switching, What's New, linked-skill targets, and the Megatron mark in the sidebar. Sample worktree sessions contribute to the Canonical Checkout's Usage. The source revision, file hashes, and six integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules come from the imported renderer.
+The current snapshot is Megatron `v0.4.0` (`08a0405`). It includes the MCP rail entry, MCP inventory and detail views, and the MCP servers panel in Usage. Sample worktree sessions contribute to the Canonical Checkout's Usage through the shared project identity contract. The source revision, file hashes, and browser integration patches are recorded in [renderer provenance](vendor/megatron/provenance.json). App styling, components, and motion rules come from the imported renderer.
 
 The [November 18 sync review](docs/upstream-sync-2026-11-18.md) records the upstream range, implementation tickets, and verification for this release. The [November 12 review](docs/upstream-sync-2026-11-12.md) covers the earlier v0.2.0 import.
 
@@ -117,7 +117,7 @@ The preview toolbar contains section tabs, Reset sample, and expansion controls.
 
 The desktop watches approved inventory locations after changes settle and reconciles missed events periodically. Full startup, focus, folder-grant, plugin-action, and manual scans retain their existing behavior. Confirmed missing discovered children beneath readable grants are pruned; missing directly granted roots and unreadable sources retain cached inventory. Warnings remain scoped to the affected folder. Settings retains the manual-rescan result while its source details reflect the latest background scan.
 
-Checks cover the command palette, conditional inventory columns, hierarchical project navigation and folder expansion, actionable scan diagnostics, project availability notices, sorting and keyboard rows, lint/detail/file navigation, Markdown links, tree resizing, lifetime history, settings and manual rescan, user- and project-scoped plugin actions, all seven Usage panels, independent time windows and history years, exact-token tooltips, token-only days with unavailable prompt history, drilldown dialogs and focus return, reset/expansion, installation copying, mobile navigation, FAQ disclosures, and reduced motion.
+Checks cover inventory navigation, scan diagnostics, folder grants, file and history views, scoped plugin and MCP actions, all eight Usage panels, independent time windows and history years, drilldowns and focus return, preview reset and expansion, installation copying, FAQ disclosures, and reduced motion.
 
 Responsive checks cover 375px, 768px, 1024px, and 1440px. Essential page and installation content remains available with JavaScript disabled. Verification scripts are tracked in `scripts/qa/` and `.claude/skills/visual-verify/`; reports, screenshots, and temporary fixtures are saved under ignored directories.
 

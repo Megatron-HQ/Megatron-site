@@ -52,7 +52,7 @@ test('inventory changes publish only inventory sources and preserve token and pr
   )
   await sample.simulateInventoryChange('delete-project')
   assert.deepEqual(summaries, [
-    ['scanSkills', 'scanPluginRegistry', 'runLinter']
+    ['scanSkills', 'scanPluginRegistry', 'scanMcpDeclarations', 'runLinter']
   ])
   const after = await sample.api.getUsageOverview()
   assert.deepEqual(after.tokens, before.tokens)

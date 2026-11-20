@@ -8,6 +8,7 @@ export { refreshIcons } from './icons.js'
 const SECTIONS = [
   { id: 'skills', label: 'Skills', icon: 'brain-circuit' },
   { id: 'plugins', label: 'Plugins', icon: 'blocks' },
+  { id: 'mcp', label: 'MCP servers', icon: 'plug' },
   { id: 'usage', label: 'Usage', icon: 'chart-no-axes-combined' }
 ]
 const LOAD_TIMEOUT_MS = 15000
@@ -189,6 +190,22 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     navigate(tabs[next].dataset.previewSection)
     tabs[next].focus({ preventScroll: true })
   })
+  function revealDestination(section) {
+    root
+      .querySelector(`[data-preview-section="${section}"]`)
+      .focus({ preventScroll: true })
+    root.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
+      block: 'start'
+    })
+    window.clearTimeout(destinationTimer)
+    viewport.dataset.linked = 'true'
+    destinationTimer = window.setTimeout(() => {
+      delete viewport.dataset.linked
+    }, DESTINATION_FEEDBACK_MS)
+  }
   return {
     navigateTo(section, target) {
       const command = parsePreviewCommand({
@@ -198,20 +215,17 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       })
       if (!command) throw new RangeError('Unknown preview destination.')
       navigate(section, undefined, target)
-      root
-        .querySelector(`[data-preview-section="${section}"]`)
-        .focus({ preventScroll: true })
-      root.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'instant'
-          : 'smooth',
-        block: 'start'
+      revealDestination(section)
+    },
+    navigateToMcpServer(serverId) {
+      const command = parsePreviewCommand({
+        type: 'megatron-preview:navigate',
+        section: 'mcp',
+        serverId
       })
-      window.clearTimeout(destinationTimer)
-      viewport.dataset.linked = 'true'
-      destinationTimer = window.setTimeout(() => {
-        delete viewport.dataset.linked
-      }, DESTINATION_FEEDBACK_MS)
+      if (!command?.serverId) throw new RangeError('Unknown sample MCP server.')
+      send(command)
+      revealDestination('mcp')
     }
   }
 }

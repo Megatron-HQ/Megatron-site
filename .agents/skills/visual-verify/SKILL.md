@@ -31,6 +31,7 @@ Otherwise **scope it** â€” `npm run verify:visual -- --only <screen>,<screen>` â
 | --------------------------------------------------------------------- | ------------------------------------ |
 | `src/product-preview-host.js` / `src/preview/` (skills table, search, inspection)              | `demo-skills`                        |
 | `src/product-preview-host.js` / `src/preview/` (plugin inventory and install actions)                        | `demo-plugins`                       |
+| `src/product-preview-host.js` / `src/preview/mcp.ts` (MCP inventory, connection checks, declaration actions) | `demo-mcp`                           |
 | `src/product-preview-host.js` / `src/preview/` (usage panels, trend charts, model tables)      | `demo-usage`                         |
 | `src/preview/fixtures.ts` / `src/preview/analytics.ts`                                                     | `demo-skills,demo-plugins,demo-usage`|
 | `src/main.js` (navigation, install copy, scroll handlers)             | `hero,install,navigation`            |

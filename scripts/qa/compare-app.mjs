@@ -11,6 +11,12 @@ import pixelmatch from 'pixelmatch'
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
 import { openSkill, openResidentCategory, selectPanel } from './preview.mjs'
 import {
+  mcpServerRow,
+  openMcpCheckDialog,
+  openMcpInventory,
+  openMcpServer
+} from './preview-mcp.mjs'
+import {
   openClaudeFolderSettings,
   openLinkedSkill,
   openTokenDetails,
@@ -161,7 +167,7 @@ const scenes = [
         .getByRole('button', { name: 'Search skills', exact: false })
         .click()
       await page
-        .getByPlaceholder('Search skills, plugins, projects...')
+        .getByPlaceholder('Search skills, plugins, MCP servers, projects...')
         .fill('design')
     }
   ],
@@ -169,6 +175,31 @@ const scenes = [
   ['linked-skill', openLinkedSkill],
   ['claude-code-folder', openClaudeFolderSettings],
   ['whats-new', openWhatsNew],
+  ['mcp-inventory', openMcpInventory],
+  ['mcp-detail', openMcpServer],
+  ['mcp-check-confirm', openMcpCheckDialog],
+  [
+    'mcp-check-results',
+    async (page) => {
+      const dialog = await openMcpCheckDialog(page)
+      await dialog
+        .getByRole('button', { name: 'Check connections' })
+        .press('Enter')
+      await mcpServerRow(page, 'claude.ai Tasks')
+        .getByText('Needs sign-in')
+        .waitFor()
+    }
+  ],
+  [
+    'mcp-remove-confirm',
+    async (page) => {
+      await openMcpServer(page, 'build-preview')
+      await page
+        .getByRole('button', { name: 'Remove', exact: true })
+        .press('Enter')
+      await page.getByRole('dialog', { name: /Remove build-preview/ }).waitFor()
+    }
+  ],
   ['token-details-day', (page) => openTokenDetails(page, '7 days')],
   ['token-details-hour', (page) => openTokenDetails(page, '24 hours')],
   [
@@ -217,6 +248,7 @@ const scenes = [
     'Cost',
     'Models',
     'Skills',
+    'MCP servers',
     'Resident tax'
   ].map((panel) => [
     panel.toLowerCase().replaceAll(' ', '-'),
@@ -224,6 +256,8 @@ const scenes = [
       await selectPanel(page, panel)
       if (panel === 'Resident tax')
         await page.getByText('Global baseline', { exact: true }).waitFor()
+      if (panel === 'MCP servers')
+        await page.getByText('Calls over time', { exact: true }).waitFor()
     }
   ]),
   ...[

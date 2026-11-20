@@ -363,7 +363,9 @@ Motion follows the same restraint. State changes are 180ms transitions on backgr
 
 ### Product Stage
 
-The signature component. A Graphite Stage frame (9px radius, 23px padding) holds the live app renderer. The top row pairs a lime-dot eyebrow with an "Explore the product" hint. The toolbar holds the Skills, Plugins, and Usage tabs: 4px radius, 12px Stage Muted text, Graphite Hover with white text on hover, and a lime fill with ink text when selected. Host buttons have a 1px #515449 border, 4px radius, and 11px text. The viewport has a 1px Hairline border, a 6px radius, and a #fcfcfc ground; it clips rather than scrolls (see Layout for scaling). A Caption row at the bottom (12px) says it is an interactive preview on sample data and that the visitor's local setup is never accessed. Expanding moves the same iframe into a native modal dialog inset 12px, with an 8px radius and the scrim shadow.
+The Graphite Stage frame holds the app renderer with a 9px radius and 23px padding. The top row pairs a lime-dot eyebrow with an "Explore the product" hint. The toolbar tabs follow the app rail order of Skills, Plugins, MCP servers, and Usage. Each tab has a 4px radius, 12px Stage Muted text, Graphite Hover with white text on hover, and a lime fill with ink text when selected. Host buttons have a 1px #515449 border, 4px radius, and 11px text. The viewport has a 1px Hairline border, a 6px radius, and a #fcfcfc ground. It clips at the scaled renderer bounds. A 12px caption explains the sample data and local setup boundary. Expanding moves the same iframe into a native modal dialog inset 12px, with an 8px radius and the scrim shadow.
+
+The MCP feature link uses the existing scope-pill styling and opens the full inventory. The analytics deck places MCP servers before Resident tax. Its 30-day call figure and chart come from the same sample data as the opened view.
 
 ### Signal Eyebrow
 

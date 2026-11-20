@@ -11,6 +11,7 @@ const ANALYTICS_VIEWS = [
   ['history', 'History'],
   ['models', 'Models'],
   ['skills', 'Skills'],
+  ['mcp', 'MCP servers'],
   ['resident-tax', 'Resident tax']
 ]
 const SKILL_DETAIL_NOTICE =
@@ -88,7 +89,7 @@ async function verifyDeckPlacement(page) {
   if (geometry.width < 768) {
     assert.ok(
       geometry.cardTop >= geometry.lastPointBottom,
-      'On phones, the card stack follows all seven points in normal page flow.'
+      'On phones, the card stack follows the analytics points in normal page flow.'
     )
     await page.evaluate(
       (top) => window.scrollTo({ top, behavior: 'instant' }),
@@ -222,7 +223,7 @@ async function verifyOpenedFromCard(page) {
       title: document.querySelector('#deck-viewer-title').textContent
     }
   })
-  assert.equal(opened.title, '07 / RESIDENT TAX')
+  assert.equal(opened.title, '08 / RESIDENT TAX')
   if (expected === 'inline') {
     assert.equal(opened.modal, false)
     assert.ok(opened.stackHidden, 'An opened view hides every other card.')

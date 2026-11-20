@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f6f6f0" />
     <meta
       name="description"
-      content="Meet Megatron, the free, open-source desktop control center for Claude Code. Explore your skills, manage plugins, and understand usage. All locally."
+      content="Meet Megatron, the free, open-source desktop control center for Claude Code skills, plugins, MCP servers, and usage."
     />
     <meta property="og:type" content="website" />
     <meta
@@ -15,7 +15,7 @@
     />
     <meta
       property="og:description"
-      content="Your skills, plugins, and usage. One local control center. Free and open source."
+      content="Your skills, plugins, MCP servers, and usage in one local control center. Free and open source."
     />
     <meta property="og:image" content="/megatron-icon.png" />
     <meta name="twitter:card" content="summary" />
@@ -100,8 +100,8 @@
           </h1>
           <div class="hero-description">
             <p>
-              Meet the local control center for your skills, plugins, and usage.
-              A clearer picture of the setup you use every day.
+              See your Claude Code skills, plugins, MCP servers, and usage in
+              one local control center.
             </p>
             <a class="button button-lime" href="#get-started"
               >Get Megatron<i
@@ -150,7 +150,10 @@
               height="64"
               alt="Megatron app icon"
             />
-            <p>Skills, plugins, and usage — one local control center.</p>
+            <p>
+              Skills, plugins, MCP servers, and usage in one local control
+              center.
+            </p>
             <noscript
               ><p>
                 Enable JavaScript to explore the interactive preview. All
@@ -348,6 +351,37 @@
             </div>
           </div>
         </article>
+        <article class="plugin-feature mcp-feature">
+          <div class="plugin-copy">
+            <span class="eyebrow">MCP SERVERS</span>
+            <h3>See where your servers come from.</h3>
+            <p>
+              Browse MCP servers from user, local, and project settings,
+              plugins, and Claude Code activity. See which declaration takes
+              precedence, which servers await approval, and what needs
+              attention.
+            </p>
+            <p class="plugin-note">
+              Grant a project folder to read its .mcp.json. In the desktop app,
+              run a connection check on demand, remove a declaration, or sign
+              out of a configured remote server. Manage claude.ai connectors on
+              claude.ai.
+            </p>
+          </div>
+          <div class="plugin-scope-visual">
+            <a
+              href="#product-demo"
+              class="scope-pill"
+              data-preview-link="mcp"
+              data-preview-target="all"
+            >
+              <i data-lucide="plug" aria-hidden="true"></i>Explore MCP servers<i
+                data-lucide="arrow-up-right"
+                aria-hidden="true"
+              ></i>
+            </a>
+          </div>
+        </article>
       </section>
       <section
         id="analytics"
@@ -510,6 +544,27 @@
                 <article>
                   <span class="analytics-number">07</span>
                   <div>
+                    <h3>See what your MCP servers did.</h3>
+                    <p>
+                      Compare recorded tool calls, errors, and estimated result
+                      tokens by server over 24 hours, 7 days, or 30 days.
+                      Coverage follows the transcripts Claude Code still has.
+                    </p>
+                    <button
+                      type="button"
+                      class="text-link"
+                      data-analytics-open="mcp"
+                    >
+                      Explore MCP usage<i
+                        data-lucide="arrow-up-right"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                  </div>
+                </article>
+                <article>
+                  <span class="analytics-number">08</span>
+                  <div>
                     <h3>Context has a footprint, too.</h3>
                     <p>
                       Claude Code’s own /context breakdown shows the global
@@ -533,7 +588,7 @@
             </div>
             <div class="context-visual" data-analytics-deck data-state="stack">
               <div class="context-header">
-                <span class="eyebrow">FOLLOW THE WORK / 7 VIEWS</span>
+                <span class="eyebrow">FOLLOW THE WORK / 8 VIEWS</span>
                 <span class="sample-tag">LIVE SAMPLE</span>
               </div>
               <div class="deck-stage" data-deck-stage></div>
@@ -636,7 +691,7 @@
           <div class="release-status">
             <span class="status-dot" aria-hidden="true"></span>
             <div>
-              <strong>Megatron 0.3.0</strong
+              <strong>Megatron 0.4.0</strong
               ><span>For Apple silicon Macs and 64-bit Windows.</span>
             </div>
           </div>
@@ -743,7 +798,7 @@
               <p class="install-download">
                 <a
                   class="button button-lime"
-                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.3.0/megatron-0.3.0-setup.exe"
+                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.4.0/megatron-0.4.0-setup.exe"
                   aria-describedby="install-exe-step"
                   >Download for Windows<i
                     data-lucide="download"
@@ -813,8 +868,8 @@
               </summary>
               <p>
                 Megatron runs alongside your existing Claude Code workflow. It
-                gives you visibility into skills, plugins, and local session
-                usage. Claude Code remains where you do the work.
+                gives you visibility into skills, plugins, MCP servers, and
+                local session usage. Claude Code remains where you do the work.
               </p>
             </details>
             <details>
@@ -828,8 +883,11 @@
                 Skill inspection does not edit definitions or execute skill
                 scripts. Resident tax runs Claude Code’s local /context command,
                 which can start configured SessionStart hooks and MCP servers.
-                Plugin management uses Claude Code’s own CLI commands, which may
-                access the network. Inventory and usage analysis run locally.
+                Plugin and MCP management use Claude Code’s CLI and may access
+                the network. An MCP connection check starts approved local
+                servers and contacts remote ones after you choose to check.
+                Inventory and usage analysis run locally. The website preview
+                uses synthetic data for checks and actions.
               </p>
             </details>
             <details>

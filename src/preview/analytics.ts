@@ -20,10 +20,8 @@ import type {
   TriggerTypeCount,
   UsageOverview
 } from '../../vendor/megatron/src/shared/ipc'
-import {
-  canonicalProjectPath,
-  isWithinProjectPath
-} from '../../vendor/megatron/src/shared/project-path.ts'
+import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import { sampleSkillProject } from './usage-projects.ts'
 import { buildTokenStats, sampleHistoryCoverage } from './usage-history.ts'
 import {
   DAY_MS,
@@ -185,7 +183,7 @@ export function sampleInvocation(
   const target = resolveSampleSkill(
     state.skills,
     event.skillName ?? '',
-    canonicalProjectPath(event.project, state.worktrees ?? [])
+    sampleSkillProject(event.project, state)
   )
   return {
     preceding_user_text: event.prompt,

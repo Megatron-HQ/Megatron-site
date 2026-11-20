@@ -21,6 +21,15 @@ export const IPC_CHANNELS = {
   updatePlugin: 'plugins:update',
   pluginUpdateProgress: 'plugins:updateProgress',
   uninstallPlugin: 'plugins:uninstall',
+  listMcpServers: 'mcp:list',
+  getMcpServerDetail: 'mcp:detail',
+  revealMcpSource: 'mcp:revealSource',
+  checkMcpConnections: 'mcp:checkConnections',
+  getInitialMcpCheckConfirmed: 'mcp:getInitialCheckConfirmed',
+  confirmMcpCheck: 'mcp:confirmCheck',
+  removeMcpServer: 'mcp:remove',
+  logoutMcpServer: 'mcp:logout',
+  resetMcpProjectChoices: 'mcp:resetProjectChoices',
   getInitialSection: 'app:getInitialSection',
   setLastSection: 'app:setLastSection',
   getInitialOnboarding: 'app:getInitialOnboarding',
@@ -39,6 +48,7 @@ export const IPC_CHANNELS = {
   usageLinkProjects: 'usage:projects:link',
   usageUnlinkProject: 'usage:projects:unlink',
   usageSkillInvocations: 'usage:skillInvocations',
+  usageMcp: 'usage:mcp',
   usageContextBaseline: 'usage:contextBaseline',
   usageRecordedRequest: 'usage:recordedRequest',
   getUpdateState: 'updates:getState',
@@ -138,6 +148,14 @@ export interface CanonicalCheckout {
   path: string
   // Filesystem identity of the approved common Git directory, when the filesystem supplies it.
   repository?: string
+}
+
+// What one Scan proved about Repos; main's Project Identity owner records it.
+export interface RepoFindings {
+  // Every Worktree link seen this pass, from either side; see CONTEXT.md "Worktree".
+  worktrees: WorktreeLink[]
+  // Positive discovery evidence; unlike catalog repositories, these are never stand-ins.
+  canonicalCheckouts: CanonicalCheckout[]
 }
 
 export type SourceType = 'global' | 'project' | 'plugin'
@@ -241,8 +259,7 @@ export type ScanWorkerProgress =
       type: 'source-complete'
       source: ScanSourceSummary
       projects?: ProjectFolder[]
-      worktrees?: WorktreeLink[]
-      canonicalCheckouts?: CanonicalCheckout[]
+      findings?: RepoFindings
     }
 
 export interface ScanProgress {
@@ -276,9 +293,7 @@ export interface ScanTaskResult {
   status: 'complete' | 'partial'
   issues?: ScanIssue[]
   projects?: ProjectFolder[]
-  worktrees?: WorktreeLink[]
-  // Positive discovery evidence; unlike catalog repositories, these are never stand-ins.
-  canonicalCheckouts?: CanonicalCheckout[]
+  findings?: RepoFindings
 }
 
 export interface ScanSummary {
@@ -287,10 +302,11 @@ export interface ScanSummary {
   sources: ScanSourceSummary[]
   isStartup?: boolean
   lastSuccessfulAt?: string | null
-  projects?: ProjectFolder[]
-  worktrees?: WorktreeLink[]
-  canonicalCheckouts?: CanonicalCheckout[]
 }
+
+// What the worker hands main; main records `projects` and `findings`, then sends only the summary
+// to the renderer.
+export type ScanResult = ScanSummary & { projects?: ProjectFolder[]; findings?: RepoFindings }
 
 export type FileStatus = 'ok' | 'too_large' | 'unreadable' | 'preview_limit'
 
@@ -459,12 +475,228 @@ export interface PluginActionInput {
 
 // The runtime list resolveInitialSection validates a stored value against, plus the derived
 // union — one source so the two can't drift.
-export const APP_SECTIONS = ['skills', 'plugins', 'usage'] as const
+// docs/mcp-servers.md. One row per server however many places declare it; see CONTEXT.md, MCP.
+export type McpServerKind = 'configured' | 'plugin' | 'connector' | 'observed'
+export type McpTransport = 'stdio' | 'http' | 'sse' | 'ws'
+export type McpDeclarationScope = 'local' | 'project' | 'user' | 'plugin'
+export type McpConfigProblem = 'url_without_type' | 'unknown_type' | 'no_endpoint'
+export type McpApproval = 'approved' | 'rejected' | 'pending'
+
+// What `claude mcp list` reported, mapped from its own wording (docs/mcp-servers.md, Live check).
+export type McpLiveStatus =
+  | 'connected'
+  | 'degraded'
+  | 'needs_auth'
+  | 'failed'
+  | 'pending_approval'
+  | 'rejected'
+  | 'disabled'
+  | 'not_configured'
+
+export interface McpLiveServer {
+  // As the CLI printed it: a configured name, plugin:<p>:<s>, or 'claude.ai <Name>'.
+  name: string
+  status: McpLiveStatus
+}
+
+// One run of `claude mcp list`, kept for the app session only. projectPath null: the general check,
+// run from an empty folder, so only user servers, connectors, and user plugins appear.
+export interface McpConnectionCheck {
+  projectPath: string | null
+  checkedAt: string
+  servers: McpLiveServer[]
+}
+
+export type McpConnectionCheckResult =
+  { ok: true; check: McpConnectionCheck } | { ok: false; error: string }
+
+// A key Claude Code passes to the server; its value never leaves the main process.
+export interface McpKeyName {
+  name: string
+  literal: boolean
+}
+
+// Longest a server id may be over IPC: plugin ids join a plugin and server name.
+export const MAX_MCP_SERVER_ID_LENGTH = 1024
+
+// MCP actions (docs/mcp-servers.md, Writes). The renderer names a Declaration by its server id,
+// scope, and project; main takes the server's name from the index, never from the request.
+export type McpConfiguredScope = 'local' | 'project' | 'user'
+
+export interface McpDeclarationRef {
+  serverId: string
+  scope: McpConfiguredScope
+  projectPath: string | null // null exactly for user scope
+}
+
+export interface McpProjectApprovals {
+  approved: number
+  pending: number
+  rejected: number
+}
+
+// ok with message: the command ran and the index shows its effect. ok with verificationError: the
+// command ran but the result isn't what was asked for, or couldn't be confirmed.
+export type McpActionResult =
+  | { ok: true; message: string }
+  | { ok: true; verificationError: string }
+  | { ok: false; error: string }
+
+export interface McpServerRow {
+  // configured:<name> | plugin:<plugin>:<server> | connector:<prefix> | observed:<prefix>
+  id: string
+  // As Claude Code names it: the configured name, plugin:<p>:<s>, or 'claude.ai <Name>'.
+  name: string
+  kind: McpServerKind
+  // The sanitized part of its tools' names, mcp__<prefix>__<tool>.
+  prefix: string
+  transports: McpTransport[]
+  location: string | null
+  scopes: McpDeclarationScope[]
+  projectCount: number
+  // Projects with a local or project Declaration, or a project-scoped plugin install.
+  projectPaths: string[]
+  calls: number
+  // Server errors only: refusals by the user's permission rules are counted in `denied`.
+  errors: number
+  denied: number
+  // Calls whose prefix another server shares; credited to neither (docs/mcp-servers.md).
+  ambiguousCalls: number
+  lastUsedAt: string | null
+  hasProblem: boolean
+  hasLiteralCredential: boolean
+  hasPendingApproval: boolean
+  prefixCollision: boolean
+  // Plugin rows: every install of the plugin is switched off.
+  pluginDisabled: boolean
+  // Lint findings by severity (docs/mcp-servers.md, Lint).
+  warnings: number
+  notices: number
+  // From the last general connection check this session; null until one has run or included it.
+  liveStatus: { status: McpLiveStatus; checkedAt: string } | null
+}
+
+export type McpLintSeverity = 'warning' | 'info'
+export type McpLintRuleId =
+  | 'mcp-inlined-credential'
+  | 'mcp-pending-approval'
+  | 'mcp-shadowed'
+  | 'mcp-prefix-collision'
+  | 'mcp-server-skipped'
+
+// Derived from the index each time a server is read, so never stale and never stored.
+export interface McpLintFinding {
+  ruleId: McpLintRuleId
+  severity: McpLintSeverity
+  message: string
+  // The Declaration it concerns; both null for a finding about the whole server.
+  scope: McpDeclarationScope | null
+  projectPath: string | null
+}
+
+export interface McpServerList {
+  servers: McpServerRow[]
+  // Bounds of the calls the index still holds; transcripts age out after ~30 days.
+  firstCallAt: string | null
+  lastCallAt: string | null
+  // Projects Claude Code knows whose .mcp.json Megatron may not read.
+  ungrantedProjects: number
+  // When the general connection check last ran this session.
+  lastCheckedAt: string | null
+}
+
+// Where a declaration loses to a higher-precedence one. projectPath null: in every project.
+export interface McpShadow {
+  projectPath: string | null
+  byScope: McpDeclarationScope
+  byProjectPath: string | null
+}
+
+export interface McpDeclarationDetail {
+  scope: McpDeclarationScope
+  projectPath: string | null
+  plugin: { name: string; marketplace: string } | null
+  transport: McpTransport | null
+  problem: McpConfigProblem | null
+  location: string | null
+  env: McpKeyName[]
+  headers: McpKeyName[]
+  argCount: number | null
+  hasLiteralCredential: boolean
+  approval: McpApproval | null
+  sourcePath: string | null
+  shadowedIn: McpShadow[]
+}
+
+export interface McpToolUsage {
+  tool: string
+  calls: number
+  errors: number
+  denied: number
+  // Estimated from returned characters, like a Skill's token estimate.
+  resultTokens: number
+  resultImages: number
+  lastUsedAt: string | null
+}
+
+export interface McpServerDetail {
+  server: McpServerRow
+  declarations: McpDeclarationDetail[]
+  // Projects whose /mcp switch turned this server off; '' is never listed.
+  disabledIn: string[]
+  // Connector rows: where disableClaudeAiConnectors applies. '' means user settings, so everywhere.
+  connectorsDisabledIn: string[]
+  tools: McpToolUsage[]
+  findings: McpLintFinding[]
+  // Per-project connection checks this session that included this server.
+  projectStatuses: { projectPath: string; status: McpLiveStatus; checkedAt: string }[]
+  // Tool-definition tokens from the last /context run this launch; null until one has run.
+  definitionTokens: { tokens: number; measuredAt: string } | null
+}
+
+export const APP_SECTIONS = ['skills', 'plugins', 'mcp', 'usage'] as const
 export type AppSection = (typeof APP_SECTIONS)[number]
 
 export interface ActivityProjectCount {
   project: string // raw cwd in reducers; primary project location in Usage IPC
   count: number
+}
+
+// Usage → MCP servers: one server's calls in a window (docs/mcp-servers.md, Usage panel).
+export interface McpUsageServerRow {
+  id: string // McpServerRow.id, the detail's key
+  name: string
+  kind: McpServerKind
+  calls: number
+  errors: number // refusals excluded
+  denied: number
+  // errors / calls that weren't refused; null when every call was refused.
+  errorRate: number | null
+  resultTokens: number // estimated from returned characters
+}
+
+export interface McpUsageWindow {
+  window: SkillStatsWindowKey
+  startAt: string
+  endAt: string
+  calls: number // includes calls on a shared prefix, which no server is credited with
+  errors: number
+  denied: number
+  resultTokens: number
+  serverCount: number
+  sessionCount: number
+  ambiguousCalls: number
+  trend: SkillTrendBucket[]
+  byServer: McpUsageServerRow[]
+  byProject: ActivityProjectCount[] // grouped by Usage project
+}
+
+export interface McpUsageStats {
+  // The oldest call the index holds, for the label naming how far back transcripts reach.
+  firstCallAt: string | null
+  last24h: McpUsageWindow
+  last7d: McpUsageWindow
+  last30d: McpUsageWindow
 }
 
 // One bar's drill-down, precomputed in the overview payload like CostDay/CostHour.

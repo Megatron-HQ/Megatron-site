@@ -7,12 +7,15 @@ export async function verifyFeatureLinks(page) {
   const links = page.locator('[data-preview-link]')
   assert.equal(
     await links.count(),
-    5,
+    6,
     'Each feature source and scope must be a link.'
   )
-  assert.equal(await page.locator('.scope-pill').count(), 2)
+  assert.equal(
+    await page.locator('.scope-pill[data-preview-link="plugins"]').count(),
+    2
+  )
   assert.doesNotMatch(
-    await page.locator('.plugin-copy').innerText(),
+    await page.locator('.plugin-copy').first().innerText(),
     /local installs/i
   )
 
@@ -21,7 +24,8 @@ export async function verifyFeatureLinks(page) {
     ['skills', 'project', 'Project Skills'],
     ['skills', 'plugin', 'Plugin Skills'],
     ['plugins', 'user', 'User Plugins'],
-    ['plugins', 'project', 'Project Plugins']
+    ['plugins', 'project', 'Project Plugins'],
+    ['mcp', 'all', 'All MCP servers']
   ]) {
     const link = page.locator(
       `[data-preview-link="${section}"][data-preview-target="${target}"]`

@@ -118,12 +118,14 @@ test('missing project scans retain cached projects and distinguish genuine warni
   const issues = result.sources.flatMap((source) => source.issues ?? [])
   assert.ok(issues.length > 0)
   assert.ok(issues.every((issue) => issue.code === 'project_missing'))
+  const projects = await api.listProjects()
+  assert.equal(Object.hasOwn(result, 'projects'), false)
   assert.equal(
-    result.projects!.find((project) => project.path === SAMPLE_PROJECT)!.status,
+    projects.find((project) => project.path === SAMPLE_PROJECT)!.status,
     'missing'
   )
   assert.equal(
-    result.projects!.find((project) => project.path === SAMPLE_PARENT)!.status,
+    projects.find((project) => project.path === SAMPLE_PARENT)!.status,
     'available'
   )
   const mixed = await createDemo({ scenario: 'projects-missing-warning' })
@@ -820,11 +822,160 @@ test('What’s New replays the shipped release without opening over the sample b
   const { api } = await createDemo()
   assert.equal(typeof api.getInitialWhatsNew, 'function')
   assert.deepEqual(api.getInitialWhatsNew().unseen, [])
-  assert.equal(api.getInitialWhatsNew().latest?.version, '0.3.0')
+  assert.equal(api.getInitialWhatsNew().latest?.version, '0.4.0')
   assert.deepEqual(
     api.getInitialWhatsNew().latest?.highlights.map(({ action }) => action),
-    [{ kind: 'section', section: 'usage' }, { kind: 'settings' }]
+    [
+      { kind: 'section', section: 'mcp' },
+      { kind: 'section', section: 'usage', anchor: 'usage-mcp' },
+      { kind: 'section', section: 'mcp' }
+    ]
   )
+})
+
+test('MCP server inventory and detail share synthetic call counts and redact fixture settings', async () => {
+  const { api } = await createDemo()
+  assert.equal(typeof api.listMcpServers, 'function')
+  const list = await api.listMcpServers()
+  const row = list.servers.find((server) => server.name === 'workspace-docs')!
+  assert.deepEqual(row.scopes, ['local', 'project', 'user'])
+  const detail = (await api.getMcpServerDetail(row.id))!
+  assert.deepEqual(detail.server, row)
+  assert.equal(
+    detail.tools.reduce((calls, tool) => calls + tool.calls, 0),
+    row.calls
+  )
+  assert.ok(row.errors > 0 && row.denied > 0)
+  assert.equal(detail.declarations[0].location, 'docs.example.invalid')
+  assert.deepEqual(detail.declarations[0].headers, [
+    { name: 'Authorization', literal: false }
+  ])
+  assert.equal(detail.definitionTokens, null)
+  assert.ok((await api.getContextBaseline()).ok)
+  assert.ok((await api.getMcpServerDetail(row.id))!.definitionTokens)
+  assert.equal(await api.getMcpServerDetail('unknown'), null)
+})
+
+test('MCP checks require confirmation and keep discoveries and statuses in the sample session', async () => {
+  const { api, reset } = await createDemo()
+  assert.equal((await api.checkMcpConnections()).ok, false)
+  await api.confirmMcpCheck()
+  assert.equal((await api.checkMcpConnections()).ok, true)
+  const discovered = (await api.listMcpServers()).servers.find(
+    ({ name }) => name === 'claude.ai Tasks'
+  )
+  assert.equal(discovered?.liveStatus?.status, 'needs_auth')
+  reset()
+  assert.equal(api.getInitialMcpCheckConfirmed(), false)
+  assert.equal((await api.listMcpServers()).lastCheckedAt, null)
+  assert.ok(
+    !(await api.listMcpServers()).servers.some(
+      ({ id }) => id === discovered?.id
+    )
+  )
+})
+
+test('MCP declarations can be removed or signed out only in an eligible scope', async () => {
+  const { api } = await createDemo()
+  const ref = {
+    serverId: 'configured:workspace-docs',
+    projectPath: SAMPLE_PROJECT,
+    scope: 'local' as const
+  }
+  assert.equal((await api.logoutMcpServer(ref)).ok, true)
+  assert.equal(
+    (await api.getMcpServerDetail(ref.serverId))?.projectStatuses[0]?.status,
+    'needs_auth'
+  )
+  assert.equal((await api.removeMcpServer(ref)).ok, true)
+  assert.equal((await api.removeMcpServer(ref)).ok, false)
+  assert.deepEqual(
+    (await api.getMcpServerDetail(ref.serverId))?.server.scopes,
+    ['project', 'user']
+  )
+  const ungranted = {
+    ...ref,
+    serverId: 'configured:review-helper',
+    projectPath: ADDITIONAL_PROJECT
+  }
+  assert.equal((await api.removeMcpServer(ungranted)).ok, false)
+})
+
+test('Signing out of a user MCP server does not discover connectors or run a general check', async () => {
+  const { api } = await createDemo()
+  assert.equal(
+    (
+      await api.logoutMcpServer({
+        serverId: 'configured:workspace-docs',
+        scope: 'user',
+        projectPath: null
+      })
+    ).ok,
+    true
+  )
+  const { servers, lastCheckedAt } = await api.listMcpServers()
+  assert.equal(lastCheckedAt, null)
+  assert.ok(!servers.some(({ name }) => name === 'claude.ai Tasks'))
+  assert.equal(
+    servers.find(({ name }) => name === 'workspace-docs')?.liveStatus?.status,
+    'needs_auth'
+  )
+})
+
+test('MCP Usage counts periods, shared prefixes, refusals and result sizes consistently', async () => {
+  const { api } = await createDemo()
+  const { last24h, last7d, last30d } = await api.getUsageMcp()
+  assert.deepEqual([last24h.calls, last7d.calls, last30d.calls], [6, 13, 17])
+  assert.equal(last30d.ambiguousCalls, 1)
+  assert.equal(
+    last30d.byServer.reduce((total, row) => total + row.calls, 0),
+    16
+  )
+  assert.equal(
+    last30d.byProject.reduce((total, row) => total + row.count, 0),
+    17
+  )
+  assert.equal(
+    last30d.trend.reduce((total, row) => total + row.count, 0),
+    17
+  )
+  const docs = last30d.byServer.find(
+    ({ id }) => id === 'configured:workspace-docs'
+  )!
+  assert.equal(docs.errorRate, 1 / 11)
+  assert.equal(docs.denied, 1)
+  assert.ok(docs.resultTokens > 0)
+  assert.equal(
+    (await api.getMcpServerDetail(docs.id))?.server.calls,
+    docs.calls
+  )
+})
+
+test('Resetting sample project choices preserves the declarations approved in settings', async () => {
+  const { api } = await createDemo()
+  assert.equal((await api.resetMcpProjectChoices(SAMPLE_PROJECT)).ok, true)
+  const result = (await api.getMcpServerDetail('configured:workspace-docs'))!
+  assert.equal(
+    result.declarations.find(({ scope }) => scope === 'project')?.approval,
+    'pending'
+  )
+  const settings = (await api.getMcpServerDetail(
+    'configured:workspace-metrics'
+  ))!
+  assert.equal(settings.declarations[0].approval, 'approved')
+})
+
+test('Reset sample stops a pending MCP action from mutating the restored fixture', async () => {
+  const { api, reset } = await createDemo({ actionDelayMs: 10 })
+  const id = 'configured:build-preview'
+  const pending = api.removeMcpServer({
+    serverId: id,
+    scope: 'project',
+    projectPath: SAMPLE_PROJECT
+  })
+  reset()
+  assert.equal((await pending).ok, false)
+  assert.ok(await api.getMcpServerDetail(id))
 })
 
 test('a linked sample skill reports its target and regular skills have no link', async () => {

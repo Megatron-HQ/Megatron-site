@@ -6,6 +6,7 @@ const KNOWN_SCREENS = new Set([
   'hero',
   'demo-skills',
   'demo-plugins',
+  'demo-mcp',
   'demo-usage',
   'features',
   'analytics',

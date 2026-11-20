@@ -15,6 +15,13 @@ import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
 import { verifyPreviewSettings } from './preview-settings.mjs'
 import { verifyReleaseFeatures } from './release-features.mjs'
 import { verifyMegatron030 } from './preview-v030.mjs'
+import {
+  verifyMcpInventory,
+  verifyMcpLayout,
+  verifyMcpManagement,
+  verifyMcpUsage,
+  verifyMcpWhatsNew
+} from './preview-mcp.mjs'
 import { verifyFeatureLinks } from './feature-links.mjs'
 import {
   verifyFaq,
@@ -87,8 +94,17 @@ try {
   await verifyReleaseFeatures(page, baseUrl, join(directory, 'release'))
   await verifyMegatron030(page, baseUrl)
   await checkOverflow(page, 1440)
+  await page.goto(baseUrl)
+  const mcpApp = await preparePreview(page)
+  await verifyMcpInventory(page, mcpApp)
+  await verifyMcpWhatsNew(mcpApp)
+  await verifyMcpManagement(mcpApp)
+  await verifyMcpUsage(page, mcpApp)
   results.push(
-    'Megatron 0.3.0: daily and hourly token details, keyboard focus, What’s New actions, Claude Code Folder switching and recovery, linked skills and scan warnings passed.'
+    'Megatron 0.4.0: MCP inventory, filters, detail, keyboard focus, source reveal, and What’s New destinations passed.'
+  )
+  results.push(
+    'Megatron 0.3.0: daily and hourly token details, keyboard focus, Claude Code Folder switching and recovery, linked skills and scan warnings passed.'
   )
   results.push(
     'Megatron 0.2.0: unsupported update state and automatic-check switch, welcome replay by keyboard, stale-skill markers and tooltip, plugin contents, Resident tax 200K scale caption, Claude app chats folded and opened by keyboard in Cost and History without scratch paths, the estimated-lineage cost caveat, and folder narrowing passed.'
@@ -131,13 +147,13 @@ try {
   assert.ok(await windowsPanel.isVisible())
   assert.equal(
     await page.locator('.release-status strong').textContent(),
-    'Megatron 0.3.0'
+    'Megatron 0.4.0'
   )
   assert.equal(
     await windowsPanel
       .getByRole('link', { name: 'Download for Windows' })
       .getAttribute('href'),
-    'https://github.com/Megatron-HQ/Megatron/releases/download/v0.3.0/megatron-0.3.0-setup.exe'
+    'https://github.com/Megatron-HQ/Megatron/releases/download/v0.4.0/megatron-0.4.0-setup.exe'
   )
   assert.equal(
     await windowsPanel.locator('.install-size').textContent(),
@@ -202,6 +218,7 @@ try {
     await verifyFeatureLinks(page)
     await verifyAnalyticsDeck(page)
     await checkOverflow(page, width)
+    await verifyMcpLayout(page, frame)
     for (const panel of [
       'Activity',
       'History',
@@ -209,6 +226,7 @@ try {
       'Cost',
       'Models',
       'Skills',
+      'MCP servers',
       'Resident tax'
     ]) {
       await selectPanel(frame, panel)
@@ -272,7 +290,7 @@ try {
     }
   }
   results.push(
-    'All seven Usage views and the analytics card stack at 375/768/1024/1440px: no page overflow; in-place or full-screen analytics as the column allows, scaled-to-fit app, mobile expansion and navigation passed.'
+    'All eight Usage views and the analytics card stack at 375/768/1024/1440px passed, including responsive layouts, full-screen opening and scaled app navigation.'
   )
 
   const motionPage = await context.newPage()

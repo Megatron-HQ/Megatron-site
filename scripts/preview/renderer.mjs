@@ -11,9 +11,9 @@ const APP_BRAND_COMPONENT = 'components/AppBrand.tsx'
 const APP_BRAND_ASSET = 'build/icon-source/icon.svg'
 const PATCHES = [
   {
-    path: 'src/shared/usage-projects.ts',
+    path: 'src/shared/project-identity.ts',
     description:
-      'Use an explicit TypeScript import extension so the browser adapter and Node regression tests share the upstream project grouping helpers.'
+      'Use an explicit TypeScript import extension so sample tests can use the desktop project identity helper.'
   },
   {
     path: 'src/shared/whats-new.ts',
@@ -37,6 +37,11 @@ const PATCHES = [
   },
   {
     path: 'src/renderer/src/views/PluginInventory.tsx',
+    description:
+      'An inactive embedded frame must not autofocus and scroll the landing page on load.'
+  },
+  {
+    path: 'src/renderer/src/views/McpInventory.tsx',
     description:
       'An inactive embedded frame must not autofocus and scroll the landing page on load.'
   }
@@ -99,7 +104,7 @@ export function applyBrowserPatch(path, contents) {
       throw new Error(`Upstream integration seam changed: ${path}`)
     text = text.replace(needle, replacement)
   }
-  if (path === 'src/shared/usage-projects.ts') {
+  if (path === 'src/shared/project-identity.ts') {
     replace("from './project-path'", "from './project-path.ts'")
   } else if (path === 'src/shared/whats-new.ts') {
     replace("from './ipc'", "from './ipc.ts'")
@@ -116,7 +121,7 @@ export function applyBrowserPatch(path, contents) {
     )
     replace(
       '  const nextToastId = useRef(0)',
-      '  const nextToastId = useRef(0)\n  usePreviewNavigation(setSection, setUsagePanel, {\n    selectSkillSource: handleFilterChange,\n    selectPluginScope: handlePluginFilterChange\n  })'
+      "  const nextToastId = useRef(0)\n  usePreviewNavigation(setSection, setUsagePanel, {\n    selectSkillSource: handleFilterChange,\n    selectPluginScope: handlePluginFilterChange,\n    selectMcpInventory: () => handleMcpFilterChange({ kind: 'all' }),\n    selectMcpServer: openMcpDetailFromUsage\n  })"
     )
   } else
     // The guard sits after the active-element check so a pending Back focus

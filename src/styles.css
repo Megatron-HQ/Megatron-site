@@ -2360,7 +2360,11 @@ h2 {
     width: calc(100% - 24px);
     padding: 13px;
   }
-  .preview-tab,
+  .preview-tab {
+    gap: 5px;
+    padding-inline: 9px;
+    white-space: nowrap;
+  }
   .install-tab {
     padding-inline: 12px;
   }

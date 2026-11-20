@@ -75,10 +75,12 @@ export async function preparePreview(page) {
 
 export async function openSkill(app, name = 'code-review') {
   await app.getByRole('button', { name: 'Search skills', exact: false }).click()
-  await app.getByPlaceholder('Search skills, plugins, projects...').fill(name)
+  await app
+    .getByPlaceholder('Search skills, plugins, MCP servers, projects...')
+    .fill(name)
   await app.getByRole('option').filter({ hasText: name }).first().waitFor()
   await app
-    .getByPlaceholder('Search skills, plugins, projects...')
+    .getByPlaceholder('Search skills, plugins, MCP servers, projects...')
     .press('Enter')
   await app.getByRole('button', { name: 'View files', exact: true }).waitFor()
 }

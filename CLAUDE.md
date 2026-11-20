@@ -1,6 +1,6 @@
 # Megatron website
 
-The product website and landing page for Megatron, a local-first desktop control center for Claude Code skills, plugins, and usage.
+The product website and landing page for Megatron, a local-first desktop control center for Claude Code skills, plugins, MCP servers, and usage.
 
 ## Commands
 

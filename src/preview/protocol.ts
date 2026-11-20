@@ -1,4 +1,6 @@
-export const PREVIEW_SECTIONS = ['skills', 'plugins', 'usage'] as const
+import { MAX_MCP_SERVER_ID_LENGTH } from '../../vendor/megatron/src/shared/ipc.ts'
+
+export const PREVIEW_SECTIONS = ['skills', 'plugins', 'mcp', 'usage'] as const
 export const USAGE_PANELS = [
   'activity',
   'history',
@@ -6,16 +8,18 @@ export const USAGE_PANELS = [
   'cost',
   'models',
   'skills',
+  'mcp',
   'resident-tax'
 ] as const
 
 export type PreviewSection = (typeof PREVIEW_SECTIONS)[number]
 export type PreviewPanel = (typeof USAGE_PANELS)[number]
-export type PreviewTarget = 'global' | 'project' | 'plugin' | 'user'
+export type PreviewTarget = 'all' | 'global' | 'project' | 'plugin' | 'user'
 
 const SECTION_TARGETS: Record<PreviewSection, readonly PreviewTarget[]> = {
   skills: ['global', 'project', 'plugin'],
   plugins: ['user', 'project'],
+  mcp: ['all'],
   usage: []
 }
 
@@ -60,6 +64,7 @@ export type PreviewCommand =
       section: PreviewSection
       panel?: PreviewPanel
       target?: PreviewTarget
+      serverId?: string
     }
   | { type: 'megatron-preview:reset' }
   | { type: 'megatron-preview:inventory-change'; action: InventoryChange }
@@ -74,6 +79,15 @@ export function parsePreviewCommand(value: unknown): PreviewCommand | null {
       : null
   if (message.type !== 'megatron-preview:navigate') return null
   if (!PREVIEW_SECTIONS.includes(message.section as PreviewSection)) return null
+  if (
+    message.serverId !== undefined &&
+    (message.section !== 'mcp' ||
+      message.target !== undefined ||
+      typeof message.serverId !== 'string' ||
+      message.serverId.length === 0 ||
+      message.serverId.length > MAX_MCP_SERVER_ID_LENGTH)
+  )
+    return null
   if (
     message.target !== undefined &&
     !SECTION_TARGETS[message.section as PreviewSection].includes(
@@ -90,6 +104,9 @@ export function parsePreviewCommand(value: unknown): PreviewCommand | null {
   return {
     type: message.type,
     section: message.section as PreviewSection,
+    ...(typeof message.serverId === 'string'
+      ? { serverId: message.serverId }
+      : {}),
     ...(message.target !== undefined
       ? { target: message.target as PreviewTarget }
       : {}),

@@ -57,7 +57,7 @@ const INVENTORY_FOCUS_SOURCE = `  const focusShownRows = useEffectEvent(() => {
   })
 `
 
-for (const view of ['SkillInventory', 'PluginInventory']) {
+for (const view of ['SkillInventory', 'PluginInventory', 'McpInventory']) {
   test(`${view} skips first-row focus while an embedded frame is inactive`, async () => {
     const { applyBrowserPatch } = await tooling()
     const patched = applyBrowserPatch(

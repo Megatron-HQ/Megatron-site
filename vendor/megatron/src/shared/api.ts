@@ -8,6 +8,12 @@ import type {
   GrantChangeResult,
   OpenSkillMetaResult,
   OpenSkillResult,
+  McpActionResult,
+  McpConnectionCheckResult,
+  McpDeclarationRef,
+  McpServerDetail,
+  McpServerList,
+  McpUsageStats,
   PluginActionInput,
   PluginUpdateProgress,
   PluginActionResult,
@@ -49,6 +55,15 @@ export interface Api {
   openExternal: (url: string) => Promise<void>
   listPlugins: () => Promise<PluginRow[]>
   getPluginDetail: (name: string, marketplace: string) => Promise<PluginDetailResult | null>
+  listMcpServers: () => Promise<McpServerList>
+  getMcpServerDetail: (id: string) => Promise<McpServerDetail | null>
+  revealMcpSource: (id: string, path: string) => Promise<boolean>
+  checkMcpConnections: (projectPath?: string) => Promise<McpConnectionCheckResult>
+  getInitialMcpCheckConfirmed: () => boolean
+  confirmMcpCheck: () => Promise<void>
+  removeMcpServer: (ref: McpDeclarationRef) => Promise<McpActionResult>
+  logoutMcpServer: (ref: McpDeclarationRef) => Promise<McpActionResult>
+  resetMcpProjectChoices: (projectPath: string) => Promise<McpActionResult>
   enablePlugin: (input: PluginActionInput) => Promise<PluginActionResult>
   disablePlugin: (input: PluginActionInput) => Promise<PluginActionResult>
   updatePlugin: (input: PluginActionInput) => Promise<PluginActionResult>
@@ -60,6 +75,7 @@ export interface Api {
   getUsageCalendar: (year: number) => Promise<UsageCalendar>
   getUsageDay: (date: string) => Promise<UsageDayDetails>
   getUsageSkillInvocations: (input: SkillInvocationSliceInput) => Promise<SkillInvocationRecord[]>
+  getUsageMcp: () => Promise<McpUsageStats>
   getContextBaseline: () => Promise<ContextBaselineResult>
   getRecordedRequest: () => Promise<RecordedRequest | null>
   getInitialSection: () => AppSection

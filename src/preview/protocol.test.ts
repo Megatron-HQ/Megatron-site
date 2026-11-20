@@ -8,7 +8,8 @@ test('feature links retain their source or scope when crossing the preview bound
     ['skills', 'project'],
     ['skills', 'plugin'],
     ['plugins', 'user'],
-    ['plugins', 'project']
+    ['plugins', 'project'],
+    ['mcp', 'all']
   ]) {
     const command = { type: 'megatron-preview:navigate', section, target }
     assert.deepEqual(parsePreviewCommand(command), command)
@@ -102,6 +103,32 @@ test('Tokens deep links navigate only within Usage', async () => {
   }
   assert.deepEqual(parsePreviewCommand(command), command)
   assert.equal(parsePreviewCommand({ ...command, section: 'skills' }), null)
+})
+
+test('MCP inventory and MCP Usage have distinct preview destinations', async () => {
+  const { parsePreviewCommand } = await protocol()
+  const navigate = { type: 'megatron-preview:navigate' }
+  const inventory = { ...navigate, section: 'mcp' }
+  const usage = { ...navigate, section: 'usage', panel: 'mcp' }
+  assert.deepEqual(parsePreviewCommand(inventory), inventory)
+  assert.deepEqual(parsePreviewCommand(usage), usage)
+  assert.equal(parsePreviewCommand({ ...inventory, panel: 'mcp' }), null)
+})
+
+test('MCP detail handoff is allowed only for the inventory section', async () => {
+  const { parsePreviewCommand } = await protocol()
+  const command = {
+    type: 'megatron-preview:navigate',
+    section: 'mcp',
+    serverId: 'configured:workspace-docs'
+  }
+  assert.deepEqual(parsePreviewCommand(command), command)
+  assert.equal(parsePreviewCommand({ ...command, section: 'usage' }), null)
+  assert.equal(parsePreviewCommand({ ...command, serverId: 123 }), null)
+  assert.equal(
+    parsePreviewCommand({ ...command, serverId: 'a'.repeat(1025) }),
+    null
+  )
 })
 
 async function protocol() {

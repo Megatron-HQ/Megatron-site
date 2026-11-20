@@ -16,13 +16,17 @@ export function sendPreviewMessage(message: Record<string, unknown>): void {
 export function forwardUnhandledEscape(): () => void {
   function forwardEscape(event: KeyboardEvent): void {
     if (event.key !== 'Escape') return
+    const mcpBack = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Back to MCP servers"]'
+    )
     const appHandlesEscape =
       document.querySelector(
         '[role="dialog"], [role="alertdialog"], [role="listbox"], tbody button[aria-pressed="true"], button[aria-label="Back to skills"], button[aria-label="Back to skill details"]'
       ) !== null
     queueMicrotask(() => {
-      if (!event.defaultPrevented && !appHandlesEscape)
-        sendPreviewMessage({ type: 'megatron-preview:escape' })
+      if (event.defaultPrevented || appHandlesEscape) return
+      if (mcpBack) mcpBack.click()
+      else sendPreviewMessage({ type: 'megatron-preview:escape' })
     })
   }
   document.addEventListener('keydown', forwardEscape)
@@ -35,8 +39,14 @@ export function usePreviewNavigation(
   filters: {
     selectSkillSource: (filter: SourceFilter) => void
     selectPluginScope: (filter: PluginFilter) => void
+    selectMcpInventory: () => void
+    selectMcpServer: (id: string) => void
   }
 ): void {
+  const selectMcpServer = useEffectEvent(async (id: string) => {
+    const detail = await window.api.getMcpServerDetail(id)
+    if (detail) filters.selectMcpServer(id)
+  })
   const selectTarget = useEffectEvent(
     (section: PreviewSection, target: string) => {
       if (
@@ -51,6 +61,8 @@ export function usePreviewNavigation(
         filters.selectPluginScope({
           kind: target === 'project' ? 'projects' : 'user'
         })
+      else if (section === 'mcp' && target === 'all')
+        filters.selectMcpInventory()
     }
   )
   useEffect(() => {
@@ -72,6 +84,15 @@ export function usePreviewNavigation(
             detail: command.action
           })
         )
+        return
+      }
+      if (command.serverId) {
+        void selectMcpServer(command.serverId).catch(() => {
+          sendPreviewMessage({
+            type: 'megatron-preview:notice',
+            message: 'The sample server could not be loaded.'
+          })
+        })
         return
       }
       setSection(command.section)

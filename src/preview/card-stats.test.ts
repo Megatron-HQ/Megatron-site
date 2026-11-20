@@ -21,6 +21,7 @@ test('cards follow the analytics list order', () => {
       'history',
       'models',
       'skills',
+      'mcp',
       'resident-tax'
     ]
   )
@@ -64,6 +65,7 @@ test('card figures match the 30-day sample the opened views load', () => {
     overview.skills.last30d.invocationCount.toLocaleString()
   )
   assert.equal(figures['resident-tax'], '32k')
+  assert.equal(figures.mcp, '17')
 })
 
 test('every card carries a drawable chart', () => {

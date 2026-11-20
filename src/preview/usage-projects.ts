@@ -6,6 +6,12 @@ import type {
   UsageOverview
 } from '../../vendor/megatron/src/shared/ipc'
 import {
+  primaryUsageProject,
+  readProjectIdentity,
+  usageProjectOwner,
+  type ProjectIdentity
+} from '../../vendor/megatron/src/shared/project-identity.ts'
+import {
   normalizeProjectPath,
   isWithinProjectPath
 } from '../../vendor/megatron/src/shared/project-path.ts'
@@ -15,15 +21,26 @@ import {
   groupProjectSpending,
   groupProjectTokens,
   isClaudeAppScratchPath,
-  primaryUsageProject,
-  usageProjectOwner,
   type UsageProject,
   type UsageProjectCatalog,
   type UsageProjectLocation
 } from '../../vendor/megatron/src/shared/usage-projects.ts'
-import { SAMPLE_CLAUDE_APP_CHATS, type SampleState } from './fixtures.ts'
+import {
+  SAMPLE_CLAUDE_APP_CHATS,
+  SAMPLE_HOME,
+  windowsPath,
+  type SampleState
+} from './fixtures.ts'
 
 const MAXIMUM_LOCATION_ID_LENGTH = 128
+
+export function sampleSkillProject(path: string, state: SampleState): string {
+  const identity = readProjectIdentity(
+    { locations: [], claudeCodeFolders: [windowsPath(SAMPLE_HOME, '.claude')] },
+    state.worktrees
+  )
+  return identity.checkoutOf(path)?.path ?? path
+}
 
 export function reconcileSampleUsageProjects(
   previous: UsageProjectLocation[],
@@ -151,6 +168,7 @@ export function sampleClaudeAppChat(
 
 export function sampleUsageProjectCatalog(
   locations: UsageProjectLocation[],
+  claudeCodeFolders: string[],
   chatOf: (path: string) => ClaudeAppChat | null = () => null
 ): UsageProjectCatalog {
   const roots = locations.filter((location) => !location.linkedTo)
@@ -178,6 +196,7 @@ export function sampleUsageProjectCatalog(
   }
   return structuredClone({
     locations,
+    claudeCodeFolders,
     projects: labels
       .map(({ location, parts, depth }) => ({
         ...(chatOf(location.path) ? { chat: chatOf(location.path)! } : {}),
@@ -238,7 +257,7 @@ export function unlinkSampleUsageProject(
 ): UsageProjectLocation[] {
   const location = locations.find((entry) => entry.id === id)
   if (!location) throw new RangeError('Unknown project location.')
-  if (location.inferredOwner || !location.linkedTo)
+  if (location.worktree || location.inferredOwner || !location.linkedTo)
     throw new RangeError('Choose a confirmed linked location to separate.')
   return locations.map((entry) => {
     const result = { ...entry }
@@ -247,80 +266,73 @@ export function unlinkSampleUsageProject(
   })
 }
 
-function groupActivity(
-  window: ActivityWindow,
-  locations: UsageProjectLocation[]
-) {
+function groupActivity(window: ActivityWindow, identity: ProjectIdentity) {
   return {
     ...window,
-    byProject: groupProjectCounts(window.byProject, locations),
+    byProject: groupProjectCounts(window.byProject, identity),
     byDay: window.byDay.map((day) => ({
       ...day,
-      byProject: groupProjectCounts(day.byProject, locations)
+      byProject: groupProjectCounts(day.byProject, identity)
     }))
   }
 }
 
-function groupCost(
-  window: CostWindow,
-  locations: UsageProjectLocation[]
-): CostWindow {
+function groupCost(window: CostWindow, identity: ProjectIdentity): CostWindow {
   return {
     ...window,
-    byProject: groupProjectSpending(window.byProject, locations),
+    byProject: groupProjectSpending(window.byProject, identity),
     byDay: window.byDay.map((day) => ({
       ...day,
-      byProject: groupProjectSpending(day.byProject, locations)
+      byProject: groupProjectSpending(day.byProject, identity)
     })),
     byHourChronological: window.byHourChronological.map((hour) => ({
       ...hour,
-      byProject: groupProjectSpending(hour.byProject, locations)
+      byProject: groupProjectSpending(hour.byProject, identity)
     }))
   }
 }
 
 export function groupSampleUsageOverview(
   overview: UsageOverview,
-  locations: UsageProjectLocation[]
+  identity: ProjectIdentity
 ): UsageOverview {
   const grouped = structuredClone(overview)
   for (const key of ['last24h', 'last7d', 'last30d'] as const) {
     Object.assign(
       grouped.activity[key],
-      groupActivity(grouped.activity[key], locations)
+      groupActivity(grouped.activity[key], identity)
     )
     grouped.tokens[key].byProject = groupProjectTokens(
       grouped.tokens[key].byProject,
-      locations
+      identity
     )
     grouped.tokens[key].trend = grouped.tokens[key].trend.map((bucket) => ({
       ...bucket,
-      byProject: groupProjectTokens(bucket.byProject, locations)
+      byProject: groupProjectTokens(bucket.byProject, identity)
     }))
-    if (grouped.cost)
-      grouped.cost[key] = groupCost(grouped.cost[key], locations)
+    if (grouped.cost) grouped.cost[key] = groupCost(grouped.cost[key], identity)
   }
   grouped.activity.last24h.hourlyTrend =
     grouped.activity.last24h.hourlyTrend.map((hour) => ({
       ...hour,
-      byProject: groupProjectCounts(hour.byProject, locations)
+      byProject: groupProjectCounts(hour.byProject, identity)
     }))
   return grouped
 }
 
 export function groupSampleCalendar(
   calendar: UsageCalendar,
-  locations: UsageProjectLocation[]
+  identity: ProjectIdentity
 ): UsageCalendar {
   return {
     ...calendar,
-    byProject: groupProjectMonths(calendar.byProject, locations)
+    byProject: groupProjectMonths(calendar.byProject, identity)
   }
 }
 
 export function groupSampleDay(
   day: UsageDayDetails,
-  locations: UsageProjectLocation[]
+  identity: ProjectIdentity
 ): UsageDayDetails {
-  return { ...day, byProject: groupProjectCounts(day.byProject, locations) }
+  return { ...day, byProject: groupProjectCounts(day.byProject, identity) }
 }

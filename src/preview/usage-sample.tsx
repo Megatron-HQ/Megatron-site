@@ -33,6 +33,8 @@ function UsagePanelSample({
     useState<SkillStatsWindowKey>(DEFAULT_WINDOW)
   const [skillWindow, setSkillWindow] =
     useState<SkillStatsWindowKey>(DEFAULT_WINDOW)
+  const [mcpWindow, setMcpWindow] =
+    useState<SkillStatsWindowKey>(DEFAULT_WINDOW)
   const [calendarYear, setCalendarYear] = useState(initialYear)
   const [invocations, setInvocations] =
     useState<SkillInvocationSelection | null>(null)
@@ -65,6 +67,14 @@ function UsagePanelSample({
         onModelWindowChange={setModelWindow}
         skillWindow={skillWindow}
         onSkillWindowChange={changeSkillWindow}
+        mcpWindow={mcpWindow}
+        onMcpWindowChange={setMcpWindow}
+        onSelectMcpServer={(serverId) =>
+          sendPreviewMessage({
+            type: 'megatron-preview:open-mcp-server',
+            serverId
+          })
+        }
         onShowInvocations={(selection) => {
           setInvocations(selection)
           setInvocationsOpen(true)

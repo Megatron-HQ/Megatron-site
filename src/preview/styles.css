@@ -17,6 +17,14 @@ body {
   color: var(--foreground);
 }
 
+/* The app hides Transport at narrow widths. Clip multi-scope source labels inside their cell. */
+#root:has(nav[aria-label='MCP server filters'])
+  tr[data-row-key]
+  td:nth-child(2)
+  > .truncate {
+  display: block;
+}
+
 .preview-error {
   display: flex;
   flex-direction: column;
