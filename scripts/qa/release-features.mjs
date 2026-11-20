@@ -91,8 +91,22 @@ async function verifyStaleSkills(app) {
     .locator('tbody tr')
     .filter({ has: app.getByText('qa-audit', { exact: true }) })
     .locator('svg.text-dormant')
+  // A scroll after pointer entry dismisses the tooltip. Reveal the marker
+  // first and move the pointer off it while the final scroll event settles.
+  await marker.scrollIntoViewIfNeeded()
+  await marker.page().mouse.move(0, 0)
+  await marker.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      )
+  )
   await marker.hover()
-  await app.getByText(STALE_TOOLTIP, { exact: true }).first().waitFor()
+  await app
+    .getByText(STALE_TOOLTIP, { exact: true })
+    .filter({ visible: true })
+    .first()
+    .waitFor()
 }
 
 async function verifyPluginContents(app, directory) {
