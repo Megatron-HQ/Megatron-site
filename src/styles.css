@@ -440,7 +440,7 @@ h1 {
   width: 15px;
   height: 15px;
 }
-.preview-tab:hover,
+.preview-tab:where(:not(:disabled)):hover,
 .install-tab:hover {
   background: #33352e;
   color: #fff;
@@ -449,6 +449,9 @@ h1 {
 .install-tab[aria-selected='true'] {
   background: var(--color-lime);
   color: var(--color-ink);
+}
+.preview-tab:disabled:not([aria-selected='true']) {
+  opacity: 0.55;
 }
 .preview-tab:focus-visible,
 .install-tab:focus-visible {
@@ -499,6 +502,12 @@ h1 {
   flex-wrap: wrap;
   gap: 8px;
 }
+.preview-motion-note {
+  margin: 4px 0 0;
+  color: #b4b6aa;
+  font-size: 10px;
+  line-height: 1.4;
+}
 .preview-host-button {
   border: 1px solid #515449;
   border-radius: 4px;
@@ -544,6 +553,9 @@ h1 {
   border: 0;
   transform: scale(var(--preview-scale, 1));
   transform-origin: 0 0;
+}
+.preview-frame[inert] {
+  pointer-events: none;
 }
 .preview-tour-indicator {
   position: absolute;

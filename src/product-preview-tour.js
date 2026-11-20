@@ -1,9 +1,8 @@
-const MIN_VISIBLE_RATIO = 0.6
+const AUTOPLAY_VISIBLE_RATIO = 0.25
 const CURSOR_MOVE_MS = 560
 const CLICK_FEEDBACK_MS = 280
 const SCROLL_MS = 1000
 const SCROLL_INSET = 24
-const VISITOR_INPUT_EVENTS = ['pointerdown', 'keydown', 'wheel', 'click']
 
 const ease = (progress) => progress * progress * (3 - 2 * progress)
 const interpolate = (from, to, progress) => from + (to - from) * progress
@@ -124,6 +123,26 @@ function* walkthrough(app, reducedMotion, visual) {
     yield { duration: dwell }
   }
 
+  // Starting a tour after a manual visit can leave a dialog over the app.
+  const dialogs = app.querySelectorAll(
+    '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]'
+  )
+  for (const dialog of [...dialogs].reverse()) {
+    if (!dialog.isConnected || dialog.dataset.state !== 'open') continue
+    const close = dialog.querySelector('[data-slot="dialog-close"]')
+    if (close) yield* click(close, CLICK_FEEDBACK_MS)
+    else {
+      dialog.dispatchEvent(
+        new app.defaultView.KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true
+        })
+      )
+      yield { duration: CLICK_FEEDBACK_MS }
+    }
+  }
+
   yield* click(rail('Skills'), 500)
   yield* click(back('Back to skill details'), 500)
   yield* click(back('Back to skills'), 500)
@@ -145,30 +164,44 @@ function* walkthrough(app, reducedMotion, visual) {
   yield* click(usagePanel('Cost'), 2800)
 }
 
-export function mountPreviewTour({ frame, viewport, button, indicator }) {
+export function mountPreviewTour({
+  frame,
+  viewport,
+  button,
+  indicator,
+  motionNote,
+  onPlaybackChange
+}) {
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
   const cursor = indicator.querySelector('[data-preview-tour-cursor]')
-  let autoStartPending = !motionPreference.matches
+  let mode = motionPreference.matches ? 'manual' : 'awaiting-autoplay'
   let hasPlayed = false
   let inView = false
-  let inputDocument
-  let inputListeners
-  let ready = false
+  let canAutoplay = false
+  let manualPreviewSeen = false
+  let appDocument = null
   let animationFrame = null
   let run = null
 
   function canPlay() {
-    return inView && !document.hidden
+    return appDocument !== null && inView && !document.hidden
   }
 
   function render() {
-    button.disabled = !ready
-    button.toggleAttribute('data-playing', Boolean(run))
-    button.textContent = run
+    const playing = mode === 'playing'
+    const explainReducedMotion = motionPreference.matches && !playing
+    button.disabled = !appDocument && !playing
+    button.toggleAttribute('data-playing', playing)
+    button.textContent = playing
       ? 'Take control'
       : hasPlayed
         ? 'Replay walkthrough'
         : 'Play walkthrough'
+    motionNote.hidden = !explainReducedMotion
+    if (explainReducedMotion)
+      button.setAttribute('aria-describedby', motionNote.id)
+    else button.removeAttribute('aria-describedby')
+    onPlaybackChange(playing)
     renderIndicator()
   }
 
@@ -195,44 +228,58 @@ export function mountPreviewTour({ frame, viewport, button, indicator }) {
     indicator.style.transform = `translate(${x}px, ${y}px)`
   }
 
-  function stop() {
-    autoStartPending = false
+  function pause() {
     if (animationFrame !== null) window.cancelAnimationFrame(animationFrame)
     animationFrame = null
+    if (run) run.lastTimestamp = null
+  }
+
+  function takeControl() {
+    // Link navigation can begin before the observer reports the latest scroll.
+    const bounds = viewport.getBoundingClientRect()
+    manualPreviewSeen =
+      !document.hidden && bounds.top < window.innerHeight && bounds.bottom > 0
+    mode = 'manual'
+    pause()
     run = null
     render()
   }
 
   function start() {
-    if (!ready || !inputDocument) return
-    autoStartPending = false
+    if (!appDocument) return
+    mode = 'playing'
     hasPlayed = true
-    const reducedMotion = motionPreference.matches
-    const visual = { point: null, highlight: false }
-    run = {
-      reducedMotion,
-      visual,
-      steps: walkthrough(inputDocument, reducedMotion, visual),
-      effect: null,
-      elapsed: 0,
-      lastTimestamp: null
-    }
     render()
     schedule()
   }
 
+  function createRun() {
+    const reducedMotion = motionPreference.matches
+    const visual = { point: null, highlight: false }
+    return {
+      reducedMotion,
+      visual,
+      steps: walkthrough(appDocument, reducedMotion, visual),
+      effect: null,
+      elapsed: 0,
+      lastTimestamp: null
+    }
+  }
+
   function schedule() {
-    if (run && canPlay() && animationFrame === null)
+    if (mode === 'playing' && canPlay() && animationFrame === null)
       animationFrame = window.requestAnimationFrame(tick)
   }
 
   function tick(timestamp) {
     animationFrame = null
-    if (!run || !canPlay()) return
+    if (mode !== 'playing' || !canPlay()) return
+    run ??= createRun()
     if (!run.effect) {
       const next = run.steps.next()
       if (next.done) {
-        stop()
+        run.steps = walkthrough(appDocument, run.reducedMotion, run.visual)
+        schedule()
         return
       }
       run.effect = next.value
@@ -250,59 +297,55 @@ export function mountPreviewTour({ frame, viewport, button, indicator }) {
 
   function updateVisibility() {
     if (!canPlay()) {
-      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame)
-      animationFrame = null
-      if (run) run.lastTimestamp = null
+      pause()
       renderIndicator()
-    } else if (ready && autoStartPending) start()
+    } else if (mode === 'awaiting-autoplay' && canAutoplay) start()
     else schedule()
   }
 
-  function takeOverOnInput(event) {
-    if (event.isTrusted && (run || autoStartPending)) stop()
-  }
-
   new IntersectionObserver(
-    ([entry]) => {
-      inView =
-        entry.isIntersecting && entry.intersectionRatio >= MIN_VISIBLE_RATIO
+    (entries) => {
+      for (const entry of entries) {
+        inView = entry.isIntersecting && entry.intersectionRatio > 0
+        canAutoplay =
+          inView && entry.intersectionRatio >= AUTOPLAY_VISIBLE_RATIO
+        if (mode === 'manual' && !document.hidden) {
+          if (inView) manualPreviewSeen = true
+          else if (manualPreviewSeen && !motionPreference.matches)
+            mode = 'awaiting-autoplay'
+        }
+      }
       updateVisibility()
     },
-    { threshold: MIN_VISIBLE_RATIO }
+    { threshold: [0, AUTOPLAY_VISIBLE_RATIO] }
   ).observe(viewport)
   document.addEventListener('visibilitychange', updateVisibility)
   motionPreference.addEventListener('change', (event) => {
-    if (event.matches && (autoStartPending || (run && !run.reducedMotion)))
-      stop()
+    if (event.matches && mode !== 'manual') takeControl()
+    else render()
   })
   button.addEventListener('click', () => {
-    if (run) stop()
+    if (mode === 'playing') takeControl()
     else start()
   })
 
   return {
     ready() {
-      const app = frame.contentDocument
-      if (!app) return
-      if (inputDocument !== app) {
-        inputListeners?.abort()
-        inputListeners = new AbortController()
-        inputDocument = app
-        for (const event of VISITOR_INPUT_EVENTS)
-          app.addEventListener(event, takeOverOnInput, {
-            capture: true,
-            passive: true,
-            signal: inputListeners.signal
-          })
+      const nextDocument = frame.contentDocument
+      if (appDocument !== nextDocument) {
+        pause()
+        run = null
+        appDocument = nextDocument
       }
-      ready = true
       render()
       updateVisibility()
     },
-    stop,
-    unavailable() {
-      ready = false
-      stop()
+    takeControl,
+    waitForSample() {
+      pause()
+      run = null
+      appDocument = null
+      render()
     }
   }
 }

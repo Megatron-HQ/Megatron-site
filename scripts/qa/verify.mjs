@@ -371,15 +371,16 @@ try {
   )
 
   const normalContext = await browser.newContext({
-    viewport: { width: 1440, height: 1000 },
+    viewport: { width: 1440, height: 600 },
     reducedMotion: 'no-preference'
   })
   const normalPage = await normalContext.newPage()
   await prepare(normalPage)
   await verifyWalkthrough(normalPage)
   results.push(
-    'Preview walkthrough autoplay, all four sections, visibility pause, pointer takeover, replay, reset and reduced motion passed.'
+    'Preview walkthrough looping, all four sections, page scrolling, visibility pause, explicit takeover, return, link arrivals, reset and reduced motion passed.'
   )
+  await normalPage.setViewportSize({ width: 1440, height: 1000 })
   await normalPage.goto(baseUrl)
   await preparePreview(normalPage)
   await normalPage.locator('[data-preview-frame]').scrollIntoViewIfNeeded()

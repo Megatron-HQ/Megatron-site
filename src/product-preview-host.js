@@ -39,7 +39,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
   root.innerHTML = `<dialog open role="region" aria-label="Interactive Megatron preview" class="preview-host" data-preview-host data-ready="false" data-expanded="false">
     <div class="preview-toolbar">
       <div class="preview-switcher" role="tablist" aria-label="Product preview sections">${SECTIONS.map((section) => `<button type="button" id="preview-${section.id}" role="tab" aria-selected="${section.id === 'skills'}" aria-controls="preview-screen" tabindex="${section.id === 'skills' ? 0 : -1}" class="preview-tab" data-preview-section="${section.id}"><i data-lucide="${section.icon}" aria-hidden="true"></i>${section.label}</button>`).join('')}</div>
-      <div class="preview-host-actions"><span class="preview-sample-label">INTERACTIVE / SAMPLE DATA</span><div class="preview-host-controls"><button type="button" class="preview-host-button" data-preview-tour disabled>Play walkthrough</button><button type="button" class="preview-host-button" data-preview-reset>Reset sample</button><button type="button" class="preview-host-button" data-preview-expand aria-expanded="false">Expand preview</button></div></div>
+      <div class="preview-host-actions"><span class="preview-sample-label">INTERACTIVE / SAMPLE DATA</span><div><div class="preview-host-controls"><button type="button" class="preview-host-button" data-preview-tour disabled>Play walkthrough</button><button type="button" class="preview-host-button" data-preview-reset>Reset sample</button><button type="button" class="preview-host-button" data-preview-expand aria-expanded="false">Expand preview</button></div><p class="preview-motion-note" id="preview-motion-note" hidden>Reduced motion is enabled</p></div></div>
     </div>
     <div class="preview-viewport" id="preview-screen" role="tabpanel" aria-labelledby="preview-skills"><iframe class="preview-frame" data-preview-frame src="${previewUrl.href}" title="Megatron app preview with sample data" referrerpolicy="no-referrer"></iframe><div class="preview-tour-indicator" data-preview-tour-indicator aria-hidden="true" hidden><span class="preview-tour-cursor" data-preview-tour-cursor><i data-lucide="mouse-pointer-2"></i></span></div></div>
     <p class="preview-host-notice" data-preview-notice role="status" aria-live="polite">Loading the Megatron preview…</p>
@@ -50,11 +50,17 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
   const viewport = root.querySelector('.preview-viewport')
   const notice = root.querySelector('[data-preview-notice]')
   const expandButton = root.querySelector('[data-preview-expand]')
+  const tabs = [...root.querySelectorAll('[data-preview-section]')]
   const tour = mountPreviewTour({
     frame,
     viewport,
     button: root.querySelector('[data-preview-tour]'),
-    indicator: root.querySelector('[data-preview-tour-indicator]')
+    indicator: root.querySelector('[data-preview-tour-indicator]'),
+    motionNote: root.querySelector('#preview-motion-note'),
+    onPlaybackChange(playing) {
+      frame.inert = playing
+      for (const tab of tabs) tab.disabled = playing
+    }
   })
   let ready = false
   let pendingCommand = null
@@ -77,7 +83,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
 
   function selectSection(section) {
     if (!SECTIONS.some((item) => item.id === section)) return
-    for (const tab of root.querySelectorAll('[data-preview-section]')) {
+    for (const tab of tabs) {
       const selected = tab.dataset.previewSection === section
       tab.setAttribute('aria-selected', String(selected))
       tab.tabIndex = selected ? 0 : -1
@@ -92,7 +98,6 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     frame.contentWindow.postMessage(command, previewUrl.origin)
   }
   function navigate(section, panel, target) {
-    tour.stop()
     selectSection(section)
     send({
       type: 'megatron-preview:navigate',
@@ -100,6 +105,11 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       ...(panel ? { panel } : {}),
       ...(target ? { target } : {})
     })
+  }
+  function waitForSample() {
+    ready = false
+    host.dataset.ready = 'false'
+    tour.waitForSample()
   }
   function setExpanded(expanded) {
     if (expanded === (host.dataset.expanded === 'true')) return
@@ -159,7 +169,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
     )
       notice.textContent = message.message
     else if (message.type === 'megatron-preview:error') {
-      tour.unavailable()
+      waitForSample()
       notice.textContent =
         'The sample preview could not load. Use Reset sample to try again.'
     } else if (
@@ -170,12 +180,12 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
   })
   root.addEventListener('click', (event) => {
     const button = event.target.closest('button')
-    if (!button || !root.contains(button)) return
+    if (!button || button.disabled || !root.contains(button)) return
     if (button.dataset.previewSection) navigate(button.dataset.previewSection)
     else if (button.hasAttribute('data-preview-reset')) {
-      tour.stop()
       if (ready) send({ type: 'megatron-preview:reset' })
       else frame.src = previewUrl.href
+      waitForSample()
     } else if (button.hasAttribute('data-preview-expand'))
       setExpanded(host.dataset.expanded !== 'true')
   })
@@ -186,10 +196,13 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
       return
     }
     const tab = event.target.closest('[role="tab"]')
-    if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+    if (
+      !tab ||
+      tab.disabled ||
+      !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
+    )
       return
     event.preventDefault()
-    const tabs = [...root.querySelectorAll('[role="tab"]')]
     const index = tabs.indexOf(tab)
     const next =
       event.key === 'Home'
@@ -225,6 +238,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
         target
       })
       if (!command) throw new RangeError('Unknown preview destination.')
+      tour.takeControl()
       navigate(section, undefined, target)
       revealDestination(section)
     },
@@ -235,7 +249,7 @@ export function mountProductDemo(root, { onSampleTheme } = {}) {
         serverId
       })
       if (!command?.serverId) throw new RangeError('Unknown sample MCP server.')
-      tour.stop()
+      tour.takeControl()
       send(command)
       revealDestination('mcp')
     }
