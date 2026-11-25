@@ -49,6 +49,19 @@ export async function verifyFaq(page, screenshotDirectory) {
     await summaries.filter({ visible: true }).count(),
     await questions.count()
   )
+  for (const [question, answer] of [
+    [
+      'Will my activity history stay available?',
+      /archives skill invocations and MCP tool calls/
+    ],
+    ['How is resident context measured?', /choose Run \/context/]
+  ]) {
+    const text = await questions
+      .filter({ has: page.getByText(question, { exact: true }) })
+      .locator('p')
+      .textContent()
+    assert.match(text.trim().replace(/\s+/g, ' '), answer)
+  }
   const fewer = page.getByRole('button', {
     name: 'Fewer questions',
     exact: true

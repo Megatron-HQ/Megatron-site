@@ -4,7 +4,7 @@ The website embeds Megatron's React renderer. Skills, Plugins, MCP servers, all 
 
 ## Renderer authority
 
-- The v0.4.0 snapshot pins app revision `08a04051443b5350cc84df4739608a71419248e3`. The manifest records the shared API, project identity, release catalog, sidebar icon, license, and renderer source hashes.
+- The v0.5.1 snapshot pins app revision `f48cacf8d0e27523c31c48841a183fd9d081e2e7`. The manifest records the shared API, project identity, release catalog, sidebar icon, license, and renderer source hashes.
 - The integration patches scope Tailwind discovery, connect trusted host navigation, protect focus in the three inventories, and make the project identity and What's New helpers usable by Node tests.
 - `src/preview/runtime.ts` installs `window.api` before any app module evaluates, as the desktop preload does. Since 0.2.0 the onboarding dialog reads `window.api.platform` at import time.
 - 0.2.0 sample behavior: the updater reports `unsupported`, so Check now stays disabled while the automatic-check switch works for the session; the first-run welcome stays closed on load and opens from Settings → Show welcome (or `?scenario=onboarding`); the sample home is `C:\Users\demo`, outside every sample project, so folder suggestions appear; stale-skill markers, plugin contents, and non-overlapping grants follow the desktop rules over sample data.
@@ -21,7 +21,7 @@ The preview retains an 860px minimum client width and scales the desktop layout 
 
 The v0.3.0 sample groups model and project tokens in each chart interval. A partial daily bucket uses its clipped time boundaries, while an empty interval stays unavailable. The browser shows the bundled What's New card from Settings and includes a linked skill with its target. Claude Code Folder choices switch between synthetic inventories and usage histories. Reset restores the default folder. The `worktree` sample credits a recorded worktree session to the Canonical Checkout and retains the recorded worktree path in the skill's history. The [November 18 sync review](upstream-sync-2026-11-18.md) records the upstream range and verification.
 
-The MCP inventory, detail, and Usage view read the same fictional tool-call records. Sample checks and declaration changes are held in memory. The full preview opens MCP details from Usage, while the landing analytics card passes a server ID to the full preview. The receiving frame checks that the ID resolves to a sample server. See the [v0.4.0 sync record](upstream-sync-2026-11-19.md).
+The MCP inventory, detail, and Usage view share fictional archived and live tool-call records. The browser adapter stores redacted declaration summaries and simulates check and sign-in results in memory. A connector discovered during a general check is eligible for both sample sign-in actions even with zero calls. The full preview opens MCP details from Usage, and the landing analytics card passes a validated sample server ID to the full preview. See the [v0.5.1 sync record](upstream-sync-2026-11-25.md).
 
 The first November 5 snapshot imported `da368fe` through the existing sync tool. The
 actual renderer handles inventory-only query invalidation, deleted-selection
@@ -104,7 +104,7 @@ See the [detailed upstream review](upstream-sync-2026-11-04.md) for this run's e
 
 Local evidence lives in `.qa/app-reference/`, `.qa/results.json`, and `.visual-verify/`. Screenshot baselines are local and ignored. Reference comparison excludes operating-system window chrome and verifies the listed Windows renderer states; it is not a native macOS test. Native actions remain deliberately simulated in the browser.
 
-Current verification is recorded in the [v0.4.0 sync record](upstream-sync-2026-11-19.md#verification). The [November 5 review](upstream-sync-2026-11-05.md#verification) records the earlier integration.
+Current verification is recorded in the [v0.5.1 sync record](upstream-sync-2026-11-25.md#verification). The [v0.4.0 sync record](upstream-sync-2026-11-19.md#verification) records the earlier integration.
 
 ## Maintenance
 

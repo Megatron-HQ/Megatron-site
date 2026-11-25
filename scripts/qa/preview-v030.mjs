@@ -2,26 +2,64 @@ import assert from 'node:assert/strict'
 import { waitForFocus } from './interactions.mjs'
 import {
   dismissWithEscape,
+  openSettings,
   openSkill,
   preparePreview,
   selectPanel
 } from './preview.mjs'
 
 export async function openClaudeFolderSettings(app) {
-  await app.getByRole('button', { name: 'Settings', exact: true }).click()
-  const settings = app.getByRole('dialog', { name: 'Settings', exact: true })
+  const settings = await openSettings(app, 'Claude Code')
   await settings.getByRole('list', { name: 'Claude Code folders' }).waitFor()
   return settings
 }
 
 export async function openWhatsNew(app) {
-  const settings = await openClaudeFolderSettings(app)
+  const settings = await openSettings(app, 'About')
   await settings
-    .getByRole('button', { name: "What's new", exact: true })
+    .getByRole('button', { name: 'View', exact: true })
     .press('Enter')
   const card = app.getByRole('region', { name: "What's new in Megatron" })
   await card.waitFor()
   return card
+}
+
+export async function verifyHistoricalWhatsNew(page, baseUrl) {
+  const url = new URL(baseUrl)
+  for (const [release, index, destination] of [
+    ['0.4.1', 0, 'settings'],
+    ['0.4.1', 1, 'plugins'],
+    ['0.4.0', 1, 'usage'],
+    ['0.3.0', 1, 'settings']
+  ]) {
+    url.searchParams.set('scenario', `whats-new-${release}`)
+    await page.goto(url.href)
+    const app = await preparePreview(page)
+    const news = app.getByRole('region', { name: "What's new in Megatron" })
+    for (let step = 0; step < index; step++)
+      await news
+        .getByRole('button', { name: 'Next', exact: true })
+        .press('Enter')
+    await news
+      .getByRole('button', { name: 'Show me', exact: true })
+      .press('Enter')
+    await news.waitFor({ state: 'hidden' })
+    if (destination === 'settings') {
+      await app.getByRole('list', { name: 'Claude Code folders' }).waitFor()
+    } else if (destination === 'plugins') {
+      await app
+        .getByRole('button', { name: 'All Plugins', exact: true })
+        .waitFor()
+    } else {
+      const panel = app
+        .getByRole('navigation', { name: 'Usage panels' })
+        .getByRole('button', { name: 'MCP servers', exact: true })
+      await panel.waitFor()
+      assert.equal(await panel.getAttribute('aria-current'), 'page')
+    }
+  }
+  await page.goto(baseUrl)
+  await preparePreview(page)
 }
 
 export async function openLinkedSkill(app) {

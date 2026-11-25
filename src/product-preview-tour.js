@@ -156,6 +156,13 @@ function* walkthrough(app, reducedMotion, visual) {
 
   yield* click(rail('MCP servers'), 650)
   yield* click(back('Back to MCP servers'), 500)
+  yield* click(app.querySelector('button[aria-label="Add server"]'), 1350)
+  yield* click(
+    app.querySelector(
+      '[role="dialog"][data-state="open"] [data-slot="dialog-close"]'
+    ),
+    450
+  )
   yield* click(row('workspace-docs'), 1450)
   if (back('Back to MCP servers')) yield* scrollDetails(2000, 'Tools used')
 

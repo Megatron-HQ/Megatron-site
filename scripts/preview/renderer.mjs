@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { copyFile, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
@@ -142,7 +142,7 @@ export async function syncRenderer(sourceRoot, destination = SNAPSHOT_ROOT) {
     )
   const renderer = await filesWithin(join(source, 'src/renderer/src'))
   const shared = await filesWithin(join(source, 'src/shared'))
-  const paths = [
+  const paths = new Set([
     ...renderer
       .filter((path) => !/\.test\./.test(path))
       .map((path) => `src/renderer/src/${path}`),
@@ -152,23 +152,36 @@ export async function syncRenderer(sourceRoot, destination = SNAPSHOT_ROOT) {
     ...(renderer.includes(APP_BRAND_COMPONENT) ? [APP_BRAND_ASSET] : []),
     'src/preload/index.d.ts',
     'LICENSE'
-  ]
-  const upstreamHashes = {}
-  for (const path of paths) {
-    const contents = await readFile(join(source, path))
-    upstreamHashes[path] = hash(contents)
-    const output = join(target, path)
-    await mkdir(dirname(output), { recursive: true })
-    if (PATCHES.some((patch) => patch.path === path))
-      await writeFile(output, applyBrowserPatch(path, contents))
-    else await copyFile(join(source, path), output)
-  }
+  ])
   const revision = execFileSync('git', ['-C', source, 'rev-parse', 'HEAD'], {
     encoding: 'utf8'
   }).trim()
   const version = JSON.parse(
     await readFile(join(source, 'package.json'), 'utf8')
   ).version
+  const hasManifest = await readFile(join(target, 'provenance.json')).then(
+    () => true,
+    (error) => {
+      if (error.code === 'ENOENT') return false
+      throw error
+    }
+  )
+  const previous = hasManifest ? await verifySnapshot(target) : null
+  const upstreamHashes = {}
+  const snapshot = new Map()
+  for (const path of paths) {
+    const contents = await readFile(join(source, path))
+    upstreamHashes[path] = hash(contents)
+    snapshot.set(path, applyBrowserPatch(path, contents))
+  }
+  for (const [path, contents] of snapshot) {
+    const output = join(target, path)
+    await mkdir(dirname(output), { recursive: true })
+    await writeFile(output, contents)
+  }
+  for (const path of Object.keys(previous?.files ?? {})) {
+    if (!paths.has(path)) await unlink(join(target, path))
+  }
   await writeManifest(target, {
     upstream: 'Megatron-HQ/Megatron',
     revision,

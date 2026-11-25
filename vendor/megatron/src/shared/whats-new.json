@@ -1,4 +1,62 @@
 {
+  "0.5.0": {
+    "title": "Manage MCP servers",
+    "highlights": [
+      {
+        "title": "Uses outlive Claude Code's cleanup",
+        "body": "Uses, Last used and MCP call counts now keep counting after Claude Code deletes old transcripts, and name the date they count from.",
+        "action": {
+          "kind": "section",
+          "section": "skills"
+        }
+      },
+      {
+        "title": "Spot MCP servers that can't start",
+        "body": "An MCP server whose command, such as uvx, isn't installed on this computer now gets a notice in its details.",
+        "action": {
+          "kind": "section",
+          "section": "mcp"
+        }
+      },
+      {
+        "title": "Add MCP servers in Megatron",
+        "body": "Fill in a server's configuration or paste its JSON, then choose where Claude Code saves it.",
+        "action": {
+          "kind": "section",
+          "section": "mcp"
+        }
+      },
+      {
+        "title": "Sign in to MCP servers",
+        "body": "Log in on a remote server or a claude.ai connector opens Claude Code's sign-in in a terminal window; Megatron then checks it worked.",
+        "action": {
+          "kind": "section",
+          "section": "mcp"
+        }
+      }
+    ]
+  },
+  "0.4.1": {
+    "title": "Settings and folder access",
+    "highlights": [
+      {
+        "title": "Settings, reorganized",
+        "body": "Settings opens larger, with General, Claude Code, Updates and About panes. Add or revoke project folders right in its Claude Code pane.",
+        "action": {
+          "kind": "settings",
+          "pane": "claude-code"
+        }
+      },
+      {
+        "title": "Add project folders where you need them",
+        "body": "Plugins and MCP servers that need a project folder offer Add folder…, which opens inside it. Hide a folder Megatron can't use, such as one you deleted.",
+        "action": {
+          "kind": "section",
+          "section": "plugins"
+        }
+      }
+    ]
+  },
   "0.4.0": {
     "title": "MCP servers",
     "highlights": [
@@ -44,7 +102,8 @@
         "title": "Read Claude Code from any folder",
         "body": "Megatron now follows CLAUDE_CONFIG_DIR, and Settings lets you choose the Claude Code folder yourself, with your profile folders suggested.",
         "action": {
-          "kind": "settings"
+          "kind": "settings",
+          "pane": "claude-code"
         }
       }
     ]

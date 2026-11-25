@@ -110,6 +110,13 @@ const TOKEN_ONLY_SAMPLE_OUTPUT = 9000
 export const CONTEXT_LIMIT = 2666
 export const HOUR_MS = 60 * 60 * 1000
 export const DAY_MS = 24 * HOUR_MS
+const SAMPLE_TRANSCRIPT_COVERAGE_DAYS = 45
+
+export function sampleTranscriptCoverage(now: Date): string {
+  return new Date(
+    now.getTime() - SAMPLE_TRANSCRIPT_COVERAGE_DAYS * DAY_MS
+  ).toISOString()
+}
 
 export function samplePluginInstallPath(
   name: string,
@@ -258,6 +265,7 @@ export interface SampleEvent {
   // Set when this session's fork lineage lost a shared ancestor, so its cost
   // is the head's own counter rather than the exact branch sum.
   costEstimated?: boolean
+  transcriptPruned?: true
 }
 
 export interface SampleState {
@@ -265,8 +273,10 @@ export interface SampleState {
   skills: SkillRow[]
   plugins: PluginRow[]
   folders: AllowedPathRow[]
+  hiddenProjects: string[]
   projects: ProjectFolder[]
   events: SampleEvent[]
+  archivedInvocations: SampleEvent[]
   history: UsageDayDetails[]
   prompts?: SamplePrompt[]
   promptCoverage?: HistoryCoverage
@@ -727,8 +737,26 @@ export function createSampleState(now: Date): SampleState {
     skills,
     plugins,
     events,
+    archivedInvocations: [
+      {
+        at: new Date(now.getTime() - 3 * DAY_MS).toISOString(),
+        sessionId: 'archived-review',
+        project: SAMPLE_PROJECT,
+        prompt: '',
+        bareSlash: false,
+        skillName: 'code-review',
+        trigger: 'user_invoked',
+        model: '',
+        effort: 'not_recorded',
+        outputTokens: 0,
+        tokens: null,
+        costCents: null,
+        transcriptPruned: true
+      }
+    ],
     history: sampleHistory(now),
     folders: [{ path: SAMPLE_PARENT, granted_at: timestamp }],
+    hiddenProjects: [],
     projects: [
       { path: SAMPLE_PARENT, kind: 'folder', status: 'available' },
       { path: SAMPLE_PROJECT, kind: 'repository', status: 'available' },

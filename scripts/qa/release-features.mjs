@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
-import { preparePreview, selectPanel } from './preview.mjs'
+import { openSettings, preparePreview, selectPanel } from './preview.mjs'
 
 // Megatron 0.2.0 additions exercised through the embedded renderer: Settings
 // updates and welcome replay, stale-skill markers, plugin contents, folder
@@ -13,13 +13,8 @@ async function activate(control) {
   await control.press('Enter')
 }
 
-async function openSettings(app) {
-  await app.getByRole('button', { name: 'Settings', exact: true }).click()
-  return app.getByRole('dialog', { name: 'Settings', exact: true })
-}
-
 async function verifyUpdatesAndWelcome(app, page, directory) {
-  const settings = await openSettings(app)
+  const settings = await openSettings(app, 'Updates')
   await settings
     .getByText('Update checks run in installed builds only.', { exact: true })
     .waitFor()
@@ -43,9 +38,10 @@ async function verifyUpdatesAndWelcome(app, page, directory) {
         .contentDocument.querySelector('#auto-update-check')
         ?.getAttribute('aria-checked') === 'false'
   )
-  await settings.getByText('Megatron v0.4.0', { exact: true }).waitFor()
   await settings.screenshot({ path: join(directory, 'settings-updates.png') })
 
+  await settings.getByRole('tab', { name: 'About', exact: true }).press('Enter')
+  await settings.getByText('v0.5.1', { exact: true }).waitFor()
   await activate(
     settings.getByRole('button', { name: 'Show welcome', exact: true })
   )
@@ -58,6 +54,7 @@ async function verifyUpdatesAndWelcome(app, page, directory) {
   await welcome
     .getByText('Here’s what Megatron found', { exact: true })
     .waitFor()
+  await welcome.getByText('MCP servers', { exact: true }).waitFor()
   await welcome.screenshot({ path: join(directory, 'welcome-overview.png') })
   await activate(welcome.getByRole('button', { name: 'Next', exact: true }))
   await welcome
@@ -152,8 +149,7 @@ async function verifyPluginContents(app, directory) {
 }
 
 async function verifyFolderNarrowing(app) {
-  await openSettings(app)
-  await app.getByRole('button', { name: 'Manage…', exact: true }).click()
+  const settings = await openSettings(app, 'Claude Code')
   await app
     .getByRole('button', { name: 'Revoke access to Dev', exact: true })
     .click()
@@ -171,7 +167,9 @@ async function verifyFolderNarrowing(app) {
     0,
     'Narrowing replaces the parent grant with the kept repository.'
   )
-  await app.getByRole('button', { name: 'Done', exact: true }).click()
+  await settings
+    .getByRole('button', { name: 'Close', exact: true })
+    .press('Enter')
 }
 
 const CHAT_GROUP = /^Claude app chats \(\d+\)$/

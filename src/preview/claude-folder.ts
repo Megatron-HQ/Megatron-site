@@ -95,6 +95,9 @@ export function createAlternateSample(initial: SampleState): SampleState {
   )
   sample.plugins = []
   sample.events = sample.events.filter((event) => event.project === API_PROJECT)
+  sample.archivedInvocations = sample.archivedInvocations.filter(
+    (event) => event.project === API_PROJECT
+  )
   sample.prompts = sample.prompts?.filter(
     (prompt) => prompt.project === API_PROJECT
   )

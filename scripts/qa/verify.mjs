@@ -12,11 +12,15 @@ import { verifyPreviewStates } from './states.mjs'
 import { verifyInventoryChanges } from './inventory.mjs'
 import { verifyUsageProjects } from './usage-projects.mjs'
 import { verifyAnalyticsDeck, verifyAnimatedDeck } from './analytics-deck.mjs'
-import { verifyPreviewSettings } from './preview-settings.mjs'
+import {
+  verifyFolderAccessAndWelcome,
+  verifyPreviewSettings
+} from './preview-settings.mjs'
 import { verifyReleaseFeatures } from './release-features.mjs'
-import { verifyMegatron030 } from './preview-v030.mjs'
+import { verifyHistoricalWhatsNew, verifyMegatron030 } from './preview-v030.mjs'
 import {
   verifyMcpInventory,
+  verifyMcpAddAndSignIn,
   verifyMcpLayout,
   verifyMcpManagement,
   verifyMcpUsage,
@@ -34,6 +38,8 @@ import {
 } from './faq.mjs'
 
 const baseUrl = process.env.MEGATRON_TEST_URL || 'http://127.0.0.1:5173/'
+const windowsInstallerUrl =
+  'https://github.com/Megatron-HQ/Megatron/releases/download/v0.5.1/megatron-0.5.1-setup.exe'
 const directory = join(resolve(import.meta.dirname, '../..'), '.qa')
 await mkdir(directory, { recursive: true })
 const browser = await launchBrowser()
@@ -94,9 +100,11 @@ try {
   const desktopDeck = await verifyAnalyticsDeck(page)
   assert.ok(desktopDeck.checkedInline, 'Desktop opens analytics in place.')
   await verifyPreviewSettings(page)
+  await verifyFolderAccessAndWelcome(page, baseUrl)
   await checkOverflow(page, 1440)
   await verifyReleaseFeatures(page, baseUrl, join(directory, 'release'))
   await verifyMegatron030(page, baseUrl)
+  await verifyHistoricalWhatsNew(page, baseUrl)
   await checkOverflow(page, 1440)
   await page.goto(baseUrl)
   const mcpApp = await preparePreview(page)
@@ -104,8 +112,10 @@ try {
   await verifyMcpWhatsNew(mcpApp)
   await verifyMcpManagement(mcpApp)
   await verifyMcpUsage(page, mcpApp)
+  await page.goto(baseUrl)
+  await verifyMcpAddAndSignIn(await preparePreview(page))
   results.push(
-    'Megatron 0.4.0: MCP inventory, filters, detail, keyboard focus, source reveal, and What’s New destinations passed.'
+    'Megatron 0.5.1: MCP inventory, keyboard focus, folder access, four-area welcome, and current and historical What’s New destinations passed.'
   )
   results.push(
     'Megatron 0.3.0: daily and hourly token details, keyboard focus, Claude Code Folder switching and recovery, linked skills and scan warnings passed.'
@@ -151,13 +161,13 @@ try {
   assert.ok(await windowsPanel.isVisible())
   assert.equal(
     await page.locator('.release-status strong').textContent(),
-    'Megatron 0.4.0'
+    'Megatron 0.5.1'
   )
   assert.equal(
     await windowsPanel
       .getByRole('link', { name: 'Download for Windows' })
       .getAttribute('href'),
-    'https://github.com/Megatron-HQ/Megatron/releases/download/v0.4.0/megatron-0.4.0-setup.exe'
+    windowsInstallerUrl
   )
   assert.equal(
     await windowsPanel.locator('.install-size').textContent(),
@@ -334,10 +344,13 @@ try {
   await noScriptPage.goto(baseUrl)
   await verifyFaqWithoutJavaScript(noScriptPage)
   assert.ok(await noScriptPage.locator('#install-commands').isVisible())
-  assert.ok(
-    await noScriptPage
-      .getByRole('link', { name: 'Download for Windows' })
-      .isVisible()
+  const noScriptWindowsDownload = noScriptPage.getByRole('link', {
+    name: 'Download for Windows'
+  })
+  assert.ok(await noScriptWindowsDownload.isVisible())
+  assert.equal(
+    await noScriptWindowsDownload.getAttribute('href'),
+    windowsInstallerUrl
   )
   assert.equal(
     await noScriptPage.locator('[data-install-tabs]').isVisible(),

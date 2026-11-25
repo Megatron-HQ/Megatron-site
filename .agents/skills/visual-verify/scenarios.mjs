@@ -1,13 +1,16 @@
 import { focusForTooltip } from '../../../scripts/qa/interactions.mjs'
 import { openAnalyticsView } from '../../../scripts/qa/analytics-deck.mjs'
 import {
+  openMcpAddDialog,
   openMcpCheckDialog,
   openMcpInventory,
   openMcpServer
 } from '../../../scripts/qa/preview-mcp.mjs'
 import {
+  measureResidentTax,
   openSkill,
   openResidentCategory,
+  openSettings,
   preparePreview,
   selectPanel
 } from '../../../scripts/qa/preview.mjs'
@@ -131,15 +134,8 @@ export const scenarios = [
     await app.getByRole('radio', { name: 'Dark', exact: true }).press('Enter')
   }),
   sample('product-demo-project-folders', 'demo-skills', async (app) => {
-    await app.getByRole('button', { name: 'Settings', exact: true }).click()
-    await app.getByRole('button', { name: 'Manage…', exact: true }).focus()
-    await app
-      .getByRole('button', { name: 'Manage…', exact: true })
-      .press('Enter')
-    await app
-      .getByRole('dialog')
-      .getByText('Project Folders', { exact: true })
-      .waitFor()
+    const settings = await openSettings(app, 'Claude Code')
+    await settings.getByRole('list', { name: 'Project folders' }).waitFor()
   }),
   sample('product-demo-plugins', 'demo-plugins', async (app) => {
     await app.getByRole('button', { name: 'Plugins', exact: true }).click()
@@ -159,6 +155,13 @@ export const scenarios = [
   sample('product-demo-mcp', 'demo-mcp', openMcpInventory),
   sample('product-demo-mcp-detail', 'demo-mcp', openMcpServer),
   sample('product-demo-mcp-check', 'demo-mcp', openMcpCheckDialog),
+  sample('product-demo-mcp-add', 'demo-mcp', openMcpAddDialog),
+  sample('product-demo-resident-tax-consent', 'demo-usage', async (app) => {
+    await selectPanel(app, 'Resident tax', { measure: false })
+    await app
+      .getByRole('button', { name: 'Run /context', exact: true })
+      .waitFor()
+  }),
   sample('product-demo-mcp-remove-confirm', 'demo-mcp', async (app) => {
     await openMcpServer(app, 'build-preview')
     await app.getByRole('button', { name: 'Remove', exact: true }).click()
@@ -244,16 +247,18 @@ export const scenarios = [
       url.searchParams.set('scenario', scenario)
       await page.goto(url.href)
       await product(page, async (app) => {
+        let surface = app
         if (scenario.startsWith('projects'))
-          await app
-            .getByRole('button', { name: 'Settings', exact: true })
-            .click()
+          surface = await openSettings(app, 'Claude Code')
         else if (scenario === 'recorded-empty')
           await openResidentCategory(app, 'System prompt')
         else await selectPanel(app, 'Resident tax')
-        await app
-          .getByText(message, { exact: typeof message === 'string' })
-          .waitFor()
+        const status = surface.getByText(message, {
+          exact: typeof message === 'string'
+        })
+        await status.waitFor()
+        if (scenario.startsWith('projects'))
+          await status.scrollIntoViewIfNeeded()
       })
     }
   })),
@@ -381,8 +386,10 @@ export const scenarios = [
         await target.focus()
         await target.press('Enter')
         await app.locator('header').getByText(panel, { exact: true }).waitFor()
-        if (panel === 'Resident tax')
+        if (panel === 'Resident tax') {
+          await measureResidentTax(app)
           await app.getByText('Global baseline', { exact: true }).waitFor()
+        }
       }
     )
   ),

@@ -90,9 +90,10 @@ export async function verifyMcpInventory(page, app) {
 
 export async function verifyMcpWhatsNew(app) {
   const highlights = [
-    'See every MCP server in one place',
-    'Track MCP calls in Usage',
-    'Remove MCP servers and sign out'
+    "Uses outlive Claude Code's cleanup",
+    "Spot MCP servers that can't start",
+    'Add MCP servers in Megatron',
+    'Sign in to MCP servers'
   ]
   for (const [index, title] of highlights.entries()) {
     const news = await openWhatsNew(app)
@@ -105,13 +106,11 @@ export async function verifyMcpWhatsNew(app) {
       .getByRole('button', { name: 'Show me', exact: true })
       .press('Enter')
     await news.waitFor({ state: 'hidden' })
-    if (index === 1) {
-      const selected = app
-        .getByRole('navigation', { name: 'Usage panels' })
-        .getByRole('button', { name: 'MCP servers', exact: true })
-      await selected.waitFor()
-      assert.equal(await selected.getAttribute('aria-current'), 'page')
-    } else await mcpServerRow(app).waitFor()
+    if (index === 0)
+      await app
+        .getByRole('button', { name: 'All Skills', exact: true })
+        .waitFor()
+    else await mcpServerRow(app).waitFor()
   }
 }
 
@@ -123,6 +122,77 @@ export async function openMcpCheckDialog(app) {
   const dialog = app.getByRole('dialog', { name: 'Check MCP connections?' })
   await dialog.waitFor()
   return dialog
+}
+
+export async function openMcpAddDialog(app) {
+  await openMcpInventory(app)
+  await app
+    .getByRole('button', { name: 'Add server', exact: true })
+    .press('Enter')
+  const dialog = app.getByRole('dialog', {
+    name: 'Add MCP server',
+    exact: true
+  })
+  await dialog.waitFor()
+  return dialog
+}
+
+export async function verifyMcpAddAndSignIn(app) {
+  const dialog = await openMcpAddDialog(app)
+  await dialog
+    .getByRole('button', { name: 'Paste JSON', exact: true })
+    .press('Enter')
+  await dialog.getByLabel('Server JSON', { exact: true }).fill(
+    JSON.stringify({
+      'sample-web': {
+        type: 'http',
+        url: 'https://example.invalid/mcp',
+        headers: { Authorization: 'Bearer ${TOKEN}' }
+      }
+    })
+  )
+  await dialog
+    .getByRole('button', { name: 'Fill form', exact: true })
+    .press('Enter')
+  assert.equal(
+    await dialog.getByLabel('Server name', { exact: true }).inputValue(),
+    'sample-web'
+  )
+  await dialog
+    .getByRole('button', { name: 'Add server', exact: true })
+    .press('Enter')
+  await dialog.waitFor({ state: 'hidden' })
+  await app.getByText('sample-web', { exact: true }).first().waitFor()
+  await app
+    .getByText(/example\.invalid/)
+    .first()
+    .waitFor()
+
+  await app
+    .getByRole('button', { name: 'Back to MCP servers', exact: true })
+    .press('Enter')
+  const generalCheck = await openMcpCheckDialog(app)
+  await generalCheck
+    .getByRole('button', { name: 'Check connections', exact: true })
+    .press('Enter')
+  await mcpServerRow(app, 'claude.ai Tasks')
+    .getByText('Needs sign-in')
+    .waitFor()
+  await openMcpServer(app, 'claude.ai Tasks')
+  await app.getByRole('button', { name: 'Log in', exact: true }).press('Enter')
+  await app.getByText(/use Check sign-in to finish the sample/).waitFor()
+  await app
+    .getByRole('button', { name: 'Check sign-in', exact: true })
+    .press('Enter')
+  await app.getByText('Connected', { exact: true }).first().waitFor()
+
+  await app
+    .getByRole('button', { name: 'Back to MCP servers', exact: true })
+    .press('Enter')
+  await openMcpServer(app, 'build-preview')
+  await app
+    .getByText('This sample cannot find sample-build on PATH.', { exact: true })
+    .waitFor()
 }
 
 export async function verifyMcpManagement(app) {

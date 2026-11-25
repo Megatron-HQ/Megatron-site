@@ -114,6 +114,15 @@ export async function verifyWalkthrough(page) {
   await viewport.scrollIntoViewIfNeeded()
   await cursor.waitFor()
   await app.getByText('MCP servers · 2', { exact: true }).waitFor()
+  const mcpAdd = app.getByRole('dialog', {
+    name: 'Add MCP server',
+    exact: true
+  })
+  await mcpAdd.waitFor()
+  await mcpAdd
+    .getByRole('button', { name: 'Paste JSON', exact: true })
+    .waitFor()
+  await mcpAdd.waitFor({ state: 'hidden' })
   await app
     .getByRole('heading', { name: 'workspace-docs', exact: true })
     .waitFor()

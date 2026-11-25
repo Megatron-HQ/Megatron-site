@@ -30,7 +30,7 @@ The interactive preview runs on session-only sample data in the browser. The pub
 
 - Visitors can explore Skills, Plugins, MCP servers, and all eight Usage panels in Megatron's renderer, pinned in `vendor/megatron/`. A typed adapter in `src/preview/` supplies the isolated iframe with synthetic data and simulates native actions.
 - The primary install path is the packaged release. On Apple silicon Macs, Homebrew (`megatron-hq/tap/megatron`) comes first. The curl installer (`install.sh`, served only as the `releases/latest/download` asset) installs to `/Applications` or `~/Applications` and updates an existing copy when run again. A browser-downloaded zip requires Open Anyway on first launch because the build is ad-hoc signed and distributed without notarization. 64-bit Windows uses an unsigned per-user installer, so SmartScreen may warn. Running from source (`git clone`, `npm ci`, `npm run dev`) requires macOS or Windows, Node.js 22.x, npm, and Git. Plugin actions also need the `claude` CLI on PATH.
-- On first launch, a short welcome shows what Megatron reads, what it found, and which folders Claude Code has used, and offers folder grants; it can be replayed from Settings. Users change grants under Settings → Project folders → Manage. Grants never overlap: a parent absorbs repositories granted inside it, and a parent can be narrowed.
+- On first launch, a short welcome shows Skills, Plugins, MCP servers, Usage, and folder grants. Replay it from Settings → About. Manage grants in Settings → Claude Code → Project folders, or add a folder from Plugins or MCP. A parent grant includes its descendants and can be narrowed.
 - Installed builds check GitHub for a newer release 10 seconds after launch and every 6 hours. Turn automatic checks off in Settings → Updates. Both platforms download updates from GitHub in the background and install them on Restart to update or quit. Mac copies on 0.2.1 or older need one manual update with `brew upgrade --cask megatron` or the curl command.
 - Megatron reads one Claude Code Folder at a time. It follows `CLAUDE_CONFIG_DIR` or the folder selected in Settings. Each folder has its own index and local usage archive. Project access is granted separately.
 - Analytics depend on local history and transcripts. Worktree sessions and skill invocations contribute to their Canonical Checkout, which owns the project's skills.
@@ -49,7 +49,7 @@ The interactive preview runs on session-only sample data in the browser. The pub
 - Megatron runs alongside Claude Code and does not replace it. It does not edit skill definitions or run skill scripts. Plugin management is a separate capability that goes through Claude Code's own CLI.
 - Megatron is free and open source under MIT today. Future pricing is undecided: make no commitments either way.
 - Platforms are Apple silicon macOS and 64-bit Windows. On Windows, use a Claude Code installation on Windows itself.
-- Distribution: v0.4.0 was published on November 19, 2026, with an Apple silicon zip and a 64-bit Windows installer. The `Megatron-HQ/homebrew-tap` cask tracks each published release through the app's release workflow. Check GitHub Releases and the tap before changing version, platform, or signing claims.
+- Distribution: v0.5.1 was published on November 25, 2026 (UTC), with an Apple silicon zip and a 64-bit Windows installer. The `Megatron-HQ/homebrew-tap` cask tracks each published release through the app's release workflow. Check GitHub Releases and the tap before changing version, platform, or signing claims.
 - Never describe the app as making no network requests: it checks github.com for updates, and plugin actions and Resident tax run Claude Code's CLI, which may use the network.
 - The vendored renderer is never edited by hand. Updates go through `npm run preview:sync` with recorded provenance.
 - Website measurement is limited to production marketing visits and performance. It collects redacted URLs through Vercel, with browser preview activity excluded from collection.
@@ -65,7 +65,7 @@ The interactive preview runs on session-only sample data in the browser. The pub
 
 ## Evidence on Hand
 
-- **The interactive preview:** Megatron's v0.4.0 renderer (`08a0405`) runs on sample data, including MCP inventories, declarations, connection checks, management actions, and recorded call analytics.
+- **The interactive preview:** Megatron's v0.5.1 renderer (`f48cacf`) uses session-only sample data for MCP Add, connection checks, sign-in, folder access, and archived Skill and tool-call analytics. Resident tax asks before running its first sample measurement.
 - **Open source:** [github.com/Megatron-HQ/Megatron](https://github.com/Megatron-HQ/Megatron) under the MIT license.
 - **App icon:** `public/megatron-icon.png`.
 - **Absent, and must not be invented:** testimonials, customer or company logos, ratings, user or download counts, star counts, benchmarks, savings or performance claims, and press. Figures in the preview and illustrations are samples, not measurements.

@@ -3,14 +3,14 @@ import { usePreviewNavigation } from '@preview/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppRail } from '@/components/AppRail'
 import { CommandPalette } from '@/components/CommandPalette'
-import { ManageFoldersDialog } from '@/components/ManageFoldersDialog'
 import { OnboardingDialog } from '@/components/onboarding/OnboardingDialog'
 import { PluginActionToasts, type PluginActionToast } from '@/components/PluginActionToasts'
 import { PluginSidebar } from '@/components/PluginSidebar'
 import { McpSidebar } from '@/components/McpSidebar'
 import { McpCheckDialog } from '@/components/McpCheckDialog'
 import { ScreenTransition } from '@/components/ScreenTransition'
-import { SettingsDialog } from '@/components/SettingsDialog'
+import { SettingsDialog } from '@/components/settings/SettingsDialog'
+import type { SettingsTarget } from '@/lib/settings-target'
 import { ScanStatusBanner, ScanUpdatingBanner } from '@/components/ScanStatus'
 import { ClaudeFolderBanner } from '@/components/ClaudeFolder'
 import { useScanBanner } from '@/lib/use-scan-banner'
@@ -56,6 +56,7 @@ import type {
   ContextBudget,
   CostWindowKey,
   GrantChangeResult,
+  SettingsPane,
   SkippedGrant,
   SkillStatsWindowKey,
   ThemePreference,
@@ -86,6 +87,7 @@ const DEFAULT_CONTEXT_BUDGET: ContextBudget = {
   userInvocableOnlyCount: 0
 }
 const SUCCESS_TOAST_DURATION_MS = 3_000
+const ACTION_TOAST_DURATION_MS = 12_000
 const MAX_SUCCESS_TOASTS = 3
 
 function App(): React.JSX.Element {
@@ -104,6 +106,7 @@ function App(): React.JSX.Element {
   const [pluginExpandedProjects, setPluginExpandedProjects] = useState(() => new Set(['$projects']))
   const [mcpView, setMcpView] = useState<McpView>({ kind: 'list' })
   const [mcpFilter, setMcpFilter] = useState<McpFilter>({ kind: 'all' })
+  const [mcpAddOpen, setMcpAddOpen] = useState(false)
   const [mcpExpandedProjects, setMcpExpandedProjects] = useState(() => new Set(['$projects']))
   const [mcpCheckConfirmed, setMcpCheckConfirmed] = useState(() =>
     window.api.getInitialMcpCheckConfirmed()
@@ -135,8 +138,10 @@ function App(): React.JSX.Element {
   const [returnMcpId, setReturnMcpId] = useState<string | null>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // App never unmounts, so Settings reopens on the pane it was left on, for this session only.
+  const [settingsPane, setSettingsPane] = useState<SettingsPane>('general')
+  const [settingsTarget, setSettingsTarget] = useState<SettingsTarget | null>(null)
   const [onboardingOpen, setOnboardingOpen] = useState(() => window.api.getInitialOnboarding())
-  const [foldersDialogOpen, setFoldersDialogOpen] = useState(false)
   const [treeWidth, setTreeWidth] = useState(TREE_WIDTH_DEFAULT)
   const [pluginActionToasts, setPluginActionToasts] = useState<PluginActionToast[]>([])
   const whatsNew = useWhatsNew()
@@ -179,6 +184,10 @@ function App(): React.JSX.Element {
   const { data: projectsData } = useQuery({
     queryKey: ['projects'],
     queryFn: () => window.api.listProjects()
+  })
+  const { data: hiddenProjects = [] } = useQuery({
+    queryKey: ['hiddenProjects'],
+    queryFn: () => window.api.listHiddenProjects()
   })
 
   const {
@@ -291,8 +300,8 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
-      // The palette or Settings would stack over onboarding's modal and fight it for focus.
-      if (onboardingOpen) return
+      // The palette or Settings would stack over the active modal and compete for focus.
+      if (onboardingOpen || mcpAddOpen) return
       // `!event.repeat` — a held Cmd+K otherwise toggles the palette on every
       // key-repeat, landing it open or closed at random depending on parity.
       if (event.key === 'k' && (event.metaKey || event.ctrlKey) && !event.repeat) {
@@ -301,6 +310,7 @@ function App(): React.JSX.Element {
       }
       if (event.key === ',' && (event.metaKey || event.ctrlKey) && !event.repeat) {
         event.preventDefault()
+        setSettingsTarget(null)
         setSettingsOpen((open) => !open)
       }
       // The What's new card never takes focus on its own; F6 is how a keyboard user reaches it.
@@ -311,7 +321,7 @@ function App(): React.JSX.Element {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [onboardingOpen])
+  }, [onboardingOpen, mcpAddOpen])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -333,6 +343,25 @@ function App(): React.JSX.Element {
     () => createProjectAvailabilityResolver(projectCatalog, folders),
     [projectCatalog, folders]
   )
+  const selectedMcpProject = mcpFilter.kind === 'projects' ? (mcpFilter.projectPath ?? null) : null
+  const mcpAddProjects = useMemo(() => {
+    const paths = new Map<string, string>()
+    const candidates = [
+      ...folders.map((folder) => folder.path),
+      ...projectCatalog.map((project) => project.path),
+      ...(selectedMcpProject ? [selectedMcpProject] : [])
+    ]
+    for (const path of candidates) {
+      const status = projectAvailability(path)
+      if (
+        (status === undefined || status === 'available') &&
+        folders.some((folder) => isWithinProjectPath(path, folder.path))
+      ) {
+        paths.set(normalizeProjectPath(path), path)
+      }
+    }
+    return [...paths.values()].sort((first, second) => first.localeCompare(second))
+  }, [folders, projectCatalog, projectAvailability, selectedMcpProject])
   const plugins = useMemo(() => pluginsData ?? [], [pluginsData])
   const mcpServers = useMemo(() => mcpData?.servers ?? [], [mcpData])
   const projectLabels = useMemo(
@@ -357,6 +386,7 @@ function App(): React.JSX.Element {
   // Latched: the card waits for the launch scan, but a later rescan must not hide it again.
   if (scanComplete && !firstScanSettled) setFirstScanSettled(true)
   const contextBudget = data?.contextBudget ?? DEFAULT_CONTEXT_BUDGET
+  const usesSince = data?.usesSince ?? null
   const {
     banner: scanBanner,
     summary: scanBannerSummary,
@@ -437,6 +467,19 @@ function App(): React.JSX.Element {
     setMcpBackTarget(backTarget)
     setReturnMcpId(null)
     setMcpView({ kind: 'detail', id })
+  }
+
+  function handleMcpAdded(
+    { serverId, message }: { serverId: string; message: string },
+    projectPath: string | null
+  ): void {
+    void queryClient.invalidateQueries({ queryKey: ['mcp-servers'] })
+    void queryClient.invalidateQueries({ queryKey: ['mcp-detail', serverId] })
+    openMcpDetail(serverId, 'inventory')
+    showPluginActionToast(message, {
+      label: 'Check connection',
+      run: () => requestMcpCheck(projectPath)
+    })
   }
 
   function leaveMcpDetail(): void {
@@ -532,6 +575,7 @@ function App(): React.JSX.Element {
     setReturnSkillId(null)
     setReturnPluginKey(null)
     setReturnMcpId(null)
+    setMcpAddOpen(false)
     setSection(next)
     void window.api.setLastSection(next)
   }
@@ -563,6 +607,17 @@ function App(): React.JSX.Element {
     setView({ kind: 'list' })
   }
 
+  // Without a pane, Settings opens where it was left; a target focuses one group's caption.
+  function openSettings(pane?: SettingsPane, target?: SettingsTarget): void {
+    if (pane) setSettingsPane(pane)
+    setSettingsTarget(target ?? null)
+    setSettingsOpen(true)
+  }
+
+  function manageFolders(): void {
+    openSettings('claude-code', 'project-folders')
+  }
+
   function handleThemeChange(next: ThemePreference): void {
     setThemePreference(next)
     void window.api.setTheme(next)
@@ -574,11 +629,38 @@ function App(): React.JSX.Element {
     queryClient.setQueryData(['folders'], result.folders)
     void queryClient.invalidateQueries({ queryKey: ['skills'] })
     void queryClient.invalidateQueries({ queryKey: ['projects'] })
+    // Picking a hidden folder, or one inside it, shows it again.
+    void queryClient.invalidateQueries({ queryKey: ['hiddenProjects'] })
     return result.skipped
   }
 
-  function handleAddFolders(): Promise<SkippedGrant[]> {
-    return applyGrantChange(window.api.pickAndAddFolders())
+  // A target aims the picker at a folder main listed; main falls back when it can't.
+  function handleAddFolders(target?: string): Promise<SkippedGrant[]> {
+    return applyGrantChange(window.api.pickAndAddFolders(target))
+  }
+
+  // The rows go when the rescan main starts reports back; the toast says where to undo it.
+  async function handleHideFolder(path: string): Promise<void> {
+    queryClient.setQueryData(['hiddenProjects'], await window.api.hideProject(path))
+    if (pluginView.kind === 'detail') {
+      const plugin = plugins.find(
+        (row) => row.name === pluginView.name && row.marketplace === pluginView.marketplace
+      )
+      const hidden = (projectPath: string | null): boolean =>
+        projectPath !== null && isWithinProjectPath(projectPath, path)
+      if (
+        (pluginView.context?.kind === 'project' && hidden(pluginView.context.path)) ||
+        (plugin !== undefined && plugin.installs.every((install) => hidden(install.project_path)))
+      )
+        leavePluginDetail()
+    }
+    showPluginActionToast(
+      `Hid ${resolveProjectLabel(path)}. Show it again from Settings › Project folders.`
+    )
+  }
+
+  async function handleShowFolder(path: string): Promise<void> {
+    queryClient.setQueryData(['hiddenProjects'], await window.api.showProject(path))
   }
 
   function handleNarrowFolder(path: string): Promise<SkippedGrant[]> {
@@ -620,7 +702,7 @@ function App(): React.JSX.Element {
       if (action.section === 'mcp') setMcpView({ kind: 'list' })
       const panel = anchor ? WHATS_NEW_ANCHOR_PANELS[anchor] : null
       if (panel) setUsagePanel(panel)
-    } else if (action.kind === 'settings') setSettingsOpen(true)
+    } else if (action.kind === 'settings') openSettings(action.pane)
     else setPaletteOpen(true)
     if (anchor) whatsNew.startSpotlight(anchor)
   }
@@ -632,17 +714,20 @@ function App(): React.JSX.Element {
     !onboardingOpen &&
     !settingsOpen &&
     !paletteOpen &&
-    !foldersDialogOpen &&
+    !(section === 'mcp' && mcpView.kind === 'list' && mcpAddOpen) &&
     mcpCheckTarget === undefined &&
     !(section === 'usage' && skillInvocationOpen) &&
     pluginActionToasts.length === 0
 
-  function showPluginActionToast(message: string): void {
+  function showPluginActionToast(message: string, action?: PluginActionToast['action']): void {
     const id = nextToastId.current++
-    setPluginActionToasts((toasts) => [...toasts, { id, message }].slice(-MAX_SUCCESS_TOASTS))
-    window.setTimeout(() => {
-      setPluginActionToasts((toasts) => toasts.filter((toast) => toast.id !== id))
-    }, SUCCESS_TOAST_DURATION_MS)
+    setPluginActionToasts((toasts) =>
+      [...toasts, { id, message, action }].slice(-MAX_SUCCESS_TOASTS)
+    )
+    window.setTimeout(
+      () => setPluginActionToasts((toasts) => toasts.filter((toast) => toast.id !== id)),
+      action ? ACTION_TOAST_DURATION_MS : SUCCESS_TOAST_DURATION_MS
+    )
   }
 
   const sidebar =
@@ -694,6 +779,7 @@ function App(): React.JSX.Element {
         <SkillDetail
           skillId={view.skillId}
           summary={skills.find((skill) => skill.id === view.skillId)}
+          usesSince={usesSince}
           onBack={leaveSkillDetail}
           onViewFiles={() => setView({ kind: 'files', skillId: view.skillId })}
           onNavigate={navigateSkillDetail}
@@ -726,12 +812,14 @@ function App(): React.JSX.Element {
             filter.kind === 'project' ? projectAvailability(filter.projectRoot) : undefined
           }
           skills={filteredSkills}
+          usesSince={usesSince}
           loading={!skills.length && !scanComplete}
           filter={filter}
           onSelect={openDetail}
           onOpenSearch={() => setPaletteOpen(true)}
-          onManageFolders={() => setFoldersDialogOpen(true)}
+          onManageFolders={manageFolders}
           onGrantFolder={handleAddFolders}
+          onHideFolder={handleHideFolder}
           restoreFocusId={returnSkillId}
         />
       )
@@ -749,8 +837,11 @@ function App(): React.JSX.Element {
           }
           onBack={leavePluginDetail}
           onViewSkills={handleViewSkillsForPlugin}
+          folders={folders}
           onActionSuccess={showPluginActionToast}
-          onManageFolders={() => setFoldersDialogOpen(true)}
+          onAddFolders={handleAddFolders}
+          onHideFolder={handleHideFolder}
+          onManageFolders={manageFolders}
         />
       ) : pluginsError ? (
         <div
@@ -776,8 +867,12 @@ function App(): React.JSX.Element {
           plugins={filteredPlugins}
           loading={pluginsPending}
           filter={pluginFilter}
+          folders={folders}
           onSelect={(plugin) => openPluginDetail(plugin.name, plugin.marketplace, plugin.context)}
           onOpenSearch={() => setPaletteOpen(true)}
+          onAddFolders={handleAddFolders}
+          onHideFolder={handleHideFolder}
+          onManageFolders={manageFolders}
           restoreFocusKey={returnPluginKey}
         />
       )
@@ -787,7 +882,7 @@ function App(): React.JSX.Element {
           id={mcpView.id}
           summary={mcpServers.find((server) => server.id === mcpView.id)}
           onBack={leaveMcpDetail}
-          canCheckProject={(path) => projectAvailability(path) === 'available'}
+          projectAvailability={projectAvailability}
           onCheckProject={requestMcpCheck}
           checkingProject={typeof mcpCheckingPath === 'string' ? mcpCheckingPath : null}
           projectCheckError={
@@ -796,6 +891,9 @@ function App(): React.JSX.Element {
           onActionSuccess={showPluginActionToast}
           onOpenPlugin={selectPluginFromPalette}
           onServerGone={leaveMcpDetail}
+          onAddFolders={handleAddFolders}
+          onHideFolder={handleHideFolder}
+          onManageFolders={manageFolders}
         />
       ) : mcpError ? (
         <div
@@ -813,6 +911,13 @@ function App(): React.JSX.Element {
         </div>
       ) : (
         <McpInventory
+          addDialog={{
+            projectPath: selectedMcpProject,
+            projects: mcpAddProjects,
+            onOpenChange: setMcpAddOpen,
+            onAdd: (input) => window.api.addMcpServer(input),
+            onAdded: handleMcpAdded
+          }}
           availability={
             mcpFilter.kind === 'projects' && mcpFilter.projectPath
               ? projectAvailability(mcpFilter.projectPath)
@@ -821,13 +926,16 @@ function App(): React.JSX.Element {
           servers={filteredMcpServers}
           loading={mcpPending}
           filter={mcpFilter}
-          firstCallAt={mcpData?.firstCallAt ?? null}
+          callsSince={mcpData?.callsSince ?? null}
           lastCheckedAt={mcpData?.lastCheckedAt ?? null}
           checking={mcpCheckingPath === null}
           checkError={mcpCheckError?.projectPath === null ? mcpCheckError.message : null}
           onCheckConnections={() => requestMcpCheck(null)}
           onSelect={(server) => openMcpDetail(server.id, 'inventory')}
           onOpenSearch={() => setPaletteOpen(true)}
+          onAddFolders={handleAddFolders}
+          onHideFolder={handleHideFolder}
+          onManageFolders={manageFolders}
           restoreFocusId={returnMcpId}
         />
       )
@@ -889,7 +997,7 @@ function App(): React.JSX.Element {
             <AppRail
               section={section}
               onSectionChange={handleSectionChange}
-              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenSettings={() => openSettings(updateNotice ? 'updates' : undefined)}
               updateNotice={updateNotice}
             />
             <ScreenTransition screenKey={section} section={section} depth={0} className="flex">
@@ -903,7 +1011,7 @@ function App(): React.JSX.Element {
               <ClaudeFolderBanner
                 status={claudeFolder}
                 home={home}
-                onChooseAnother={() => setSettingsOpen(true)}
+                onChooseAnother={() => openSettings('claude-code', 'claude-folder')}
               />
             )}
             {!folderHoldsScans && scanBanner.kind === 'updating' && (
@@ -912,7 +1020,7 @@ function App(): React.JSX.Element {
             {!folderHoldsScans && scanBanner.kind === 'warning' && scanBannerSummary && (
               <ScanStatusBanner
                 summary={scanBannerSummary}
-                onOpenDetails={() => setSettingsOpen(true)}
+                onOpenDetails={() => openSettings('claude-code', 'index')}
               />
             )}
             <div className="flex min-h-0 flex-1">
@@ -955,15 +1063,14 @@ function App(): React.JSX.Element {
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+        pane={settingsPane}
+        onPaneChange={setSettingsPane}
+        target={settingsTarget}
         themePreference={themePreference}
         onThemeChange={handleThemeChange}
         version={version}
         scanSummary={scanBannerSummary}
         scanning={scanning}
-        onManageFolders={() => {
-          setSettingsOpen(false)
-          setFoldersDialogOpen(true)
-        }}
         onShowWelcome={() => {
           setSettingsOpen(false)
           setOnboardingOpen(true)
@@ -976,28 +1083,31 @@ function App(): React.JSX.Element {
           })
         }
         updateState={updateState}
+        updateNotice={updateNotice}
         claudeFolder={claudeFolder}
         home={home}
+        folders={folders}
+        projectCatalog={projectCatalog}
+        onAddFolders={handleAddFolders}
+        onNarrowFolder={handleNarrowFolder}
+        onRevokeFolder={handleRevokeFolder}
+        hiddenProjects={hiddenProjects}
+        onHideFolder={handleHideFolder}
+        onShowFolder={handleShowFolder}
       />
       <OnboardingDialog
         open={onboardingOpen}
         onFinish={finishOnboarding}
         skills={skills}
         plugins={plugins}
+        mcpServers={mcpServers}
+        mcpLoaded={mcpData !== undefined}
         folders={folders}
         scanComplete={scanComplete}
         home={home}
+        hiddenProjects={hiddenProjects}
         onAddFolders={handleAddFolders}
         claudeFolder={claudeFolder}
-      />
-      <ManageFoldersDialog
-        open={foldersDialogOpen}
-        onOpenChange={setFoldersDialogOpen}
-        folders={folders}
-        projectCatalog={projectCatalog}
-        onAddFolders={handleAddFolders}
-        onNarrowFolder={handleNarrowFolder}
-        onRevokeFolder={handleRevokeFolder}
       />
       <PluginActionToasts
         toasts={pluginActionToasts}

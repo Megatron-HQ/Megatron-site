@@ -13,6 +13,7 @@ import { Loader2, Plug, RefreshCw, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { GlideTitle } from '@/components/GlideTitle'
 import { McpConnectionBadge, McpStatusBadge } from '@/components/McpBadges'
+import { ManageFoldersButton } from '@/components/ManageFoldersButton'
 import { ProjectAvailabilityNotice } from '@/components/ProjectAvailabilityNotice'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -24,12 +25,14 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { mcpFilterTitle, mcpSourceLabel, type McpFilter } from '@/lib/mcp-filter'
+import { McpAddDialog } from '@/components/McpAddDialog'
 import { ENTER, mcpTitleGlideId, useSettle } from '@/lib/transitions'
 import { useGlideHighlight } from '@/lib/use-glide-highlight'
 import { formatRelativeTime } from '@/lib/relative-time'
+import { formatUsageSince } from '@/lib/usage-since'
 import { useProjectLabel } from '@/lib/use-project-label'
 import { cn } from '@/lib/utils'
-import type { McpLiveStatus, McpServerRow, ProjectFolder } from '../../../shared/ipc'
+import type { McpLiveStatus, McpServerRow, ProjectFolder, SkippedGrant } from '../../../shared/ipc'
 
 const ROW_HEIGHT = 40
 const HEADER_HEIGHT = 40
@@ -152,10 +155,12 @@ function emptyDetail(filter: McpFilter): string {
 }
 
 interface McpInventoryProps {
+  addDialog: React.ComponentProps<typeof McpAddDialog>
   servers: McpServerRow[]
   loading: boolean
   filter: McpFilter
-  firstCallAt: string | null
+  // Since when every call is counted (McpServerList.callsSince).
+  callsSince: string | null
   // The general connection check (docs/mcp-servers.md, Live check).
   lastCheckedAt: string | null
   checking: boolean
@@ -164,15 +169,19 @@ interface McpInventoryProps {
   availability?: ProjectFolder['status']
   onSelect: (server: McpServerRow) => void
   onOpenSearch: () => void
+  onAddFolders: (target?: string) => Promise<SkippedGrant[]>
+  onHideFolder: (path: string) => Promise<void>
+  onManageFolders: () => void
   // The row Back left from, focused when the list mounts so Back returns to where the user was.
   restoreFocusId?: string | null
 }
 
 export function McpInventory({
+  addDialog,
   servers,
   loading,
   filter,
-  firstCallAt,
+  callsSince,
   lastCheckedAt,
   checking,
   checkError,
@@ -180,6 +189,9 @@ export function McpInventory({
   availability,
   onSelect,
   onOpenSearch,
+  onAddFolders,
+  onHideFolder,
+  onManageFolders,
   restoreFocusId = null
 }: McpInventoryProps): React.JSX.Element {
   const resolveProjectLabel = useProjectLabel()
@@ -204,6 +216,7 @@ export function McpInventory({
       ? `Projects / ${resolveProjectLabel(filter.projectPath)} servers`
       : mcpFilterTitle(filter)
   const hasRows = rows.length > 0
+  const callsSinceLabel = formatUsageSince(callsSince)
   const safeFocusedIndex = Math.min(focusedIndex, Math.max(rows.length - 1, 0))
   const highlightIndex = hoveredId !== null ? rows.findIndex((row) => row.id === hoveredId) : -1
   const settle = useSettle(loading)
@@ -355,7 +368,19 @@ export function McpInventory({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <ProjectAvailabilityNotice status={availability} />
+      <ProjectAvailabilityNotice
+        status={availability}
+        message={
+          filter.kind === 'projects' && filter.projectPath
+            ? `${resolveProjectLabel(filter.projectPath)} needs folder access to read its .mcp.json and change its servers.`
+            : undefined
+        }
+        projects={
+          filter.kind === 'projects' && filter.projectPath ? [filter.projectPath] : undefined
+        }
+        onAddFolders={onAddFolders}
+        onHideFolder={onHideFolder}
+      />
       <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
         <h2 title={headerTitle} className="truncate text-[13px] font-semibold">
           {headerTitle}
@@ -370,16 +395,12 @@ export function McpInventory({
               Checked {formatRelativeTime(lastCheckedAt)}
             </span>
           )}
-          {firstCallAt && (
+          {callsSinceLabel && (
             <span
-              title="Calls come from the transcripts Megatron still holds. Claude Code prunes them after about 30 days."
+              title={`Every call since ${callsSinceLabel}, including ones whose transcripts Claude Code has since deleted.`}
               className="text-[11px] text-muted-foreground max-[1000px]:hidden"
             >
-              Calls since{' '}
-              {new Date(firstCallAt).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric'
-              })}
+              Calls since {callsSinceLabel}
             </span>
           )}
           <button
@@ -395,6 +416,8 @@ export function McpInventory({
             )}
             {checking ? 'Checking…' : 'Check connections'}
           </button>
+          <McpAddDialog {...addDialog} />
+          {filter.kind === 'projects' && <ManageFoldersButton onClick={onManageFolders} />}
           <button
             type="button"
             onClick={onOpenSearch}

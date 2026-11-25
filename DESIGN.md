@@ -367,6 +367,8 @@ The Graphite Stage frame holds the app renderer with a 9px radius and 23px paddi
 
 The MCP feature link uses the existing scope-pill styling and opens the full inventory. The analytics deck places MCP servers before Resident tax. Its 30-day call figure and chart come from the same sample data as the opened view.
 
+The guided walkthrough opens and closes the MCP Add dialog before showing server details. Its cursor and click feedback use the same motion and reduced-motion behavior as the other stops.
+
 ### Signal Eyebrow
 
 A mono uppercase label led by a 7px status dot: lime on Graphite, Status Moss on paper. Section indexes ("01 / …") sit in Muted Ink above each section heading.

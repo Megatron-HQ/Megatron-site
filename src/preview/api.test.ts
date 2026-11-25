@@ -822,14 +822,34 @@ test('What’s New replays the shipped release without opening over the sample b
   const { api } = await createDemo()
   assert.equal(typeof api.getInitialWhatsNew, 'function')
   assert.deepEqual(api.getInitialWhatsNew().unseen, [])
-  assert.equal(api.getInitialWhatsNew().latest?.version, '0.4.0')
+  assert.equal(api.getInitialWhatsNew().latest?.version, '0.5.0')
   assert.deepEqual(
     api.getInitialWhatsNew().latest?.highlights.map(({ action }) => action),
     [
+      { kind: 'section', section: 'skills' },
       { kind: 'section', section: 'mcp' },
-      { kind: 'section', section: 'usage', anchor: 'usage-mcp' },
+      { kind: 'section', section: 'mcp' },
       { kind: 'section', section: 'mcp' }
     ]
+  )
+})
+
+test('targeted folder picking grants the requested project and shows it again if hidden', async () => {
+  const { api } = await createDemo()
+  const initialGrants = await api.listAllowedPaths()
+  assert.deepEqual(await api.hideProject(ADDITIONAL_PROJECT), [
+    ADDITIONAL_PROJECT
+  ])
+  assert.deepEqual(await api.listAllowedPaths(), initialGrants)
+  assert.ok(
+    !(await api.listProjects()).some(({ path }) => path === ADDITIONAL_PROJECT)
+  )
+
+  const grant = await api.pickAndAddFolders(ADDITIONAL_PROJECT)
+  assert.ok(grant.folders.some(({ path }) => path === ADDITIONAL_PROJECT))
+  assert.deepEqual(await api.listHiddenProjects(), [])
+  assert.ok(
+    (await api.listProjects()).some(({ path }) => path === ADDITIONAL_PROJECT)
   )
 })
 
@@ -854,6 +874,141 @@ test('MCP server inventory and detail share synthetic call counts and redact fix
   assert.ok((await api.getContextBaseline()).ok)
   assert.ok((await api.getMcpServerDetail(row.id))!.definitionTokens)
   assert.equal(await api.getMcpServerDetail('unknown'), null)
+})
+
+const sampleMcpAdd = {
+  name: 'sample-search',
+  scope: 'user',
+  projectPath: null,
+  transport: 'http',
+  command: '',
+  args: [],
+  url: 'https://service.example.invalid/connect?token=sample-secret',
+  env: [],
+  headers: [{ name: 'Authorization', value: 'Bearer sample-secret' }]
+} as const
+
+test('adding a sample MCP server exposes only redacted configuration details', async () => {
+  const { api, reset } = await createDemo()
+  const input = structuredClone(sampleMcpAdd)
+  const result = await api.addMcpServer({
+    ...input,
+    args: [],
+    env: [],
+    headers: [...input.headers]
+  })
+  assert.ok(result.ok)
+  const detail = await api.getMcpServerDetail(result.serverId)
+  assert.equal(detail?.declarations[0].location, 'service.example.invalid')
+  assert.deepEqual(detail?.declarations[0].headers, [
+    { name: 'Authorization', literal: true }
+  ])
+  assert.ok(!JSON.stringify({ result, detail }).includes('sample-secret'))
+  assert.equal(
+    (
+      await api.addMcpServer({
+        ...input,
+        args: [],
+        env: [],
+        headers: [...input.headers]
+      })
+    ).ok,
+    false
+  )
+  reset()
+  assert.equal(await api.getMcpServerDetail(result.serverId), null)
+})
+
+test('project MCP Add rejects literal credentials and accepts references with a precedence note', async () => {
+  const { api } = await createDemo()
+  const input = {
+    ...sampleMcpAdd,
+    name: 'workspace-docs',
+    scope: 'project' as const,
+    projectPath: API_PROJECT,
+    url: 'https://service.example.invalid/connect',
+    args: [],
+    env: [],
+    headers: [...sampleMcpAdd.headers]
+  }
+  const refused = await api.addMcpServer(input)
+  assert.ok(!refused.ok)
+  assert.match(refused.error, /\.mcp\.json/)
+  const added = await api.addMcpServer({
+    ...input,
+    headers: [{ name: 'Authorization', value: 'Bearer ${API_KEY}' }]
+  })
+  assert.ok(added.ok && 'message' in added)
+  assert.match(
+    added.message,
+    /takes precedence|takes priority|pending approval/
+  )
+  const detail = await api.getMcpServerDetail(added.serverId)
+  assert.ok(
+    detail?.declarations.some(
+      ({ projectPath, approval }) =>
+        projectPath === API_PROJECT && approval === 'pending'
+    )
+  )
+})
+
+test('a zero-call connector discovered by the general check can complete sign-in', async () => {
+  const { api, reset } = await createDemo()
+  const ref = {
+    serverId: 'connector:claude_ai_Tasks',
+    scope: null,
+    projectPath: null
+  }
+  assert.equal((await api.loginMcpServer(ref)).ok, false)
+  await api.confirmMcpCheck()
+  assert.ok((await api.checkMcpConnections()).ok)
+  const discovered = (await api.listMcpServers()).servers.find(
+    ({ id }) => id === ref.serverId
+  )
+  assert.equal(discovered?.calls, 0)
+  assert.ok((await api.loginMcpServer(ref)).ok)
+  assert.ok((await api.checkMcpSignIn(ref)).ok)
+  const detail = await api.getMcpServerDetail(ref.serverId)
+  assert.equal(detail?.server.liveStatus?.status, 'connected')
+  reset()
+  assert.equal((await api.checkMcpSignIn(ref)).ok, false)
+})
+
+test('a pruned invocation contributes once to inventory and recent Skills Usage without a prompt or branch', async () => {
+  const { api } = await createDemo()
+  const { skills, usesSince } = await api.listSkills()
+  const skill = skills.find(({ name }) => name === 'code-review')!
+  const log = await api.openSkillHistory(skill.id)
+  const archived = log.filter(
+    ({ transcript_pruned }) => transcript_pruned === 1
+  )
+  assert.equal(archived.length, 1)
+  assert.equal(archived[0].preceding_user_text, '')
+  assert.equal(archived[0].git_branch, null)
+  assert.equal(skill.total_invocations, log.length)
+  assert.ok(usesSince && usesSince < archived[0].invoked_at)
+  const { skills: usage } = await api.getUsageOverview()
+  const window = usage.last7d
+  const records = await api.getUsageSkillInvocations({
+    startAt: window.startAt,
+    endAt: window.endAt
+  })
+  assert.equal(
+    records.filter(({ transcript_pruned }) => transcript_pruned === 1).length,
+    1
+  )
+  assert.equal(window.invocationCount, records.length)
+  assert.ok(window.unpricedInvocationCount >= 1)
+})
+
+test('Resident tax consent is independent of MCP check consent and resets with the preview', async () => {
+  const { api, reset } = await createDemo()
+  await api.confirmMcpCheck()
+  assert.equal(api.getInitialResidentTaxConfirmed(), false)
+  await api.confirmResidentTax()
+  assert.equal(api.getInitialResidentTaxConfirmed(), true)
+  reset()
+  assert.equal(api.getInitialResidentTaxConfirmed(), false)
 })
 
 test('MCP checks require confirmation and keep discoveries and statuses in the sample session', async () => {

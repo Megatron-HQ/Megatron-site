@@ -20,10 +20,15 @@ import type {
 } from '../../vendor/megatron/src/shared/ipc'
 import type { Api } from '../../vendor/megatron/src/shared/api'
 import { readProjectIdentity } from '../../vendor/megatron/src/shared/project-identity.ts'
-import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import {
+  isHiddenProject,
+  isWithinProjectPath,
+  normalizeProjectPath
+} from '../../vendor/megatron/src/shared/project-path.ts'
 import { missingProjectInstallMessage } from '../../vendor/megatron/src/shared/missing-project.ts'
 import { SCAN_BANNER_REVEAL_MS } from '../../vendor/megatron/src/shared/scan-banner.ts'
 import whatsNewCatalog from '../../vendor/megatron/src/shared/whats-new.json' with { type: 'json' }
+import provenance from '../../vendor/megatron/provenance.json' with { type: 'json' }
 import {
   anchorsOf,
   latestReleaseUpTo,
@@ -45,11 +50,13 @@ import {
   sampleFindings,
   samplePluginComponents,
   samplePluginInstallPath,
+  sampleTranscriptCoverage,
   windowsPath,
   type SampleState
 } from './fixtures.ts'
 import {
   buildUsageOverview,
+  knownSampleInvocations,
   resolveSampleSkill,
   sampleInvocation,
   triggerCounts
@@ -58,12 +65,14 @@ import { buildUsageCalendar, buildUsageDay } from './usage-history.ts'
 import { sampleContextBaseline, sampleRecordedRequest } from './context.ts'
 import { applyInventoryChange } from './inventory.ts'
 import {
+  addSampleMcpServer,
   changeSampleMcpDeclaration,
   createSampleMcpState,
   recordSampleMcpCheck,
   resetSampleMcpChoices,
   sampleMcpDetail,
   sampleMcpList,
+  sampleMcpSignIn,
   sampleMcpUsage,
   sampleProjectGranted,
   type SampleMcpState
@@ -79,7 +88,7 @@ import {
   sampleClaudeFolders
 } from './claude-folder.ts'
 
-export const PREVIEW_APP_VERSION = '0.4.0'
+export const PREVIEW_APP_VERSION = provenance.version
 const { releases } = parseWhatsNewCatalog(whatsNewCatalog)
 // The desktop's updater never runs in a browser, so the preview shows the
 // state an uninstalled build reports.
@@ -143,6 +152,17 @@ export interface DemoOptions {
 export function createDemoApi(options: DemoOptions = {}) {
   const now = options.now ?? new Date()
   const initial = createSampleState(now)
+  const onboardingEmpty = options.scenario === 'onboarding-empty'
+  const onboardingMcpOnly = options.scenario === 'onboarding-mcp-only'
+  if (onboardingEmpty || onboardingMcpOnly) {
+    initial.skills = []
+    initial.plugins = []
+    initial.events = []
+    initial.archivedInvocations = []
+    initial.history = []
+    initial.projects = []
+    initial.folders = []
+  }
   if (options.scenario === 'worktree') {
     initial.worktrees = [SAMPLE_WORKTREE]
     const event = initial.events.find(
@@ -183,7 +203,7 @@ export function createDemoApi(options: DemoOptions = {}) {
   }
   let state: SampleState = structuredClone(initial)
   let inventorySource = structuredClone(initial)
-  const emptyMcp = options.scenario === 'mcp-empty'
+  const emptyMcp = options.scenario === 'mcp-empty' || onboardingEmpty
   let mcp = createSampleMcpState(now, false, emptyMcp)
   let inventoryOnly = false
   let usageLocations = reconcileSampleUsageProjects([], initial)
@@ -202,16 +222,23 @@ export function createDemoApi(options: DemoOptions = {}) {
     }
   >()
   const latestRelease = latestReleaseUpTo(releases, PREVIEW_APP_VERSION)
-  const unseenReleases =
-    options.scenario === 'whats-new'
-      ? selectUnseenReleases(releases, PREVIEW_APP_VERSION, null)
-      : []
+  const whatsNewScenario = /^whats-new(?:-(\d+\.\d+\.\d+))?$/.exec(
+    options.scenario ?? ''
+  )
+  const unseenReleases = whatsNewScenario
+    ? selectUnseenReleases(
+        releases,
+        whatsNewScenario[1] ?? latestRelease?.version ?? PREVIEW_APP_VERSION,
+        null
+      )
+    : []
   let unseen = unseenReleases
   let whatsNewDots: WhatsNewAnchorId[] = []
   let section = options.initialSection ?? 'skills'
   let theme = options.initialTheme ?? 'light'
   let pendingAction = false
   let mcpCheckConfirmed = false
+  let residentTaxConfirmed = false
   let sessionRevision = 0
   let scanActivity: ScanActivity | null = null
   let nextScanId = 0
@@ -233,7 +260,33 @@ export function createDemoApi(options: DemoOptions = {}) {
   const delay = options.actionDelayMs ?? 450
   function currentUsageLocations() {
     usageLocations = reconcileSampleUsageProjects(usageLocations, state)
+    if (options.scenario === 'projects-gone') {
+      const gone = usageLocations.find(
+        ({ path }) => path === ADDITIONAL_PROJECT
+      )
+      if (gone) gone.status = 'missing'
+    }
     return usageLocations
+  }
+
+  function recordedProject(path: string) {
+    const normalized = normalizeProjectPath(path)
+    return currentUsageLocations().find(
+      (location) => normalizeProjectPath(location.path) === normalized
+    )
+  }
+
+  function projectVisible(path: string | null): boolean {
+    return path === null || !isHiddenProject(path, state.hiddenProjects)
+  }
+
+  function visiblePlugins(): PluginRow[] {
+    return state.plugins.flatMap((plugin) => {
+      const installs = plugin.installs.filter((install) =>
+        projectVisible(install.project_path)
+      )
+      return installs.length ? [{ ...plugin, installs }] : []
+    })
   }
   function claudeCodeFolders() {
     return [
@@ -496,29 +549,32 @@ export function createDemoApi(options: DemoOptions = {}) {
   }
 
   function currentSkills(): SkillRow[] {
+    const invocations = knownSampleInvocations(state)
     const base =
       options.scenario === 'projects-empty'
         ? state.skills.filter((skill) => skill.source_type !== 'project')
         : state.skills
-    return base.map((skill) => {
-      const events =
-        skill.shadowed_by_skill_id !== null
-          ? []
-          : state.events.filter(
-              (event) =>
-                event.skillName === skill.name &&
-                resolveSampleSkill(
-                  state.skills,
-                  skill.name,
-                  projectForSkill(event.project)
-                )?.id === skill.id
-            )
-      return {
-        ...skill,
-        total_invocations: events.length,
-        last_invoked_at: events.at(-1)?.at ?? null
-      }
-    })
+    return base
+      .filter((skill) => projectVisible(skill.project_root))
+      .map((skill) => {
+        const events =
+          skill.shadowed_by_skill_id !== null
+            ? []
+            : invocations.filter(
+                (event) =>
+                  event.skillName === skill.name &&
+                  resolveSampleSkill(
+                    state.skills,
+                    skill.name,
+                    projectForSkill(event.project)
+                  )?.id === skill.id
+              )
+        return {
+          ...skill,
+          total_invocations: events.length,
+          last_invoked_at: events.at(-1)?.at ?? null
+        }
+      })
   }
 
   function contextBudget(skills: SkillRow[]) {
@@ -546,7 +602,7 @@ export function createDemoApi(options: DemoOptions = {}) {
   function history(id: number) {
     const skill = state.skills.find((row) => row.id === id)
     if (!skill || skill.shadowed_by_skill_id !== null) return []
-    return state.events
+    return knownSampleInvocations(state)
       .filter(
         (event) =>
           event.skillName === skill.name &&
@@ -867,7 +923,8 @@ export function createDemoApi(options: DemoOptions = {}) {
         scanComplete: true,
         scanSummary: scanSummary(),
         scanActivity,
-        contextBudget: contextBudget(skills)
+        contextBudget: contextBudget(skills),
+        usesSince: state.events.length ? sampleTranscriptCoverage(now) : null
       })
     },
     async openSkillMeta(id) {
@@ -932,17 +989,54 @@ export function createDemoApi(options: DemoOptions = {}) {
         return copy(
           state.projects.map((p) => ({ ...p, status: 'needs_access' as const }))
         )
-      return copy(state.projects)
+      return copy(state.projects.filter(({ path }) => projectVisible(path)))
     },
-    async pickAndAddFolders() {
+    async pickAndAddFolders(target) {
+      const recorded =
+        target === undefined ? undefined : recordedProject(target)
+      if (target !== undefined && (!recorded || recorded.status === 'missing'))
+        return copy({ folders: state.folders, skipped: [] })
       // Repository first, then its parent (which absorbs it), then the
       // repository again (which the parent now covers, so it is skipped).
-      const pick = state.folders.some((row) => row.path === ADDITIONAL_PROJECT)
-        ? ADDITIONAL_PARENT
-        : ADDITIONAL_PROJECT
+      const pick =
+        recorded?.path ??
+        (state.folders.some((row) => row.path === ADDITIONAL_PROJECT)
+          ? ADDITIONAL_PARENT
+          : ADDITIONAL_PROJECT)
+      state.hiddenProjects = state.hiddenProjects.filter(
+        (hidden) => !isWithinProjectPath(pick, hidden)
+      )
       const change = changeGrants([pick], [])
-      options.onNotice?.(grantNotice(change))
+      options.onNotice?.(
+        recorded && change.added.length
+          ? `Added the sample ${projectName(pick)} repository. Your local folders are never accessed.`
+          : grantNotice(change)
+      )
       return copy({ folders: change.folders, skipped: change.skipped })
+    },
+    async listHiddenProjects() {
+      return copy(state.hiddenProjects)
+    },
+    async hideProject(path) {
+      const recorded = recordedProject(path)
+      if (!recorded) throw new RangeError('Unknown sample project.')
+      if (!state.hiddenProjects.includes(recorded.path)) {
+        state.hiddenProjects.push(recorded.path)
+        notify()
+      }
+      return copy(state.hiddenProjects)
+    },
+    async showProject(path) {
+      const hidden = state.hiddenProjects.find(
+        (entry) => normalizeProjectPath(entry) === normalizeProjectPath(path)
+      )
+      if (hidden === undefined)
+        throw new RangeError('Sample project is not hidden.')
+      state.hiddenProjects = state.hiddenProjects.filter(
+        (entry) => entry !== hidden
+      )
+      notify()
+      return copy(state.hiddenProjects)
     },
     async narrowAllowedPath(path) {
       if (!state.folders.some((row) => row.path === path))
@@ -972,7 +1066,7 @@ export function createDemoApi(options: DemoOptions = {}) {
     },
     async listPlugins() {
       checkScenario('plugins')
-      return copy(state.plugins)
+      return copy(visiblePlugins())
     },
     async listMcpServers() {
       checkScenario('mcp-servers')
@@ -1038,9 +1132,19 @@ export function createDemoApi(options: DemoOptions = {}) {
       ),
     resetMcpProjectChoices: (projectPath) =>
       runSampleMcpAction(() => resetSampleMcpChoices(mcp, state, projectPath)),
+    addMcpServer: (input) =>
+      runSampleMcpWork(() => addSampleMcpServer(mcp, state, input)),
+    loginMcpServer: (ref) =>
+      runSampleMcpWork(() =>
+        sampleMcpSignIn(mcp, state, ref, 'open', options.scenario)
+      ),
+    checkMcpSignIn: (ref) =>
+      runSampleMcpWork(() =>
+        sampleMcpSignIn(mcp, state, ref, 'check', options.scenario)
+      ),
     async getPluginDetail(name, marketplace) {
       checkScenario('plugin')
-      const plugin = state.plugins.find(
+      const plugin = visiblePlugins().find(
         (row) => row.name === name && row.marketplace === marketplace
       )
       if (!plugin) return null
@@ -1071,6 +1175,7 @@ export function createDemoApi(options: DemoOptions = {}) {
         return buildUsageOverview({
           ...state,
           events: [],
+          archivedInvocations: [],
           prompts: [],
           history: []
         })
@@ -1118,6 +1223,10 @@ export function createDemoApi(options: DemoOptions = {}) {
       if (revision === sessionRevision) mcp.measuredAt = state.now
       return sampleContextBaseline(state.now)
     },
+    getInitialResidentTaxConfirmed: () => residentTaxConfirmed,
+    async confirmResidentTax() {
+      residentTaxConfirmed = true
+    },
     async getRecordedRequest() {
       checkScenario('recorded')
       if (options.scenario === 'recorded-empty') return null
@@ -1160,7 +1269,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       )
         throw new RangeError('Invalid invocation window.')
       return copy(
-        state.events
+        knownSampleInvocations(state)
           .filter(
             (row) =>
               row.skillName !== null &&
@@ -1219,7 +1328,8 @@ export function createDemoApi(options: DemoOptions = {}) {
     getHomePath: () => folders.home,
     // An embedded welcome would cover the landing page; Settings → Show
     // welcome opens it on request.
-    getInitialOnboarding: () => options.scenario === 'onboarding',
+    getInitialOnboarding: () =>
+      options.scenario === 'onboarding' || onboardingEmpty || onboardingMcpOnly,
     async setOnboardingDone() {},
     getInitialWhatsNew: () =>
       copy({ unseen, latest: latestRelease, dots: whatsNewDots }),
@@ -1370,6 +1480,7 @@ export function createDemoApi(options: DemoOptions = {}) {
       sessionRevision += 1
       pendingAction = false
       mcpCheckConfirmed = false
+      residentTaxConfirmed = false
       scanActivity = null
       lastScanWasStartup = STARTUP_SCAN_SCENARIOS.includes(
         options.scenario ?? ''

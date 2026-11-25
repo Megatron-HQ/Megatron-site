@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { waitForFocus } from './interactions.mjs'
-import { dismissWithEscape } from './preview.mjs'
+import { dismissWithEscape, measureResidentTax } from './preview.mjs'
 
 // Must match INLINE_MINIMUM_WIDTH in src/analytics-deck.js.
 const INLINE_MINIMUM_WIDTH = 440
@@ -44,12 +44,14 @@ async function expectedOpenState(page) {
 }
 
 /** Opens a view from its "Explore" link in the list, as a keyboard user would. */
-export async function openAnalyticsView(page, view) {
+export async function openAnalyticsView(page, view, { measure = true } = {}) {
   const link = page.locator(`[data-analytics-open="${view}"]`)
   await link.focus()
   await link.press('Enter')
   await waitForView(page, view)
-  return deckFrame(page)
+  const frame = deckFrame(page)
+  if (view === 'resident-tax' && measure) await measureResidentTax(frame)
+  return frame
 }
 
 async function closeDeck(page) {
@@ -241,6 +243,7 @@ async function verifyResidentTaxView(page) {
     .locator('header')
     .getByText('Resident tax', { exact: true })
     .waitFor()
+  await measureResidentTax(sample)
   await sample.getByText('Global baseline', { exact: true }).waitFor()
   await sample.getByText('Deferred, not loaded', { exact: true }).waitFor()
   assert.equal(
@@ -517,6 +520,7 @@ export async function verifyResidentTaxRecovery(page) {
       .locator('header')
       .getByText('Resident tax', { exact: true })
       .waitFor()
+    await measureResidentTax(sample)
     await sample.getByText('Global baseline', { exact: true }).waitFor()
     await sample.locator('html.dark').waitFor()
     assert.equal(await sample.getByRole('alert').count(), 0)

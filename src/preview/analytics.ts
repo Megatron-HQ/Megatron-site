@@ -186,16 +186,31 @@ export function sampleInvocation(
     sampleSkillProject(event.project, state)
   )
   return {
-    preceding_user_text: event.prompt,
+    preceding_user_text: event.transcriptPruned ? '' : event.prompt,
     invoked_at: event.at,
     trigger_type: event.trigger,
     cwd: event.project,
-    git_branch: 'main',
+    git_branch: event.transcriptPruned ? null : 'main',
+    transcript_pruned: event.transcriptPruned ? 1 : 0,
     agent_id: event.trigger === 'subagent' ? `agent-${event.sessionId}` : null,
     skillName: event.skillName ?? '',
     skillId: target?.id ?? null,
     sourceType: target?.source_type ?? null
   }
+}
+
+export function knownSampleInvocations(state: SampleState): SampleEvent[] {
+  const invocations = new Map<string, SampleEvent>()
+  for (const event of [...state.archivedInvocations, ...state.events]) {
+    if (event.skillName === null) continue
+    invocations.set(
+      JSON.stringify([event.sessionId, event.at, event.skillName]),
+      event
+    )
+  }
+  return [...invocations.values()].sort((first, second) =>
+    first.at.localeCompare(second.at)
+  )
 }
 
 export function triggerCounts(events: SampleEvent[]): TriggerTypeCount[] {
@@ -415,7 +430,11 @@ function skillWindow(
 ): SkillStatsWindow {
   const range = windowRange(state.now, days)
   const all = eventsWithin(state.events, range.startAt, range.endAt)
-  const invocations = all.filter((row) => row.skillName !== null)
+  const invocations = eventsWithin(
+    knownSampleInvocations(state),
+    range.startAt,
+    range.endAt
+  )
   const buckets =
     days === 1
       ? hourlyBuckets(range.startAt).map((hour) => ({

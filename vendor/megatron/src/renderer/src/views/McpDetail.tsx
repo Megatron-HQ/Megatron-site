@@ -16,8 +16,10 @@ import { motion } from 'motion/react'
 import { EntityGlyph } from '@/components/EntityGlyph'
 import { GlideTitle } from '@/components/GlideTitle'
 import { McpConnectionBadge, McpStatusBadge } from '@/components/McpBadges'
+import { ProjectAvailabilityNotice } from '@/components/ProjectAvailabilityNotice'
 import { ProjectName } from '@/components/ProjectName'
 import { TextLink } from '@/components/TextLink'
+import { useFolderAction } from '@/lib/folder-grant'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -33,8 +35,11 @@ import {
   McpActionError,
   mcpActionMessage,
   mcpDeclarationActions,
-  mcpDeclarationRef
+  mcpDeclarationRef,
+  connectorOffersLogin,
+  mcpLoginRef
 } from '@/lib/mcp-action'
+import { McpSignIn } from '@/components/McpSignIn'
 import { MCP_USAGE_QUERY_KEY } from '@/lib/mcp-usage-query'
 import { mcpSourceLabel } from '@/lib/mcp-filter'
 import { formatRelativeTime } from '@/lib/relative-time'
@@ -49,7 +54,9 @@ import type {
   McpServerDetail,
   McpServerRow,
   McpShadow,
-  McpToolUsage
+  McpToolUsage,
+  ProjectFolder,
+  SkippedGrant
 } from '../../../shared/ipc'
 
 // One key for every MCP action: main runs one at a time, so the view disables them all together.
@@ -78,6 +85,72 @@ function cardKey(declaration: McpDeclarationDetail): string {
   return `${declaration.scope}:${declaration.projectPath ?? ''}`
 }
 
+type ProjectAvailability = (path: string) => ProjectFolder['status'] | undefined
+
+// Projects whose local or project Declarations this page checks and changes from their folder.
+function projectPathsOf(detail: McpServerDetail): string[] {
+  return [
+    ...new Set(
+      detail.declarations
+        .filter((declaration) => declaration.scope === 'local' || declaration.scope === 'project')
+        .flatMap((declaration) => (declaration.projectPath ? [declaration.projectPath] : []))
+    )
+  ].sort()
+}
+
+// Why a project's check or actions are off. Only a missing grant links to Settings: a missing or
+// unreadable folder is already granted, and another grant can't help it.
+function ProjectBlockedNote({
+  status,
+  grantLabel,
+  onManageFolders
+}: {
+  status: ProjectFolder['status'] | undefined
+  grantLabel: string
+  onManageFolders: () => void
+}): React.JSX.Element {
+  if (status === 'needs_access')
+    return (
+      <TextLink onClick={onManageFolders} className="shrink-0 text-[11px] text-muted-foreground">
+        {grantLabel}
+      </TextLink>
+    )
+  return (
+    <span className="shrink-0 text-[11px] text-muted-foreground">
+      {status === 'missing' ? 'Folder missing' : "Can't read this folder right now"}
+    </span>
+  )
+}
+
+// Display only: the project's declarations stay in Claude Code's files, and only an unreadable or
+// missing folder offers it, since that is the one Megatron can't otherwise clear.
+function HideFolderLink({
+  path,
+  onHideFolder
+}: {
+  path: string
+  onHideFolder: (path: string) => Promise<void>
+}): React.JSX.Element {
+  const { run: hide, pending, error } = useFolderAction(() => onHideFolder(path))
+  return (
+    <>
+      <TextLink
+        onClick={() => void hide()}
+        disabled={pending}
+        aria-busy={pending}
+        className="shrink-0 text-[11px] text-muted-foreground"
+      >
+        {pending ? 'Hiding…' : 'Hide'}
+      </TextLink>
+      {error && (
+        <span role="alert" className="shrink-0 text-[11px] text-destructive">
+          Could not hide it
+        </span>
+      )}
+    </>
+  )
+}
+
 const SCOPE_LABEL: Record<McpDeclarationScope, string> = {
   local: 'Local',
   project: 'Project',
@@ -96,8 +169,9 @@ interface McpDetailProps {
   // From the list row, so the header and its title glide render before the query returns.
   summary?: McpServerRow
   onBack: () => void
-  // Per-project connection checks (docs/mcp-servers.md, Live check), only from a granted folder.
-  canCheckProject: (path: string) => boolean
+  // Per-project connection checks (docs/mcp-servers.md, Live check), only from an available
+  // granted folder.
+  projectAvailability: ProjectAvailability
   onCheckProject: (path: string) => void
   checkingProject: string | null
   projectCheckError: { projectPath: string | null; message: string } | null
@@ -107,20 +181,27 @@ interface McpDetailProps {
   onOpenPlugin: (name: string, marketplace: string) => void
   // A remove that took the server's last Declaration leaves nothing here to show.
   onServerGone: () => void
+  onAddFolders: (target?: string) => Promise<SkippedGrant[]>
+  onHideFolder: (path: string) => Promise<void>
+  onManageFolders: () => void
 }
 
 export function McpDetail({
   id,
   summary,
   onBack,
-  canCheckProject,
+  projectAvailability,
   onCheckProject,
   checkingProject,
   projectCheckError,
   onActionSuccess,
   onOpenPlugin,
-  onServerGone
+  onServerGone,
+  onAddFolders,
+  onHideFolder,
+  onManageFolders
 }: McpDetailProps): React.JSX.Element {
+  const resolveProjectLabel = useProjectLabel()
   const queryClient = useQueryClient()
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['mcp-detail', id],
@@ -183,6 +264,16 @@ export function McpDetail({
     }
   })
 
+  // A sign-in changes the server's status and possibly its tools, so its views refetch.
+  function signedIn(message: string): void {
+    onActionSuccess(message)
+    void Promise.all(
+      [['mcp-servers'], ['mcp-detail']].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey })
+      )
+    )
+  }
+
   function runAction({ kind, declaration }: McpActionRequest): void {
     // Synchronous, and it survives an unmount: a quick back and reopen can't start a second run.
     if (queryClient.isMutating({ mutationKey: MCP_ACTION_KEY, exact: true }) > 0) return
@@ -236,9 +327,26 @@ export function McpDetail({
     )
   }
 
+  const ungranted = projectPathsOf(data).filter(
+    (path) => projectAvailability(path) === 'needs_access'
+  )
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <McpHeader id={id} name={name} server={data.server} onBack={onBack} />
+      {ungranted.length > 0 && (
+        <ProjectAvailabilityNotice
+          status="needs_access"
+          message={`${
+            ungranted.length === 1
+              ? `${resolveProjectLabel(ungranted[0])} needs`
+              : `${ungranted.length} projects need`
+          } folder access to check and change this server there.`}
+          projects={ungranted}
+          onAddFolders={onAddFolders}
+          onHideFolder={onHideFolder}
+        />
+      )}
       <motion.div {...settle} className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-4 px-4 py-4">
           <McpStats detail={data} />
@@ -249,8 +357,10 @@ export function McpDetail({
             </p>
           )}
           <Connection
+            onHideFolder={onHideFolder}
             detail={data}
-            canCheckProject={canCheckProject}
+            projectAvailability={projectAvailability}
+            onManageFolders={onManageFolders}
             onCheckProject={onCheckProject}
             checkingProject={checkingProject}
             projectCheckError={projectCheckError}
@@ -259,14 +369,23 @@ export function McpDetail({
           <Declarations
             serverId={id}
             declarations={data.declarations}
-            canChangeProject={canCheckProject}
+            projectAvailability={projectAvailability}
+            onManageFolders={onManageFolders}
             anyPending={anyPending}
             pending={pending}
             failure={failure}
             onRequest={setConfirming}
             onOpenPlugin={onOpenPlugin}
+            onSignedIn={signedIn}
           />
-          {data.server.kind === 'connector' && <ConnectorChanges />}
+          {data.server.kind === 'connector' && (
+            <ConnectorChanges
+              serverId={id}
+              live={data.server.liveStatus}
+              disabled={anyPending}
+              onSignedIn={signedIn}
+            />
+          )}
           <SwitchedOff detail={data} />
           <Tools tools={data.tools} />
         </div>
@@ -285,14 +404,30 @@ export function McpDetail({
   )
 }
 
-// Connectors live on the user's claude.ai account; the CLI won't change them (docs/mcp-servers.md,
-// Connector logout).
-function ConnectorChanges(): React.JSX.Element {
+// Connectors live on the user's claude.ai account: Claude Code can sign one in (#50), but only claude.ai
+// disconnects it (docs/mcp-servers.md, Connector logout).
+function ConnectorChanges({
+  serverId,
+  live,
+  disabled,
+  onSignedIn
+}: {
+  serverId: string
+  live: McpServerRow['liveStatus']
+  disabled: boolean
+  onSignedIn: (message: string) => void
+}): React.JSX.Element {
+  const loginRef = connectorOffersLogin(live) ? mcpLoginRef(serverId, null) : null
   return (
     <section className="flex flex-col gap-2">
       <Caption label="Changes" />
+      {loginRef && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <McpSignIn loginRef={loginRef} disabled={disabled} onSignedIn={onSignedIn} />
+        </div>
+      )}
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
-        Managed in claude.ai, where its sign-in lives.
+        Disconnect it in claude.ai.
         <TextLink
           onClick={() => void window.api.openExternal(CONNECTORS_PAGE)}
           className="flex items-center gap-1 text-[13px] text-foreground"
@@ -356,7 +491,7 @@ function McpActionDialog({
             <DialogTitle className="break-words">Log out of {name}?</DialogTitle>
             <DialogDescription>
               Claude Code forgets this server&apos;s sign-in on this computer, and the next session
-              asks you to sign in again. Sign back in from Claude Code with /mcp.
+              asks you to sign in again. Sign back in with Log in, or from Claude Code with /mcp.
             </DialogDescription>
           </DialogHeader>
         ) : (
@@ -508,26 +643,24 @@ function McpStats({ detail }: { detail: McpServerDetail }): React.JSX.Element {
 // The general check covers user servers, connectors, and user plugins; a local or project server
 // only answers from its own project, checked one project at a time.
 function Connection({
+  onHideFolder,
   detail,
-  canCheckProject,
+  projectAvailability,
+  onManageFolders,
   onCheckProject,
   checkingProject,
   projectCheckError
 }: {
   detail: McpServerDetail
-  canCheckProject: (path: string) => boolean
+  projectAvailability: ProjectAvailability
+  onManageFolders: () => void
+  onHideFolder: (path: string) => Promise<void>
   onCheckProject: (path: string) => void
   checkingProject: string | null
   projectCheckError: { projectPath: string | null; message: string } | null
 }): React.JSX.Element {
   const resolveProjectLabel = useProjectLabel()
-  const projects = [
-    ...new Set(
-      detail.declarations
-        .filter((declaration) => declaration.scope === 'local' || declaration.scope === 'project')
-        .flatMap((declaration) => (declaration.projectPath ? [declaration.projectPath] : []))
-    )
-  ].sort()
+  const projects = projectPathsOf(detail)
   const statusIn = (path: string): McpServerDetail['projectStatuses'][number] | undefined =>
     detail.projectStatuses.find((entry) => entry.projectPath === path)
   return (
@@ -542,6 +675,7 @@ function Connection({
         )}
         {projects.map((path) => {
           const status = statusIn(path)
+          const availability = projectAvailability(path)
           const checking = checkingProject === path
           return (
             <li key={path} className="flex min-w-0 items-center gap-2">
@@ -551,7 +685,7 @@ function Connection({
               <McpConnectionBadge
                 live={status ? { status: status.status, checkedAt: status.checkedAt } : null}
               />
-              {canCheckProject(path) ? (
+              {availability === 'available' ? (
                 <TextLink
                   onClick={() => onCheckProject(path)}
                   disabled={checkingProject !== null}
@@ -565,9 +699,16 @@ function Connection({
                   {checking ? 'Checking…' : status ? 'Check again' : 'Check in this project'}
                 </TextLink>
               ) : (
-                <span className="shrink-0 text-[11px] text-muted-foreground">
-                  Grant this folder to check it
-                </span>
+                <>
+                  <ProjectBlockedNote
+                    status={availability}
+                    grantLabel="Grant this folder to check it"
+                    onManageFolders={onManageFolders}
+                  />
+                  {(availability === 'needs_access' || availability === 'missing') && (
+                    <HideFolderLink path={path} onHideFolder={onHideFolder} />
+                  )}
+                </>
               )}
             </li>
           )
@@ -616,12 +757,14 @@ function shadowText(shadow: McpShadow, label: (path: string) => string): string 
 }
 
 interface DeclarationActionState {
-  canChangeProject: (path: string) => boolean
+  projectAvailability: ProjectAvailability
+  onManageFolders: () => void
   anyPending: boolean
   pending: { cardKey: string; kind: McpActionKind } | null
   failure: { cardKey: string; message: string; unconfirmed: boolean } | null
   onRequest: (request: McpActionRequest) => void
   onOpenPlugin: (name: string, marketplace: string) => void
+  onSignedIn: (message: string) => void
 }
 
 function Declarations({
@@ -717,7 +860,7 @@ function Declarations({
                     .join(', ')}
                 </p>
               )}
-              <DeclarationActions declaration={declaration} {...actionState} />
+              <DeclarationActions serverId={serverId} declaration={declaration} {...actionState} />
             </li>
           )
         })}
@@ -727,14 +870,20 @@ function Declarations({
 }
 
 function DeclarationActions({
+  serverId,
   declaration,
-  canChangeProject,
+  projectAvailability,
+  onManageFolders,
   anyPending,
   pending,
   failure,
   onRequest,
-  onOpenPlugin
-}: { declaration: McpDeclarationDetail } & DeclarationActionState): React.JSX.Element | null {
+  onOpenPlugin,
+  onSignedIn
+}: {
+  serverId: string
+  declaration: McpDeclarationDetail
+} & DeclarationActionState): React.JSX.Element | null {
   const plugin = declaration.plugin
   if (plugin !== null)
     return (
@@ -751,12 +900,15 @@ function DeclarationActions({
     )
   const actions = mcpDeclarationActions(declaration)
   const key = cardKey(declaration)
-  const changeable = declaration.projectPath === null || canChangeProject(declaration.projectPath)
+  const availability =
+    declaration.projectPath === null ? 'available' : projectAvailability(declaration.projectPath)
+  const changeable = availability === 'available'
   const disabled = anyPending || !changeable
   const pendingKind = pending?.cardKey === key ? pending.kind : null
   const icon = (kind: McpActionKind, Idle: typeof Trash2): React.JSX.Element =>
     pendingKind === kind ? <Loader2 className="animate-spin" /> : <Idle />
   const ownFailure = failure?.cardKey === key ? failure : null
+  const loginRef = actions.login && changeable ? mcpLoginRef(serverId, declaration) : null
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -771,6 +923,9 @@ function DeclarationActions({
           {icon('remove', Trash2)}
           {pendingKind === 'remove' ? PENDING_LABEL.remove : 'Remove'}
         </Button>
+        {loginRef && (
+          <McpSignIn loginRef={loginRef} disabled={anyPending} onSignedIn={onSignedIn} />
+        )}
         {actions.logout && (
           <Button
             type="button"
@@ -796,7 +951,11 @@ function DeclarationActions({
           </Button>
         )}
         {!changeable && (
-          <span className="text-[11px] text-muted-foreground">Grant this folder to change it</span>
+          <ProjectBlockedNote
+            status={availability}
+            grantLabel="Grant this folder to change it"
+            onManageFolders={onManageFolders}
+          />
         )}
       </div>
       {ownFailure && (

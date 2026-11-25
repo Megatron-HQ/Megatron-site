@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
 import {
+  openSettings,
   openSkill,
   preparePreview,
   selectPanel,
@@ -152,8 +153,11 @@ export async function verifyInventoryChanges(page, baseUrl, directory) {
     await page
       .getByRole('button', { name: 'Reset sample', exact: true })
       .click()
-    await app.getByRole('button', { name: 'Settings', exact: true }).click()
-    const rescan = app.getByRole('button', { name: 'Rescan now', exact: true })
+    const settings = await openSettings(app, 'Claude Code')
+    const rescan = settings.getByRole('button', {
+      name: 'Rescan now',
+      exact: true
+    })
     await rescan.focus()
     await rescan.press('Enter')
     await app.getByText('Scan complete.', { exact: true }).waitFor()

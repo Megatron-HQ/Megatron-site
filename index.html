@@ -354,18 +354,18 @@
         <article class="plugin-feature mcp-feature">
           <div class="plugin-copy">
             <span class="eyebrow">MCP SERVERS</span>
-            <h3>See where your servers come from.</h3>
+            <h3>Add, inspect, and sign in to MCP servers.</h3>
             <p>
-              Browse MCP servers from user, local, and project settings,
-              plugins, and Claude Code activity. See which declaration takes
-              precedence, which servers await approval, and what needs
-              attention.
+              Add a server by filling in the form or pasting its JSON. Choose
+              user, local, or shared project scope. See which declaration takes
+              precedence, which servers await approval, and when a local command
+              is missing from PATH.
             </p>
             <p class="plugin-note">
-              Grant a project folder to read its .mcp.json. In the desktop app,
-              run a connection check on demand, remove a declaration, or sign
-              out of a configured remote server. Manage claude.ai connectors on
-              claude.ai.
+              Grant project folder access from MCP details. In the desktop app,
+              start sign-in for remote servers and claude.ai connectors through
+              Claude Code’s terminal, then check the result in Megatron. The
+              preview lets you try the same flow with sample data.
             </p>
           </div>
           <div class="plugin-scope-visual">
@@ -547,8 +547,9 @@
                     <h3>See what your MCP servers did.</h3>
                     <p>
                       Compare recorded tool calls, errors, and estimated result
-                      tokens by server over 24 hours, 7 days, or 30 days.
-                      Coverage follows the transcripts Claude Code still has.
+                      tokens by server over 24 hours, 7 days, or 30 days. The
+                      local archive keeps calls Megatron already recorded after
+                      Claude Code removes their transcripts.
                     </p>
                     <button
                       type="button"
@@ -691,7 +692,7 @@
           <div class="release-status">
             <span class="status-dot" aria-hidden="true"></span>
             <div>
-              <strong>Megatron 0.4.0</strong
+              <strong>Megatron 0.5.1</strong
               ><span>For Apple silicon Macs and 64-bit Windows.</span>
             </div>
           </div>
@@ -798,7 +799,7 @@
               <p class="install-download">
                 <a
                   class="button button-lime"
-                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.4.0/megatron-0.4.0-setup.exe"
+                  href="https://github.com/Megatron-HQ/Megatron/releases/download/v0.5.1/megatron-0.5.1-setup.exe"
                   aria-describedby="install-exe-step"
                   >Download for Windows<i
                     data-lucide="download"
@@ -826,12 +827,11 @@
               <p>
                 On first launch, a short welcome shows what Megatron found and
                 helps you grant project folders. Change those grants under
-                <strong>Settings → Project folders → Manage…</strong>, or switch
-                the folder Megatron reads under
-                <strong>Settings → Claude Code folder</strong>.
+                <strong>Settings → Claude Code → Project folders</strong>. The
+                same pane lets you switch the Claude Code folder Megatron reads.
               </p>
               <p>
-                Plugin actions and Resident tax also need the
+                Plugin and MCP actions and Resident tax also need the
                 <code>claude</code> CLI on your PATH.
               </p>
             </div>
@@ -881,11 +881,11 @@
               </summary>
               <p>
                 Skill inspection does not edit definitions or execute skill
-                scripts. Resident tax runs Claude Code’s local /context command,
-                which can start configured SessionStart hooks and MCP servers.
-                Plugin and MCP management use Claude Code’s CLI and may access
-                the network. An MCP connection check starts approved local
-                servers and contacts remote ones after you choose to check.
+                scripts. When you approve the first Resident tax measurement,
+                Claude Code’s /context command can start configured SessionStart
+                hooks and MCP servers. Plugin and MCP management use Claude
+                Code’s CLI and may access the network. Connection checks are
+                opt-in, and MCP sign-in runs through Claude Code in a terminal.
                 Inventory and usage analysis run locally. The website preview
                 uses synthetic data for checks and actions.
               </p>
@@ -950,18 +950,20 @@
               </summary>
               <p>
                 Megatron keeps a local usage archive for each Claude Code folder
-                across scans and cache rebuilds, without storing prompt text in
-                that archive. It retains activity already observed when Claude
-                Code removes older source files. History deleted before Megatron
-                saw it cannot be recovered. Activity and History use the same
-                retained prompt records for matching time intervals. The History
-                panel shows annual summaries, a yearly calendar, and a monthly
-                project timeline. Coverage notes separate missing history from
-                days with no activity; streaks count consecutive observed days
-                with prompts. A day can still show token details when its prompt
-                history is unavailable. Incomplete source scans preserve the
-                previously archived history, including recorded project paths
-                and existing location links.
+                across scans and cache rebuilds. It archives skill invocations
+                and MCP tool calls as metadata, so recorded uses and calls can
+                still count after Claude Code prunes their transcripts. The
+                archive excludes prompts, arguments, and tool input and result
+                content. Coverage starts with the records Megatron has seen.
+                Activity and History use the same retained prompt records for
+                matching time intervals. The History panel shows annual
+                summaries, a yearly calendar, and a monthly project timeline.
+                Coverage notes separate missing history from days with no
+                activity; streaks count consecutive observed days with prompts.
+                A day can still show token details when its prompt history is
+                unavailable. Incomplete source scans preserve the previously
+                archived history, including recorded project paths and existing
+                location links.
               </p>
             </details>
             <details>
@@ -990,17 +992,18 @@
               <p>
                 Resident tax runs Claude Code’s /context from an empty folder to
                 measure your global baseline, excluding project instructions,
-                skills, and MCP servers. It measures on first open each launch
-                and again when you choose Refresh. Deferred tools and the
-                autocompact buffer are shown separately. On context windows
-                larger than 200K tokens, the bar is drawn against a 200K
-                reference so small categories stay visible; totals and
-                percentages still use the full window. Category tables come from
-                /context; other details read the first request of your newest
-                interactive Claude Code 2.1.300+ session on demand, without
-                storing it. Those session details can include project
-                configuration. The website preview uses synthetic examples
-                throughout.
+                skills, and MCP servers. The first measurement starts when you
+                choose Run /context. Megatron remembers that choice. After that,
+                it measures on first open each launch and when you choose
+                Refresh. Deferred tools and the autocompact buffer are shown
+                separately. On context windows larger than 200K tokens, the bar
+                is drawn against a 200K reference so small categories stay
+                visible; totals and percentages still use the full window.
+                Category tables come from /context; other details read the first
+                request of your newest interactive Claude Code 2.1.300+ session
+                on demand, without storing it. Those session details can include
+                project configuration. The website preview uses synthetic
+                examples throughout.
               </p>
             </details>
             <details>

@@ -5,6 +5,7 @@ import {
   previewFrame,
   openSkill,
   openResidentCategory,
+  openSettings,
   selectPanel
 } from './preview.mjs'
 
@@ -149,17 +150,7 @@ export async function verifyPreviewStates(page, baseUrl) {
       .isDisabled(),
     true
   )
-  await app
-    .getByRole('button', { name: 'C:\\Clients\\docs-site', exact: true })
-    .click()
-  await app.getByRole('button', { name: 'Add Folder...', exact: true }).click()
-  await app
-    .getByRole('button', {
-      name: 'Revoke access to docs-site',
-      exact: true
-    })
-    .waitFor()
-  await app.getByRole('button', { name: 'Done', exact: true }).click()
+  await app.getByRole('button', { name: 'Add folder…', exact: true }).click()
   await app
     .getByRole('button', { name: 'Disable', exact: true })
     .first()
@@ -372,7 +363,7 @@ export async function verifyPreviewStates(page, baseUrl) {
       async (frame) => {
         await openDevRepository(frame, 'web-app')
       },
-      'Folder access is required. Grant this project or a parent folder in Settings.'
+      /web-app needs folder access to show its project skills\./
     ]
   ]
   for (const [scenario, activate, message] of cases) {
@@ -398,9 +389,7 @@ export async function verifyPreviewStates(page, baseUrl) {
       .count(),
     0
   )
-  await missingApp
-    .getByRole('button', { name: 'Settings', exact: true })
-    .click()
+  await openSettings(missingApp, 'Claude Code')
   await missingApp
     .getByText('Missing project folders', { exact: true })
     .waitFor()
@@ -454,10 +443,9 @@ export async function verifyPreviewStates(page, baseUrl) {
 
   await page.goto(baseUrl)
   const freshApp = await preparePreview(page)
-  await freshApp.getByRole('button', { name: 'Settings', exact: true }).click()
-  await freshApp.getByRole('button', { name: 'Manage…', exact: true }).click()
-  const addFolder = freshApp.getByRole('button', {
-    name: 'Add Folder...',
+  const settings = await openSettings(freshApp, 'Claude Code')
+  const addFolder = settings.getByRole('button', {
+    name: 'Add folder…',
     exact: true
   })
   const revokeButton = (name) =>
@@ -489,7 +477,9 @@ export async function verifyPreviewStates(page, baseUrl) {
     .getByRole('button', { name: 'Revoke', exact: true })
     .click()
   await revokeButton('Clients').waitFor({ state: 'hidden' })
-  await freshApp.getByRole('button', { name: 'Done', exact: true }).click()
+  await settings
+    .getByRole('button', { name: 'Close', exact: true })
+    .press('Enter')
   await freshApp
     .getByRole('button', { name: 'All Skills', exact: true })
     .click()

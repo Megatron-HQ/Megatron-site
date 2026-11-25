@@ -13,6 +13,9 @@ export const IPC_CHANNELS = {
   pickAndAddFolders: 'folders:pickAndAdd',
   revokeAllowedPath: 'folders:revoke',
   narrowAllowedPath: 'folders:narrow',
+  listHiddenProjects: 'folders:listHidden',
+  hideProject: 'folders:hide',
+  showProject: 'folders:show',
   openExternal: 'shell:openExternal',
   listPlugins: 'plugins:list',
   getPluginDetail: 'plugins:detail',
@@ -28,6 +31,9 @@ export const IPC_CHANNELS = {
   getInitialMcpCheckConfirmed: 'mcp:getInitialCheckConfirmed',
   confirmMcpCheck: 'mcp:confirmCheck',
   removeMcpServer: 'mcp:remove',
+  addMcpServer: 'mcp:add',
+  loginMcpServer: 'mcp:login',
+  checkMcpSignIn: 'mcp:checkSignIn',
   logoutMcpServer: 'mcp:logout',
   resetMcpProjectChoices: 'mcp:resetProjectChoices',
   getInitialSection: 'app:getInitialSection',
@@ -50,6 +56,8 @@ export const IPC_CHANNELS = {
   usageSkillInvocations: 'usage:skillInvocations',
   usageMcp: 'usage:mcp',
   usageContextBaseline: 'usage:contextBaseline',
+  getInitialResidentTaxConfirmed: 'usage:getInitialResidentTaxConfirmed',
+  confirmResidentTax: 'usage:confirmResidentTax',
   usageRecordedRequest: 'usage:recordedRequest',
   getUpdateState: 'updates:getState',
   checkForUpdates: 'updates:check',
@@ -274,6 +282,9 @@ export interface SkillsListResult {
   // Set while a scan is in progress so a renderer that missed scan:started can still time the banner.
   scanActivity: ScanActivity | null
   contextBudget: ContextBudget
+  // Since when Uses and Last used count every use (usageHistorySince in known-calls.ts); null
+  // before any transcript was seen.
+  usesSince: string | null
 }
 
 export interface ScanIssue {
@@ -306,7 +317,11 @@ export interface ScanSummary {
 
 // What the worker hands main; main records `projects` and `findings`, then sends only the summary
 // to the renderer.
-export type ScanResult = ScanSummary & { projects?: ProjectFolder[]; findings?: RepoFindings }
+export type ScanResult = ScanSummary & {
+  projects?: ProjectFolder[]
+  findings?: RepoFindings
+  goneFolders?: string[]
+}
 
 export type FileStatus = 'ok' | 'too_large' | 'unreadable' | 'preview_limit'
 
@@ -332,9 +347,12 @@ export interface SkillInvocationEntry {
   preceding_user_text: string
   invoked_at: string
   trigger_type: TriggerType
-  cwd: string // from sessions_meta
-  git_branch: string | null // NULL when cwd isn't a git repo
+  cwd: string // the session's cwd
+  git_branch: string | null // NULL when cwd isn't a git repo, or its transcript is pruned
   agent_id: string | null // subagent filename stem; NULL for main-session invocations
+  // 1 when only the usage archive still holds this use: Claude Code pruned its transcript, and
+  // its prompt, args and branch went with it (preceding_user_text is then '').
+  transcript_pruned: 0 | 1
 }
 
 export interface SkillInvocationRecord extends SkillInvocationEntry {
@@ -542,6 +560,40 @@ export type McpActionResult =
   | { ok: true; verificationError: string }
   | { ok: false; error: string }
 
+// Adding a server (#50, docs/mcp-servers.md, Writes). Values may be credentials: main hands them
+// to `claude mcp add-json` on stdin and never stores or logs them.
+export type McpAddTransport = 'stdio' | 'http' | 'sse' | 'ws'
+
+export interface McpKeyValue {
+  name: string
+  value: string
+}
+
+export interface McpAddInput {
+  name: string
+  scope: McpConfiguredScope
+  projectPath: string | null // null exactly for user scope
+  transport: McpAddTransport
+  command: string // stdio only
+  args: string[] // stdio only
+  url: string // http, sse and ws only
+  env: McpKeyValue[] // stdio only
+  headers: McpKeyValue[] // http, sse and ws only
+}
+
+// Signing in (#50): a configured Declaration (scope and project, as for the other actions) or a
+// claude.ai connector (scope null), whose sign-in is account-wide.
+export interface McpLoginRef {
+  serverId: string
+  scope: McpConfiguredScope | null
+  projectPath: string | null
+}
+
+export type McpAddResult =
+  | { ok: true; serverId: string; message: string }
+  | { ok: true; serverId: string; verificationError: string }
+  | { ok: false; error: string }
+
 export interface McpServerRow {
   // configured:<name> | plugin:<plugin>:<server> | connector:<prefix> | observed:<prefix>
   id: string
@@ -583,6 +635,7 @@ export type McpLintRuleId =
   | 'mcp-shadowed'
   | 'mcp-prefix-collision'
   | 'mcp-server-skipped'
+  | 'mcp-command-not-found'
 
 // Derived from the index each time a server is read, so never stale and never stored.
 export interface McpLintFinding {
@@ -596,11 +649,10 @@ export interface McpLintFinding {
 
 export interface McpServerList {
   servers: McpServerRow[]
-  // Bounds of the calls the index still holds; transcripts age out after ~30 days.
-  firstCallAt: string | null
+  // Since when every call is counted: the start of the latest unbroken transcript coverage
+  // (known-calls.ts). Calls Megatron archived before then are still counted.
+  callsSince: string | null
   lastCallAt: string | null
-  // Projects Claude Code knows whose .mcp.json Megatron may not read.
-  ungrantedProjects: number
   // When the general connection check last ran this session.
   lastCheckedAt: string | null
 }
@@ -626,6 +678,8 @@ export interface McpDeclarationDetail {
   approval: McpApproval | null
   sourcePath: string | null
   shadowedIn: McpShadow[]
+  // A stdio command given as a bare program name, looked up on PATH (location holds it).
+  commandIsBare: boolean
 }
 
 export interface McpToolUsage {
@@ -656,6 +710,9 @@ export interface McpServerDetail {
 
 export const APP_SECTIONS = ['skills', 'plugins', 'mcp', 'usage'] as const
 export type AppSection = (typeof APP_SECTIONS)[number]
+
+export const SETTINGS_PANES = ['general', 'claude-code', 'updates', 'about'] as const
+export type SettingsPane = (typeof SETTINGS_PANES)[number]
 
 export interface ActivityProjectCount {
   project: string // raw cwd in reducers; primary project location in Usage IPC
@@ -692,8 +749,8 @@ export interface McpUsageWindow {
 }
 
 export interface McpUsageStats {
-  // The oldest call the index holds, for the label naming how far back transcripts reach.
-  firstCallAt: string | null
+  // Since when every call is counted (usageHistorySince), as in the server list.
+  callsSince: string | null
   last24h: McpUsageWindow
   last7d: McpUsageWindow
   last30d: McpUsageWindow

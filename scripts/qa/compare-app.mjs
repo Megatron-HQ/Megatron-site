@@ -9,9 +9,15 @@ import { _electron } from 'playwright-core'
 import { PNG } from 'pngjs'
 import pixelmatch from 'pixelmatch'
 import { launchBrowser } from '../../.claude/skills/visual-verify/browser-launch.mjs'
-import { openSkill, openResidentCategory, selectPanel } from './preview.mjs'
+import {
+  openSettings,
+  openSkill,
+  openResidentCategory,
+  selectPanel
+} from './preview.mjs'
 import {
   mcpServerRow,
+  openMcpAddDialog,
   openMcpCheckDialog,
   openMcpInventory,
   openMcpServer
@@ -102,15 +108,17 @@ const siteServer = await preview({
 })
 const address = (server) =>
   `http://127.0.0.1:${server.httpServer.address().port}/`
-const executable = join(
-  appRoot,
-  'node_modules/electron/dist',
-  process.platform === 'win32'
-    ? 'electron.exe'
-    : process.platform === 'darwin'
-      ? 'Electron.app/Contents/MacOS/Electron'
-      : 'electron'
-)
+const executable =
+  process.env.MEGATRON_REFERENCE_ELECTRON ??
+  join(
+    appRoot,
+    'node_modules/electron/dist',
+    process.platform === 'win32'
+      ? 'electron.exe'
+      : process.platform === 'darwin'
+        ? 'Electron.app/Contents/MacOS/Electron'
+        : 'electron'
+  )
 await writeFile(
   join(directory, 'electron-main.cjs'),
   `const { app, BrowserWindow } = require('electron')
@@ -174,9 +182,30 @@ const scenes = [
   ['detail', (page) => openSkill(page, 'design-system')],
   ['linked-skill', openLinkedSkill],
   ['claude-code-folder', openClaudeFolderSettings],
+  ['settings-updates', (page) => openSettings(page, 'Updates')],
+  ['settings-about', (page) => openSettings(page, 'About')],
   ['whats-new', openWhatsNew],
   ['mcp-inventory', openMcpInventory],
   ['mcp-detail', openMcpServer],
+  ['mcp-add', openMcpAddDialog],
+  [
+    'resident-tax-consent',
+    (page) => selectPanel(page, 'Resident tax', { measure: false })
+  ],
+  [
+    'pruned-skill-activity',
+    async (page) => {
+      await openSkill(page, 'code-review')
+      await page
+        .getByRole('button', { name: /invocations?$/ })
+        .first()
+        .press('Enter')
+      await page
+        .getByText('Transcript pruned', { exact: true })
+        .first()
+        .waitFor()
+    }
+  ],
   ['mcp-check-confirm', openMcpCheckDialog],
   [
     'mcp-check-results',

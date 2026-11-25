@@ -1,9 +1,12 @@
 import type {
   McpActionResult,
+  McpAddInput,
+  McpAddResult,
   McpConnectionCheck,
   McpDeclarationRef,
   McpDeclarationDetail,
   McpLintFinding,
+  McpLoginRef,
   McpServerDetail,
   McpServerKind,
   McpServerList,
@@ -13,8 +16,18 @@ import type {
   McpUsageWindow
 } from '../../vendor/megatron/src/shared/ipc'
 import type { ProjectIdentity } from '../../vendor/megatron/src/shared/project-identity'
-import { isWithinProjectPath } from '../../vendor/megatron/src/shared/project-path.ts'
+import {
+  isHiddenProject,
+  isWithinProjectPath
+} from '../../vendor/megatron/src/shared/project-path.ts'
 import { groupProjectCounts } from '../../vendor/megatron/src/shared/usage-projects.ts'
+import {
+  MCP_ENV_NAME,
+  MCP_HEADER_NAME,
+  MCP_VARIABLE_REFERENCE,
+  mcpServerNameError,
+  mcpUrlError
+} from '../../vendor/megatron/src/shared/mcp-add-rules.ts'
 import { localDate } from './analytics.ts'
 import {
   ADDITIONAL_PROJECT,
@@ -23,6 +36,7 @@ import {
   HOUR_MS,
   SAMPLE_HOME,
   SAMPLE_PROJECT,
+  sampleTranscriptCoverage,
   windowsPath,
   type SampleState
 } from './fixtures.ts'
@@ -51,8 +65,10 @@ interface SampleMcpCall {
 export interface SampleMcpState {
   servers: SampleMcpServer[]
   calls: SampleMcpCall[]
+  callsSince: string | null
   checks: McpConnectionCheck[]
   signedOut: McpDeclarationRef[]
+  signIns: { target: McpLoginRef; connected: boolean }[]
   measuredAt: string | null
 }
 
@@ -65,6 +81,18 @@ const OTHER_CONNECTOR_ID = 'connector:claude_ai_Tasks'
 const SETTINGS_APPROVED_ID = 'configured:workspace-metrics'
 const REMOTE_TRANSPORTS = new Set(['http', 'sse', 'ws'])
 const CHARS_PER_TOKEN = 3
+const SCOPE_PRECEDENCE = { user: 1, project: 2, local: 3 }
+const SAMPLE_MISSING_COMMANDS = new Set([
+  'sample-build',
+  'sample-missing',
+  'uvx'
+])
+const CREDENTIAL_NAME =
+  /token|secret|passw(?:or)?d|api[-_]?key|access[-_]?key|credential|auth|cookie|session/i
+const CREDENTIAL_FLAG =
+  /^--?(?:token|secret|password|api[-_]?key|access[-_]?key|auth|key)(?:=(.*))?$/i
+const CREDENTIAL_VALUE =
+  /(?:sk-|gh[pousr]_|github_pat_|glpat-|xox[baprs]-)[\w-]{4,}|^[\w+=/-]{32,}$/
 
 function declaration(
   scope: McpDeclarationDetail['scope'],
@@ -84,6 +112,7 @@ function declaration(
     approval: null,
     sourcePath: windowsPath(SAMPLE_HOME, '.claude.json'),
     shadowedIn: [],
+    commandIsBare: false,
     ...fields
   }
 }
@@ -152,6 +181,7 @@ export function createSampleMcpState(
           sourcePath: windowsPath(SAMPLE_PROJECT, '.mcp.json'),
           approval: 'pending',
           transport: 'stdio',
+          commandIsBare: true,
           argCount: 2,
           location: 'sample-build'
         })
@@ -285,6 +315,15 @@ export function createSampleMcpState(
       outcome: 'ok'
     })
   }
+  const archived = [calls[5], calls[7]]
+  const live = calls.filter((call) => call !== archived[1])
+  // The live record wins if the archive and a retained transcript both have a call.
+  const knownCalls = new Map(
+    [...archived, ...live].map((call) => [
+      JSON.stringify([call.session, call.at, call.tool]),
+      call
+    ])
+  )
   return {
     servers: empty
       ? []
@@ -294,10 +333,14 @@ export function createSampleMcpState(
     calls: empty
       ? []
       : alternate
-        ? calls.filter(({ project }) => project === API_PROJECT)
-        : calls,
+        ? [...knownCalls.values()].filter(
+            ({ project }) => project === API_PROJECT
+          )
+        : [...knownCalls.values()],
+    callsSince: empty ? null : sampleTranscriptCoverage(now),
     checks: [],
     signedOut: [],
+    signIns: [],
     measuredAt: null
   }
 }
@@ -315,10 +358,11 @@ export function sampleProjectGranted(
 }
 
 function declarationsFor(server: SampleMcpServer, state: SampleState) {
-  const visible = server.declarations.filter(
-    ({ scope, projectPath }) =>
-      scope !== 'project' ||
-      (projectPath !== null && sampleProjectGranted(state, projectPath))
+  const visible = server.declarations.filter(({ scope, projectPath }) =>
+    projectPath === null
+      ? scope !== 'project'
+      : !isHiddenProject(projectPath, state.hiddenProjects) &&
+        (scope !== 'project' || sampleProjectGranted(state, projectPath))
   )
   const projects = [
     ...new Set(visible.flatMap(({ projectPath }) => projectPath ?? []))
@@ -367,7 +411,11 @@ export function recordSampleMcpCheck(
       if (server.kind === 'configured' && !entry) return []
       let status: McpLiveStatus = 'connected'
       if (
-        server.id === OTHER_CONNECTOR_ID ||
+        (server.id === OTHER_CONNECTOR_ID &&
+          !mcp.signIns.some(
+            ({ target, connected }) =>
+              target.serverId === server.id && connected
+          )) ||
         mcp.signedOut.some(
           (ref) =>
             ref.serverId === server.id &&
@@ -424,6 +472,9 @@ export function changeSampleMcpDeclaration(
       }
     if (!mcp.signedOut.some((entry) => sameDeclaration(entry, ref)))
       mcp.signedOut.push({ ...ref })
+    mcp.signIns = mcp.signIns.filter(
+      ({ target }) => !sameDeclaration(target, ref)
+    )
     mcp.checks = []
     return {
       ok: true,
@@ -435,6 +486,9 @@ export function changeSampleMcpDeclaration(
   )
   mcp.signedOut = mcp.signedOut.filter(
     (signedOut) => !sameDeclaration(signedOut, ref)
+  )
+  mcp.signIns = mcp.signIns.filter(
+    ({ target }) => !sameDeclaration(target, ref)
   )
   mcp.checks = []
   if (!server.declarations.length) {
@@ -466,15 +520,290 @@ export function changeSampleMcpDeclaration(
   }
 }
 
-function sameDeclaration(
-  first: McpDeclarationRef,
-  second: McpDeclarationRef
-): boolean {
+function sameDeclaration(first: McpLoginRef, second: McpLoginRef): boolean {
   return (
     first.serverId === second.serverId &&
     first.scope === second.scope &&
     first.projectPath === second.projectPath
   )
+}
+
+function literalValue(value: string): string {
+  return value
+    .replace(new RegExp(MCP_VARIABLE_REFERENCE.source, 'g'), '')
+    .trim()
+}
+
+function representsCredential(name: string, value: string): boolean {
+  const literal = literalValue(value)
+    .replace(/^(?:bearer|basic|token)\b/i, '')
+    .trim()
+  return (
+    CREDENTIAL_VALUE.test(literal) ||
+    (CREDENTIAL_NAME.test(name) && literal !== '')
+  )
+}
+
+function mcpAddPrecedenceNote(
+  scope: McpAddInput['scope'],
+  projectPath: string | null,
+  declarations: McpDeclarationDetail[]
+): string {
+  if (scope === 'user') {
+    const projects = new Set(
+      declarations.flatMap((entry) => entry.projectPath ?? [])
+    )
+    return projects.size
+      ? ` A project’s own declaration takes precedence over this one in ${projects.size} ${projects.size === 1 ? 'project' : 'projects'}.`
+      : ''
+  }
+  const otherScopes = declarations.flatMap(
+    ({ scope: other, projectPath: path }) =>
+      other !== 'plugin' && (other === 'user' || path === projectPath)
+        ? [other]
+        : []
+  )
+  const higher = otherScopes.filter(
+    (other) => SCOPE_PRECEDENCE[other] > SCOPE_PRECEDENCE[scope]
+  )
+  const lower = otherScopes.filter(
+    (other) => SCOPE_PRECEDENCE[other] < SCOPE_PRECEDENCE[scope]
+  )
+  return [
+    higher.length &&
+      ` In this project the ${higher.join(' and ')} declaration takes precedence over this one.`,
+    lower.length &&
+      ` In this project the ${scope} declaration takes precedence over the ${lower.join(' and ')} declaration.`
+  ]
+    .filter(Boolean)
+    .join('')
+}
+
+export function addSampleMcpServer(
+  mcp: SampleMcpState,
+  state: SampleState,
+  input: McpAddInput
+): McpAddResult {
+  if (
+    !input ||
+    typeof input.name !== 'string' ||
+    !Object.hasOwn(SCOPE_PRECEDENCE, input.scope)
+  )
+    return {
+      ok: false,
+      error: 'Choose a name and scope for the sample server.'
+    }
+  const { scope, transport, projectPath } = input
+  const nameError = mcpServerNameError(input.name)
+  if (nameError) return { ok: false, error: nameError }
+  if (
+    scope === 'user'
+      ? projectPath !== null
+      : typeof projectPath !== 'string' ||
+        !sampleProjectGranted(state, projectPath) ||
+        !state.projects.some(({ path }) => path === projectPath) ||
+        isHiddenProject(projectPath, state.hiddenProjects)
+  )
+    return {
+      ok: false,
+      error: 'Choose an available granted sample folder for this scope.'
+    }
+  const stdio = transport === 'stdio'
+  if (!stdio && !REMOTE_TRANSPORTS.has(transport))
+    return { ok: false, error: 'Choose stdio, HTTP, SSE or WebSocket.' }
+  const endpoint = stdio ? input.command : input.url
+  if (
+    typeof endpoint !== 'string' ||
+    !endpoint.trim() ||
+    endpoint.includes('\0')
+  )
+    return {
+      ok: false,
+      error: stdio
+        ? 'Give the command that starts the server.'
+        : 'Give the server its URL.'
+    }
+  const urlError = stdio ? null : mcpUrlError(transport, endpoint)
+  if (urlError) return { ok: false, error: urlError }
+  const args = stdio ? input.args : []
+  const entries = stdio ? input.env : input.headers
+  const namePattern = stdio ? MCP_ENV_NAME : MCP_HEADER_NAME
+  const keys = new Set<string>()
+  if (
+    !Array.isArray(args) ||
+    args.some((arg) => typeof arg !== 'string' || arg.includes('\0')) ||
+    !Array.isArray(entries)
+  )
+    return {
+      ok: false,
+      error: 'Enter valid arguments and settings for the sample server.'
+    }
+  for (const entry of entries) {
+    if (
+      !entry ||
+      typeof entry.name !== 'string' ||
+      !namePattern.test(entry.name) ||
+      typeof entry.value !== 'string' ||
+      entry.value.includes('\0')
+    )
+      return { ok: false, error: 'Each setting needs a valid name and value.' }
+    const key = stdio ? entry.name : entry.name.toLowerCase()
+    if (keys.has(key))
+      return { ok: false, error: 'A setting name appears twice.' }
+    keys.add(key)
+  }
+  const url = stdio ? null : new URL(endpoint.trim())
+  const hasLiteralCredential =
+    entries.some(({ name, value }) => representsCredential(name, value)) ||
+    args.some((arg, index) => {
+      const flag = CREDENTIAL_FLAG.exec(arg)
+      return (
+        CREDENTIAL_VALUE.test(literalValue(arg)) ||
+        (flag !== null && literalValue(flag[1] ?? args[index + 1] ?? '') !== '')
+      )
+    }) ||
+    (url !== null &&
+      (url.username !== '' ||
+        url.password !== '' ||
+        [...url.searchParams].some(([name, value]) =>
+          representsCredential(name, value)
+        ))) ||
+    (stdio && CREDENTIAL_VALUE.test(literalValue(endpoint)))
+  if (scope === 'project' && hasLiteralCredential)
+    return {
+      ok: false,
+      error:
+        'A project’s .mcp.json is shared through git. Use an environment variable reference for credentials.'
+    }
+
+  const name = input.name.trim()
+  const serverId = 'configured:' + name
+  const server = mcp.servers.find(({ id }) => id === serverId)
+  if (
+    server?.declarations.some(
+      (entry) => entry.scope === scope && entry.projectPath === projectPath
+    )
+  )
+    return {
+      ok: false,
+      error: `This scope already declares ${name}. Choose another name.`
+    }
+  const collision = mcp.servers.find(
+    ({ id, kind, prefix }) =>
+      id !== serverId && kind !== 'observed' && prefix === name
+  )
+  if (collision)
+    return {
+      ok: false,
+      error: `This server would share a tool prefix with ${collision.name}. Choose another name.`
+    }
+
+  const settings = entries.map(({ name, value }) => ({
+    name,
+    literal: !MCP_VARIABLE_REFERENCE.test(value)
+  }))
+  const command = endpoint.trim()
+  const commandIsBare = stdio && /^[\w.-]+$/.test(command)
+  const basename = command.split(/[\\/]/).at(-1) ?? ''
+  const location =
+    url?.host ??
+    (CREDENTIAL_VALUE.test(literalValue(basename)) ? null : basename)
+  const entry = declaration(scope, {
+    projectPath,
+    transport,
+    location,
+    commandIsBare,
+    hasLiteralCredential,
+    env: stdio ? settings : [],
+    headers: stdio ? [] : settings,
+    argCount: stdio ? args.length : null,
+    approval: scope === 'project' ? 'pending' : null,
+    sourcePath:
+      scope === 'project' && projectPath
+        ? windowsPath(projectPath, '.mcp.json')
+        : windowsPath(SAMPLE_HOME, '.claude.json')
+  })
+  const note = mcpAddPrecedenceNote(
+    scope,
+    projectPath,
+    server?.declarations ?? []
+  )
+  if (server) {
+    server.declarations.push(entry)
+    server.declarations.sort(
+      (first, second) =>
+        SCOPE_PRECEDENCE[second.scope as McpAddInput['scope']] -
+        SCOPE_PRECEDENCE[first.scope as McpAddInput['scope']]
+    )
+  } else
+    mcp.servers.push(sampleServer(serverId, name, 'configured', name, [entry]))
+  const approval =
+    scope === 'project' ? ' The declaration is pending approval.' : ''
+  return {
+    ok: true,
+    serverId,
+    message: `Added sample server ${name}.${approval}${note}`
+  }
+}
+
+export function sampleMcpSignIn(
+  mcp: SampleMcpState,
+  state: SampleState,
+  ref: McpLoginRef,
+  action: 'open' | 'check',
+  scenario?: string
+): McpActionResult {
+  const detail = ref && sampleMcpDetail(mcp, state, ref.serverId)
+  if (!detail)
+    return { ok: false, error: 'Megatron no longer finds this sample server.' }
+  const eligible =
+    ref.scope === null
+      ? detail.server.kind === 'connector' && ref.projectPath === null
+      : detail.server.kind === 'configured' &&
+        detail.declarations.some(
+          (entry) =>
+            entry.scope === ref.scope &&
+            entry.projectPath === ref.projectPath &&
+            entry.transport &&
+            REMOTE_TRANSPORTS.has(entry.transport)
+        ) &&
+        (ref.projectPath === null ||
+          sampleProjectGranted(state, ref.projectPath))
+  if (!eligible)
+    return {
+      ok: false,
+      error: 'Choose a remote declaration or a claude.ai connector to sign in.'
+    }
+  const previous = mcp.signIns.find(({ target }) =>
+    sameDeclaration(target, ref)
+  )
+  if (action === 'open') {
+    if (scenario === 'mcp-sign-in-launch-error')
+      return {
+        ok: false,
+        error: 'The sample terminal could not open. Try again.'
+      }
+    if (!previous) mcp.signIns.push({ target: { ...ref }, connected: false })
+    return {
+      ok: true,
+      message:
+        'The desktop app opens Claude Code in a terminal. In this preview, use Check sign-in to finish the sample.'
+    }
+  }
+  if (!previous || scenario === 'mcp-sign-in-pending')
+    return {
+      ok: true,
+      verificationError: 'Sign-in is still pending in this sample.'
+    }
+  previous.connected = true
+  mcp.signedOut = mcp.signedOut.filter(
+    (target) => !sameDeclaration(target, ref)
+  )
+  recordSampleMcpCheck(mcp, state, ref.projectPath)
+  return {
+    ok: true,
+    message: `Sample sign-in verified for ${detail.server.name}.`
+  }
 }
 
 export function resetSampleMcpChoices(
@@ -516,7 +845,8 @@ export function resetSampleMcpChoices(
 function sampleFindings(
   server: SampleMcpServer,
   declarations: McpDeclarationDetail[],
-  collisions: number
+  collisions: number,
+  recentlyUsed: boolean
 ) {
   const findings: McpLintFinding[] = []
   if (collisions)
@@ -546,7 +876,22 @@ function sampleFindings(
         ruleId: 'mcp-inlined-credential',
         severity: 'warning',
         message:
-          'DOCS_TOKEN is a literal. Use an environment variable reference.'
+          'This declaration appears to include a literal credential. Use an environment variable reference.'
+      })
+    if (
+      entry.scope !== 'plugin' &&
+      entry.transport === 'stdio' &&
+      entry.commandIsBare &&
+      entry.location !== null &&
+      SAMPLE_MISSING_COMMANDS.has(entry.location) &&
+      !recentlyUsed &&
+      !entry.env.some(({ name }) => name.toUpperCase() === 'PATH')
+    )
+      findings.push({
+        ...source,
+        ruleId: 'mcp-command-not-found',
+        severity: 'info',
+        message: `This sample cannot find ${entry.location} on PATH.`
       })
     if (entry.approval === 'pending')
       findings.push({
@@ -624,7 +969,10 @@ export function sampleMcpDetail(
   const findings = sampleFindings(
     fixture,
     declarations,
-    collisionCount > 1 ? collisionCount : 0
+    collisionCount > 1 ? collisionCount : 0,
+    calls.some(
+      ({ at }) => Date.parse(at) >= Date.parse(state.now) - 30 * DAY_MS
+    )
   )
   const projectPaths = [
     ...new Set(declarations.flatMap(({ projectPath }) => projectPath ?? []))
@@ -702,11 +1050,8 @@ export function sampleMcpList(
     servers: mcp.servers.flatMap(
       ({ id }) => sampleMcpDetail(mcp, state, id)?.server ?? []
     ),
-    firstCallAt: times[0] ?? null,
+    callsSince: mcp.callsSince,
     lastCallAt: times.at(-1) ?? null,
-    ungrantedProjects: state.projects.filter(
-      ({ path }) => !sampleProjectGranted(state, path)
-    ).length,
     lastCheckedAt:
       mcp.checks.find(({ projectPath }) => projectPath === null)?.checkedAt ??
       null
@@ -794,7 +1139,7 @@ export function sampleMcpUsage(
     }
   }
   return {
-    firstCallAt: mcp.calls.map(({ at }) => at).sort()[0] ?? null,
+    callsSince: mcp.callsSince,
     last24h: reduce('24h', 1),
     last7d: reduce('7d', 7),
     last30d: reduce('30d', 30)

@@ -85,13 +85,24 @@ export async function openSkill(app, name = 'code-review') {
   await app.getByRole('button', { name: 'View files', exact: true }).waitFor()
 }
 
-export async function selectPanel(app, name) {
+export async function selectPanel(app, name, { measure = true } = {}) {
   await app.getByRole('button', { name: 'Usage', exact: true }).click()
   await app
     .getByRole('navigation', { name: 'Usage panels' })
     .getByRole('button', { name, exact: true })
     .click()
   await app.locator('header').getByText(name, { exact: true }).waitFor()
+  if (name === 'Resident tax' && measure) await measureResidentTax(app)
+}
+
+export async function measureResidentTax(app) {
+  const run = app.getByRole('button', { name: 'Run /context', exact: true })
+  const refresh = app.getByRole('button', { name: 'Refresh', exact: true })
+  await run.or(refresh).first().waitFor()
+  if (await run.isVisible()) {
+    assert.equal(await refresh.isVisible(), false)
+    await run.press('Enter')
+  }
 }
 
 export async function openResidentCategory(app, name) {
@@ -105,7 +116,13 @@ export async function openResidentCategory(app, name) {
 }
 
 async function verifyResidentContext(page, app) {
-  await selectPanel(app, 'Resident tax')
+  await selectPanel(app, 'Resident tax', { measure: false })
+  await app.getByRole('button', { name: 'Run /context', exact: true }).waitFor()
+  assert.equal(
+    await app.getByText('Global baseline', { exact: true }).count(),
+    0
+  )
+  await measureResidentTax(app)
   await app.getByText('Global baseline', { exact: true }).waitFor()
   await app.getByText('Deferred, not loaded', { exact: true }).waitFor()
   assert.equal(await app.getByRole('img', { name: /deferred/i }).count(), 0)
@@ -151,6 +168,17 @@ async function verifyResidentContext(page, app) {
     await dismissWithEscape(page, dialog)
     await waitForFocus(trigger)
   }
+}
+
+export async function openSettings(app, pane) {
+  await app.getByRole('button', { name: 'Settings', exact: true }).click()
+  const settings = app.getByRole('dialog', { name: 'Settings', exact: true })
+  await settings.waitFor()
+  if (pane)
+    await settings
+      .getByRole('tab', { name: new RegExp(`^${pane}(?: · |$)`) })
+      .press('Enter')
+  return settings
 }
 
 export async function verifyPreview(page) {
@@ -210,6 +238,9 @@ export async function verifyPreview(page) {
   await app.getByRole('radio', { name: 'Dark', exact: true }).click()
   assert.equal(await app.locator('html').getAttribute('class'), 'dark')
   await app.getByRole('radio', { name: 'Light', exact: true }).click()
+  await app
+    .getByRole('tab', { name: 'Claude Code', exact: true })
+    .press('Enter')
   await app.getByRole('button', { name: 'Rescan now', exact: true }).click()
   await app
     .getByRole('status')

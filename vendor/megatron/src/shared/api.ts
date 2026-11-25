@@ -9,6 +9,9 @@ import type {
   OpenSkillMetaResult,
   OpenSkillResult,
   McpActionResult,
+  McpAddInput,
+  McpAddResult,
+  McpLoginRef,
   McpConnectionCheckResult,
   McpDeclarationRef,
   McpServerDetail,
@@ -49,7 +52,12 @@ export interface Api {
   setTheme: (theme: ThemePreference) => Promise<void>
   listAllowedPaths: () => Promise<AllowedPathRow[]>
   listProjects: () => Promise<ProjectFolder[]>
-  pickAndAddFolders: () => Promise<GrantChangeResult>
+  // With a target: a folder main listed, which main aims the picker at when it can.
+  pickAndAddFolders: (target?: string) => Promise<GrantChangeResult>
+  listHiddenProjects: () => Promise<string[]>
+  // Display only; see hidden-projects.ts. Both resolve with the hidden list.
+  hideProject: (path: string) => Promise<string[]>
+  showProject: (path: string) => Promise<string[]>
   narrowAllowedPath: (path: string) => Promise<GrantChangeResult>
   revokeAllowedPath: (path: string) => Promise<AllowedPathRow[]>
   openExternal: (url: string) => Promise<void>
@@ -62,6 +70,9 @@ export interface Api {
   getInitialMcpCheckConfirmed: () => boolean
   confirmMcpCheck: () => Promise<void>
   removeMcpServer: (ref: McpDeclarationRef) => Promise<McpActionResult>
+  addMcpServer: (input: McpAddInput) => Promise<McpAddResult>
+  loginMcpServer: (ref: McpLoginRef) => Promise<McpActionResult>
+  checkMcpSignIn: (ref: McpLoginRef) => Promise<McpActionResult>
   logoutMcpServer: (ref: McpDeclarationRef) => Promise<McpActionResult>
   resetMcpProjectChoices: (projectPath: string) => Promise<McpActionResult>
   enablePlugin: (input: PluginActionInput) => Promise<PluginActionResult>
@@ -77,6 +88,8 @@ export interface Api {
   getUsageSkillInvocations: (input: SkillInvocationSliceInput) => Promise<SkillInvocationRecord[]>
   getUsageMcp: () => Promise<McpUsageStats>
   getContextBaseline: () => Promise<ContextBaselineResult>
+  getInitialResidentTaxConfirmed: () => boolean
+  confirmResidentTax: () => Promise<void>
   getRecordedRequest: () => Promise<RecordedRequest | null>
   getInitialSection: () => AppSection
   setLastSection: (section: AppSection) => Promise<void>

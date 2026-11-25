@@ -3,6 +3,7 @@ import test from 'node:test'
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
 
 async function tooling() {
   try {
@@ -49,6 +50,62 @@ test('the imported renderer includes the SVG AppBrand loads', async () => {
   const asset = 'build/icon-source/icon.svg'
   assert.ok(manifest.files[asset], 'The snapshot is missing the AppBrand SVG.')
   assert.equal(manifest.files[asset], manifest.upstreamHashes[asset])
+})
+
+test('refreshing a snapshot removes renderer files deleted upstream', async (context) => {
+  const { syncRenderer, verifySnapshot } = await tooling()
+  const directory = await mkdtemp(join(tmpdir(), 'megatron-renderer-sync-'))
+  context.after(() => rm(directory, { recursive: true, force: true }))
+  const source = join(directory, 'desktop')
+  const target = join(directory, 'snapshot')
+  const files = {
+    'src/renderer/src/OldDialog.tsx': 'export const old = true\n',
+    'src/shared/example.ts': 'export const shared = true\n',
+    'src/preload/index.d.ts': 'export {}\n',
+    'package.json': '{"version":"0.4.0"}\n',
+    LICENSE: 'Sample license\n'
+  }
+  for (const [path, contents] of Object.entries(files)) {
+    const output = join(source, path)
+    await mkdir(join(output, '..'), { recursive: true })
+    await writeFile(output, contents)
+  }
+  const git = (...args) =>
+    execFileSync('git', ['-C', source, ...args], { stdio: 'ignore' })
+  const commit = () => {
+    git('add', '--all')
+    git(
+      '-c',
+      'user.name=Renderer Test',
+      '-c',
+      'user.email=test@example.invalid',
+      'commit',
+      '--no-gpg-sign',
+      '--no-verify',
+      '-qm',
+      'Sample renderer'
+    )
+  }
+  git('init', '--quiet')
+  commit()
+  await syncRenderer(source, target)
+  await rm(join(source, 'src/renderer/src/OldDialog.tsx'))
+  await writeFile(
+    join(source, 'src/renderer/src/NewDialog.tsx'),
+    'export const current = true\n'
+  )
+  await writeFile(join(source, 'package.json'), '{"version":"0.5.1"}\n')
+  commit()
+
+  const snapshot = await syncRenderer(source, target)
+  assert.equal(snapshot.version, '0.5.1')
+  assert.ok(snapshot.files['src/renderer/src/NewDialog.tsx'])
+  assert.equal(snapshot.files['src/renderer/src/OldDialog.tsx'], undefined)
+  await assert.rejects(
+    readFile(join(target, 'src/renderer/src/OldDialog.tsx')),
+    { code: 'ENOENT' }
+  )
+  await verifySnapshot(target)
 })
 
 const INVENTORY_FOCUS_SOURCE = `  const focusShownRows = useEffectEvent(() => {
